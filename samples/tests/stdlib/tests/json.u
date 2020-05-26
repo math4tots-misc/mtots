@@ -1,0 +1,40 @@
+import json
+
+def __test_loads() {
+    blob = json::loads(r###"
+    { "a": [1, 2, 3], "b": [2, 3, 4]}
+    "###)
+
+    assert_eq(blob, [:a: [1, 2, 3], :b:[2, 3, 4]])
+}
+
+def __test_dumps() {
+    string = json::dumps("hello")
+    assert_eq(string, '"hello"')
+
+    string = json::dumps([1, 2, 'hi'])
+    assert_eq(string, '[1,2,"hi"]')
+
+    string = json::dumps([
+        :asdf: ['a', 'b', 'c'],
+    ])
+    assert_eq(string, '{"asdf":["a","b","c"]}')
+}
+
+
+def __test_preserve_order() {
+    """
+    Check that order is preserved for maps
+    """
+    string = json::dumps([
+        :asdf: ['a', 'b', 'c'],
+        :b: 'xyz',
+    ])
+    assert_eq(string, '{"asdf":["a","b","c"],"b":"xyz"}')
+
+    string = json::dumps([
+        :b: 'xyz',
+        :asdf: ['a', 'b', 'c'],
+    ])
+    assert_eq(string, '{"b":"xyz","asdf":["a","b","c"]}')
+}

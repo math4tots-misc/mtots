@@ -1,0 +1,12 @@
+import json
+
+print(json)
+
+blob = json::loads(r###"
+{
+    "a": [1, 2, 3]
+}
+
+"###)
+
+print(blob)
