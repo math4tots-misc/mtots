@@ -1,0 +1,13 @@
+import cgen.android
+import os
+
+project_dir = __file.parent().parent().parent().parent().join('sandbox', 'android', 'base')
+
+print('start...')
+sdk = android::SDK(os::home().join(r'AppData\Local\Android\Sdk'))
+sdk.materialize(project_dir, nil)
+print('before emulator start')
+sdk.start_emulator()
+print('after emulator start')
+print(sdk.install(project_dir))
+print('after install')

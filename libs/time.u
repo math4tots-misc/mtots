@@ -1,0 +1,3 @@
+import _time
+
+sleep = _time::sleep

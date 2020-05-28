@@ -1,0 +1,30 @@
+r###"
+cgen library
+for generating code
+
+For this first version:
+
+    * I'm focusing on mobile (so Java/Kotlin and/or ObjC/Swift)
+    * Gonna try not to get carried away with the type system
+"###
+
+class MutableProgram {
+    r###"
+    class_map: maps [pkg, class-name] pairs to MutableClass instances
+    "###
+    [class_map]
+}
+
+class MutableClass {
+    [pkg, name, methods]
+
+    static def __call(pkg, name) = __malloc(MutableClass, [pkg, name, @[]])
+
+    def id(self) = [self.pkg, name]
+    def pkg(self) = self.pkg
+    def name(self) = self.name
+}
+
+class MutableMethod {
+    [class_id, name, parameters, return_type, body_builder]
+}

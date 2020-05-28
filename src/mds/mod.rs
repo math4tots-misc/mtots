@@ -8,9 +8,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 mod json;
+mod mfs;
+mod time;
 
 pub fn add_standard_modules(globals: &mut Globals) {
     add(globals, json::NAME, json::load);
+    add(globals, mfs::NAME, mfs::load);
+    add(globals, time::NAME, time::load);
 }
 
 fn add<F>(globals: &mut Globals, name: &'static str, body: F)

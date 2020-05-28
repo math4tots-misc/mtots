@@ -1,0 +1,7 @@
+r###"
+File system operations
+"###
+import _fs
+
+copy = _fs::copy
+
