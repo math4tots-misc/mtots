@@ -3,27 +3,44 @@ class Program {
     Models a Java program
 
     class_map:
-        maps full class names to their models
+        maps full class names to their ClassSig
+    method_map:
+        maps full method names to their MethodSig
+    field_map:
+        maps full field names to their FieldSig
+    method_body_map:
+        maps full method names to their bodies
+        If the method is abstract, or the class that
+        contains the method is abstract, the body
+        may be omitted
     "###
-    [class_map]
+    [
+        class_map,
+        method_map,
+        field_map,
+        method_body_map,
+    ]
 }
 
-class Class {
+class ClassSig {
     r###"
-    Models a Java class
+    Models a Java class signature
 
     package_name
     short_name
     type:
         :CLASS, :INTERFACE or :ENUM
+    native:
+        boolean indicating whether this class is already
+        implemented (in Java or some other JVM language)
     "###
-    [package_name, short_name, full_name, type]
+    [package_name, short_name, full_name, type, native]
 
-    static def __call(full_name, type) = {
+    static def __call(full_name, type, native) = {
         package_name = _package_name(full_name)
         short_name = _short_name(full_name)
         assert(JAVA_CLASS_TYPES.has(type))
-        __malloc(Class, [package_name, short_name, full_name, type])
+        __malloc(ClassSig, [package_name, short_name, full_name, type, native])
     }
 
     def short_name(self) = self.short_name
