@@ -1,0 +1,51 @@
+class Program {
+    r###"
+    Models a Java program
+
+    class_map:
+        maps full class names to their models
+    "###
+    [class_map]
+}
+
+class Class {
+    r###"
+    Models a Java class
+
+    package_name
+    short_name
+    type:
+        :CLASS, :INTERFACE or :ENUM
+    "###
+    [package_name, short_name, full_name, type]
+
+    static def __call(full_name, type) = {
+        package_name = _package_name(full_name)
+        short_name = _short_name(full_name)
+        assert(JAVA_CLASS_TYPES.has(type))
+        __malloc(Class, [package_name, short_name, full_name, type])
+    }
+
+    def short_name(self) = self.short_name
+    def package_name(self) = self.package_name
+    def full_name(self) = self.full_name
+}
+
+JAVA_CLASS_TYPES = [
+    :CLASS,
+    :INTERFACE,
+    :ENUM,
+]
+
+def _short_name(full_name) = {
+    full_name.slice(full_name.rfind('.') + 1)
+}
+
+def _package_name(full_name) = {
+    full_name.slice(0, full_name.rfind('.'))
+}
+
+def __test_name_slicing() {
+    assert_eq(_short_name('a.b.Foo'), 'Foo')
+    assert_eq(_package_name('a.b.Foo'), 'a.b')
+}

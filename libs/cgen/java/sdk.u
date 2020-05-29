@@ -1,0 +1,8 @@
+
+
+class SDK {
+    r###"
+    The Java SDK
+    "###
+    [java_home]
+}

@@ -10,11 +10,13 @@ project_dir = (
         .join('sandbox', 'android', 'base')
 )
 
-print('start...')
-sdk = android::SDK()
-sdk.materialize(project_dir, nil)
-print('before emulator start')
-sdk.start_emulator()
-print('after emulator start')
-sdk.install(project_dir)
-print('after install')
+if __name == __main() {
+    print('start...')
+    sdk = android::SDK()
+    sdk.materialize(project_dir, nil)
+    print('before emulator start')
+    sdk.start_emulator()
+    print('after emulator start')
+    sdk.install(project_dir)
+    print('after install')
+}

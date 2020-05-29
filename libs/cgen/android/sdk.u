@@ -22,11 +22,11 @@ class SDK {
         """
         Materialize an android project to the given path
         """
-        print([_template_dir.join('base'), outpath])
         fs::copy(_template_dir.join('base'), outpath)
     }
 
     def _run_args(self) = Table(
+        encoding=:utf8,
         clear_envs=true,
         envs=[
             :ANDROID_SDK_ROOT: self.android_sdk_path,
@@ -36,9 +36,6 @@ class SDK {
 
     def _run(self, *args, **kwargs) = {
         kwargs = (self._run_args() + kwargs)
-        if str(args[0]).has('gradlew') {
-            print('kwargs = ' + str(kwargs))
-        }
         os::run(
             *args,
             **kwargs,
@@ -104,8 +101,8 @@ class SDK {
         r###"
         Installs the android app at the given path
         "###
-        self._run(
-            self._gradlew(project_path),
+        self._run_gradlew(
+            project_path,
             ['installDebug'],
         )
     }
@@ -119,7 +116,7 @@ class SDK {
             self._emulator(),
             ['-list-avds'],
             stdout=:pipe,
-        )[1].trim().lines()[-1]
+        )[1].trim().lines().list()[-1]
     }
 
     def _start_emulator(self) = {
