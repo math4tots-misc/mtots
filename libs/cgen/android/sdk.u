@@ -1,6 +1,7 @@
 import fs
 import os
 import time
+import ..consts::_template_dir
 
 class SDK {
     r###"
@@ -8,16 +9,41 @@ class SDK {
     "###
     [android_sdk_path]
 
-    static def __call(android_sdk_path) = {
+    static def __call() = {
         "Do some minimal validity check on the sdk path"
-        path = Path(android_sdk_path)
-        assert(path.is_dir())
-        __malloc(SDK, [path])
+        __malloc(SDK, [_guess_sdk_root()])
     }
 
     def _emulator(self) = self.android_sdk_path.join('emulator', 'emulator')
 
     def _adb(self) = self.android_sdk_path.join('platform-tools', 'adb')
+
+    def materialize(self, outpath, project) {
+        """
+        Materialize an android project to the given path
+        """
+        print([_template_dir.join('base'), outpath])
+        fs::copy(_template_dir.join('base'), outpath)
+    }
+
+    def _run_args(self) = Table(
+        clear_envs=true,
+        envs=[
+            :ANDROID_SDK_ROOT: self.android_sdk_path,
+            :PATH: os::env('PATH'),
+        ],
+    )
+
+    def _run(self, *args, **kwargs) = {
+        kwargs = (self._run_args() + kwargs)
+        if str(args[0]).has('gradlew') {
+            print('kwargs = ' + str(kwargs))
+        }
+        os::run(
+            *args,
+            **kwargs,
+        )
+    }
 
     def _gradlew(self, project_path) = {
         if os::name == "windows" {
@@ -33,21 +59,44 @@ class SDK {
         }
     }
 
-    def materialize(self, outpath, project) {
-        """
-        Materialize an android project to the given path
-        """
-        fs::copy(_template_dir.join('base'), outpath)
+    def _run_gradlew(self, project_path, cmdargs, *args, **kwargs) = {
+        if os::name == 'windows' {
+            self._run(
+                self._gradlew(project_path),
+                cmdargs,
+                dir=project_path,
+                *args,
+                **kwargs,
+            )
+        } else {
+            r###"
+            We call sh instead of the script directly so that
+            gradlew doesn't need executable permissions
+            "###
+            self._run(
+                'sh',
+                [self._gradlew(project_path)] + cmdargs,
+                dir=project_path,
+                *args,
+                **kwargs,
+            )
+        }
+    }
+
+    def _start(self, *args, **kwargs) = {
+        os::Process(
+            *args,
+            **(self._run_args() + kwargs),
+        )
     }
 
     def build(self, project_path) {
         r###"
         Builds the android app at the given path
         "###
-        os::run(
-            self._gradlew(project_path),
+        self._run_gradlew(
+            project_path,
             ['build'],
-            dir=project_path,
         )
     }
 
@@ -55,29 +104,39 @@ class SDK {
         r###"
         Installs the android app at the given path
         "###
-        os::run(
+        self._run(
             self._gradlew(project_path),
             ['installDebug'],
-            dir=project_path,
         )
     }
 
-    def _start_emulator(self) = {
-        os::run(
+    def _get_emulator_name(self) = {
+        r###"
+        Tries to get the name of some emulator available
+        on the system
+        "###
+        self._run(
             self._emulator(),
-            ['-avd', 'Nexus_5X_API_28_x86', '-port', '5554'],
-            stdout=:null,
-            stderr=:null,
+            ['-list-avds'],
+            stdout=:pipe,
+        )[1].trim().lines()[-1]
+    }
+
+    def _start_emulator(self) = {
+        emulator_name = self._get_emulator_name()
+        self._start(
+            self._emulator(),
+            ['-avd', emulator_name, '-port', '5554'],
         )
         self._wait_for_emulator_ready()
     }
 
     def _wait_for_emulator_ready(self) {
-        os::run(self._adb(), ['wait-for-device'])
+        self._run(self._adb(), ['wait-for-device'])
     }
 
     def _emulator_started(self) = {
-        [_status, stdout, _stderr] = os::run(
+        [_status, stdout, _stderr] = self._run(
             self._adb(),
             ['devices', '-l'],
             stdout=:pipe,
@@ -87,12 +146,45 @@ class SDK {
     }
 
     def start_emulator(self) = {
-        "Checks if emulator is started, if not, start it"
+        r###"
+        Starts an emulator if none found,
+        and waits for it to be ready
+        "###
         if self._emulator_started() {
             self._wait_for_emulator_ready()
             nil
         } else {
             self._start_emulator()
         }
+    }
+}
+
+def _guess_sdk_root() = {
+    def _failure() {
+        __raise(
+            RuntimeError,
+            'Could not find android sdk root (maybe set ANDROID_SDK_ROOT?)',
+        )
+    }
+
+    path = os::env(:ANDROID_SDK_ROOT)
+    if path {
+        Path(path)
+    } elif os::name == 'windows' {
+        path = Path((os::home() or _failure()).join(r'AppData\Local\Android\Sdk'))
+        if path.is_dir() {
+            path
+        } else {
+            _failure()
+        }
+    } elif os::name == 'macos' {
+        path = Path((os::home() or _failure()).join(r'Library/Android/sdk'))
+        if path.is_dir() {
+            path
+        } else {
+            _failure()
+        }
+    } else {
+        _failure()
     }
 }

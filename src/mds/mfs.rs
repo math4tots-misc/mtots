@@ -59,6 +59,7 @@ fn copy_tree(globals: &mut Globals, source: &Path, dest: &Path) -> EvalResult<()
             return globals.set_exc_str(
                 "Symlink encountered when trying to copy (use copy_file or copy_symlink instead)");
         } else if filetype.is_dir() {
+            Eval::try_(globals, fs::create_dir_all(&dest))?;
             for entry in Eval::try_(globals, fs::read_dir(&source))? {
                 let entry = Eval::try_(globals, entry)?;
                 let path = entry.path();

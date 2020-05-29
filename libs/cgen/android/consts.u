@@ -1,0 +1,2 @@
+
+_template_dir = __file.parent().join('templates')

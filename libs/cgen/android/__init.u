@@ -6,8 +6,6 @@ import os
 import time
 import .sdk::SDK
 
-_template_dir = __file.parent().join('templates')
-
 class Project {
     r###"
     An android project consists of a few parts:
