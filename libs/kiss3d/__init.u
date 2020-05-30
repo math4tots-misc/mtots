@@ -14,4 +14,28 @@ class Window {
         opaque = _kiss3d::new_window(name)
         __malloc(Window, [opaque])
     }
+
+    def add_cube(self, xyz) = {
+        SceneNode(_kiss3d::add_cube(self.opaque, xyz))
+    }
+
+    def start_event_loop(self) {
+        _kiss3d::start_event_loop(self.opaque, self)
+    }
+}
+
+class SceneNode {
+    [opaque]
+
+    static def __call(opaque) = {
+        __malloc(SceneNode, [opaque])
+    }
+
+    def set_color(self, rgb) = {
+        _kiss3d::set_node_color(self.opaque, rgb)
+    }
+
+    def append_rotation(self, xyz, r) = {
+        _kiss3d::append_rotation(self.opaque, xyz, r)
+    }
 }

@@ -1,5 +1,14 @@
 import _kiss3d
+import kiss3d
 
 if __name == __main() {
-    _kiss3d::main()
+    r###" _kiss3d::main() "###
+
+    window = kiss3d::Window('new window')
+
+    cube = window.add_cube([0.1, 0.1, 0.1])
+    cube.set_color([1, 0, 0])
+    cube.append_rotation([0, 1, 0], 0.24)
+
+    window.start_event_loop()
 }
