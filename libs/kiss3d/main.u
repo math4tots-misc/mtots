@@ -1,0 +1,5 @@
+import _kiss3d
+
+if __name == __main() {
+    _kiss3d::main()
+}

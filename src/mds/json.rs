@@ -5,8 +5,8 @@ use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
-use crate::Value;
 use crate::VMap;
+use crate::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -105,14 +105,10 @@ fn mtots_to_serde(globals: &mut Globals, val: &Value) -> EvalResult<serde_json::
             }
             serde_json::Value::Array(ret)
         }
-        Value::Table(_) => {
-            globals.set_exc_str(
-                concat!(
-                    "Tables cannot be converted to json because they do not preserve order ",
-                    "(use Maps with Symbol keys instead)"
-                )
-            )?
-        }
+        Value::Table(_) => globals.set_exc_str(concat!(
+            "Tables cannot be converted to json because they do not preserve order ",
+            "(use Maps with Symbol keys instead)"
+        ))?,
         Value::Map(map) => {
             let mut ret = serde_json::Map::new();
             for (key, val) in map.iter() {

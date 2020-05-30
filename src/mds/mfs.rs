@@ -6,12 +6,12 @@ use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Value;
-use std::fs;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 pub const NAME: &str = "_fs";
 
@@ -57,7 +57,8 @@ fn copy_tree(globals: &mut Globals, source: &Path, dest: &Path) -> EvalResult<()
         if filetype.is_symlink() {
             // TODO: Implement copy_symlink
             return globals.set_exc_str(
-                "Symlink encountered when trying to copy (use copy_file or copy_symlink instead)");
+                "Symlink encountered when trying to copy (use copy_file or copy_symlink instead)",
+            );
         } else if filetype.is_dir() {
             Eval::try_(globals, fs::create_dir_all(&dest))?;
             for entry in Eval::try_(globals, fs::read_dir(&source))? {
@@ -70,11 +71,13 @@ fn copy_tree(globals: &mut Globals, source: &Path, dest: &Path) -> EvalResult<()
         } else if filetype.is_file() {
             Eval::try_(globals, fs::copy(source, dest))?;
         } else {
-            return globals.set_os_error(&format!(
-                "File type of {:?} ({:?}) could not be identified",
-                dest,
-                filetype,
-            ).into());
+            return globals.set_os_error(
+                &format!(
+                    "File type of {:?} ({:?}) could not be identified",
+                    dest, filetype,
+                )
+                .into(),
+            );
         }
     }
     Ok(())

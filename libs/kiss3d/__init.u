@@ -1,0 +1,17 @@
+import _kiss3d
+
+class Window {
+    r###"
+    opaque:
+        Opaque window object
+        This points to the underlying kiss3d Window object.
+        This value needs to be passed around when making
+        calls to the underlying API
+    "###
+    [opaque]
+
+    static def __call(name) = {
+        opaque = _kiss3d::new_window(name)
+        __malloc(Window, [opaque])
+    }
+}
