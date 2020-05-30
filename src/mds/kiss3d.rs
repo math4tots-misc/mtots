@@ -90,29 +90,14 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 sr,
                 "start_event_loop",
                 &["window", "delegate"],
-                |_globals, _args, _kwargs| {
-                    // struct App {
-                    //     globals: &'static Globals,
-                    //     delegate: &'static Value,
-                    // }
+                |globals, args, _kwargs| {
+                    let window: Ref<RefCell<Window>> = Eval::expect_opaque(globals, &args[0])?;
 
-                    // impl kiss3d::window::State for App {
-                    //     fn step(&mut self, window: &mut Window) {
-                    //     }
-                    // }
-
-                    // let window: Ref<RefCell<Window>> = Eval::expect_opaque(globals, &args[0])?;
-                    // let mut window: RefMut<Window> = window.borrow_mut();
-
-                    // TODO: Figure out how to work around render_loop
-                    // requiring a 'static callback
-
-                    // let app = App {
-                    //     globals,
-                    //     delegate: &args[1],
-                    // };
-
-                    // window.render_loop(app);
+                    while window.borrow_mut().render() {
+                        for event in window.borrow().events().iter() {
+                            println!("event -> {:?}", event.value);
+                        }
+                    }
 
                     Ok(Value::Nil)
                 },
