@@ -19,6 +19,7 @@ use std::cell::Ref;
 use std::cell::RefCell;
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::rc::Rc;
 
 pub const NAME: &str = "_kiss3d";
@@ -99,16 +100,56 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     };
                     let tick_step: f64 = Eval::expect_floatlike(globals, &args[2])?;
                     let mut last_tick = std::time::Instant::now();
+                    let mut instants = VecDeque::<std::time::Instant>::new();
+                    let font = kiss3d::text::Font::default();
 
                     while window.borrow_mut().render() {
+                        let instant = std::time::Instant::now();
                         if let Some(tick_cb) = &on_tick {
-                            let instant = std::time::Instant::now();
                             let dur_f64 = (instant - last_tick).as_secs_f64();
                             if dur_f64 >= tick_step {
                                 last_tick = instant;
                                 Eval::call(globals, tick_cb, vec![dur_f64.into()])?;
                             }
                         }
+                        while let Some(i) = instants.front() {
+                            if (instant - *i).as_secs_f64() > 1.0 {
+                                instants.pop_front();
+                            } else {
+                                break;
+                            }
+                        }
+                        instants.push_back(instant);
+                        window.borrow_mut().draw_text(
+                            &format!("frames/sec = {}", instants.len()),
+                            &nalgebra::Point2::origin(),
+                            120.0,
+                            &font,
+                            &nalgebra::Point3::new(0.0, 1.0, 1.0),
+                        );
+                        let width = window.borrow().width();
+                        let height = window.borrow().height();
+                        window.borrow_mut().draw_text(
+                            &format!("size = ({}, {})", width, height),
+                            &nalgebra::Point2::new(0.0, 120.0),
+                            120.0,
+                            &font,
+                            &nalgebra::Point3::new(0.0, 1.0, 1.0),
+                        );
+                        window.borrow_mut().draw_text(
+                            &format!("middle row"),
+                            &nalgebra::Point2::new(0.0, (height as f32) - 120.0),
+                            120.0,
+                            &font,
+                            &nalgebra::Point3::new(0.0, 1.0, 1.0),
+                        );
+                        window.borrow_mut().draw_text(
+                            &format!("bottom row"),
+                            &nalgebra::Point2::new(0.0, 2.0 * (height as f32) - 120.0),
+                            120.0,
+                            &font,
+                            &nalgebra::Point3::new(0.0, 1.0, 1.0),
+                        );
                         for event in window.borrow().events().iter() {
                             println!("event -> {:?}", event.value);
                         }
