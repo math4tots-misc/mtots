@@ -1,5 +1,7 @@
 import _kiss3d
 
+_DEFAULT_TICK_SEC = 1.0 / 60
+
 class Window {
     r###"
     opaque:
@@ -8,11 +10,11 @@ class Window {
         This value needs to be passed around when making
         calls to the underlying API
     "###
-    [opaque]
+    [opaque, delegate, tick_sec]
 
     static def __call(name) = {
         opaque = _kiss3d::new_window(name)
-        __malloc(Window, [opaque])
+        __malloc(Window, [opaque, @[Table()], @[_DEFAULT_TICK_SEC]])
     }
 
     def add_cube(self, xyz) = {
@@ -20,7 +22,33 @@ class Window {
     }
 
     def start_event_loop(self) {
-        _kiss3d::start_event_loop(self.opaque, self)
+        _kiss3d::start_event_loop(self.opaque, self.delegate[0], self.tick_sec[0])
+    }
+
+    def _add_to_delegate(self, table) {
+        """
+        Popping allows the delegate to potentially be a unique reference
+        allowing for optimization when merging tables
+        """
+        delegate = self.delegate.pop() + table
+        self.delegate.push(delegate)
+    }
+
+    def on_tick(self, f, interval_sec=nil) {
+        """
+        f:
+            Callback to call on each tick.
+            f should expect a single argument indicating the number
+            of seconds in float since last tick
+        interval_sec:
+            The desired interval length between each tick
+            This is a best effort, and the actual amount of time passed
+            between each invocation of 'f' can vary -- you should check the value
+            passed to f to figure the actual value
+        """
+        if interval_sec is nil { interval_sec = _DEFAULT_TICK_SEC }
+        self.tick_sec[0] = interval_sec
+        self._add_to_delegate(Table(tick=f))
     }
 }
 

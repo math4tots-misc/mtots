@@ -89,11 +89,26 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::simple0(
                 sr,
                 "start_event_loop",
-                &["window", "delegate"],
+                &["window", "delegate", "tick_step"],
                 |globals, args, _kwargs| {
                     let window: Ref<RefCell<Window>> = Eval::expect_opaque(globals, &args[0])?;
+                    let delegate = &args[1];
+                    let on_tick = {
+                        let key = globals.intern_str("tick");
+                        Eval::getattr(globals, delegate, key)
+                    };
+                    let tick_step: f64 = Eval::expect_floatlike(globals, &args[2])?;
+                    let mut last_tick = std::time::Instant::now();
 
                     while window.borrow_mut().render() {
+                        if let Some(tick_cb) = &on_tick {
+                            let instant = std::time::Instant::now();
+                            let dur_f64 = (instant - last_tick).as_secs_f64();
+                            if dur_f64 >= tick_step {
+                                last_tick = instant;
+                                Eval::call(globals, tick_cb, vec![dur_f64.into()])?;
+                            }
+                        }
                         for event in window.borrow().events().iter() {
                             println!("event -> {:?}", event.value);
                         }

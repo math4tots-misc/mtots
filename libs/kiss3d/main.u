@@ -7,8 +7,12 @@ if __name == __main() {
     window = kiss3d::Window('new window')
 
     cube = window.add_cube([0.1, 0.1, 0.1])
-    cube.set_color([1, 0, 0])
+    cube.set_color([1, 1, 0])
     cube.append_rotation([0, 1, 0], 0.24)
+
+    window.on_tick(def(sec) = {
+        cube.append_rotation([0, 1, 0], sec)
+    })
 
     window.start_event_loop()
 }
