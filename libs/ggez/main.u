@@ -1,0 +1,5 @@
+import _ggez
+
+if __name == __main() {
+    _ggez::main()
+}
