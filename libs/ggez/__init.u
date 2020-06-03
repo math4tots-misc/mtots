@@ -1,0 +1,7 @@
+
+
+
+def* on_update() {
+    [width, height] = yield :size
+    yield [:draw_circle, 4]
+}

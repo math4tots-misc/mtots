@@ -31,6 +31,58 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
         ),
         NativeFunction::simple0(
             sr,
+            "start",
+            &["callback_table"],
+            |globals, _args, _kwargs| {
+                struct State<'a> {
+                    _globals: &'a mut Globals,
+                }
+
+                impl<'a> State<'a> {
+                    pub fn new(_globals: &'a mut Globals, _ctx: &mut Context) -> State<'a> {
+                        State {
+                            _globals,
+                        }
+                    }
+                }
+
+                impl<'a> EventHandler for State<'a> {
+                    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+                        Ok(())
+                    }
+
+                    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+                        graphics::clear(ctx, graphics::BLACK);
+                        let circle = graphics::Mesh::new_circle(
+                            ctx,
+                            graphics::DrawMode::fill(),
+                            ggez::nalgebra::Point2::new(200.0, 200.0),
+                            100.0,
+                            2.0,
+                            graphics::WHITE,
+                        )?;
+                        graphics::draw(ctx, &circle, (ggez::nalgebra::Point2::new(0.0, 0.0), ))?;
+                        graphics::present(ctx)
+                    }
+                }
+
+                let (mut ctx, mut event_loop) = ContextBuilder::new("foo", "author")
+                    .build()
+                    .unwrap();
+                let mut state = State::new(globals, &mut ctx);
+
+                match event::run(&mut ctx, &mut event_loop, &mut state) {
+                    Ok(_) => Ok(Value::Nil),
+                    Err(e) => if globals.exc_occurred() {
+                        Err(mtots_core::ErrorIndicator)
+                    } else {
+                        globals.set_exc_str(&format!("{:?}", e))
+                    },
+                }
+            },
+        ),
+        NativeFunction::simple0(
+            sr,
             "main",
             &[],
             |globals, _args, _kwargs| {
@@ -72,11 +124,13 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let mut state = State::new(globals, &mut ctx);
 
                 match event::run(&mut ctx, &mut event_loop, &mut state) {
-                    Ok(_) => (),
-                    Err(e) => println!("Error: {:?}", e),
+                    Ok(_) => Ok(Value::Nil),
+                    Err(e) => if globals.exc_occurred() {
+                        Err(mtots_core::ErrorIndicator)
+                    } else {
+                        globals.set_exc_str(&format!("{:?}", e))
+                    },
                 }
-
-                Ok(Value::Nil)
             },
         ),
         ]
