@@ -1,27 +1,28 @@
 //! JSON bindings
+use crate::ErrorIndicator;
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
+use crate::Opaque;
 use crate::RcStr;
 use crate::Value;
-use crate::Opaque;
-use crate::ErrorIndicator;
-use std::cell::RefCell;
-use std::cell::Ref;
-use std::collections::HashMap;
-use std::rc::Rc;
-use ggez::graphics;
-use ggez::Context;
-use ggez::ContextBuilder;
-use ggez::GameResult;
-use ggez::GameError;
 use ggez::event;
 use ggez::event::EventHandler;
-use ggez::graphics::MeshBuilder;
-use ggez::graphics::Mesh;
+use ggez::event::MouseButton;
+use ggez::graphics;
 use ggez::graphics::Color;
+use ggez::graphics::Mesh;
+use ggez::graphics::MeshBuilder;
+use ggez::Context;
+use ggez::ContextBuilder;
+use ggez::GameError;
+use ggez::GameResult;
+use std::cell::Ref;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
 
 pub const NAME: &str = "_ggez";
 
@@ -44,176 +45,198 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-        NativeFunction::simple0(
-            sr,
-            "new_color",
-            &["r", "g", "b", "a"],
-            |globals, args, _kwargs| {
-                let r = Eval::expect_floatlike(globals, &args[0])? as f32;
-                let g = Eval::expect_floatlike(globals, &args[1])? as f32;
-                let b = Eval::expect_floatlike(globals, &args[2])? as f32;
-                let a = Eval::expect_floatlike(globals, &args[3])? as f32;
-                from_color(globals, Color { r, g, b, a })
-            },
-        ),
-        NativeFunction::simple0(
-            sr,
-            "new_mesh_builder",
-            &[],
-            |globals, _args, _kwargs| {
+            NativeFunction::simple0(
+                sr,
+                "new_color",
+                &["r", "g", "b", "a"],
+                |globals, args, _kwargs| {
+                    let r = Eval::expect_floatlike(globals, &args[0])? as f32;
+                    let g = Eval::expect_floatlike(globals, &args[1])? as f32;
+                    let b = Eval::expect_floatlike(globals, &args[2])? as f32;
+                    let a = Eval::expect_floatlike(globals, &args[3])? as f32;
+                    from_color(globals, Color { r, g, b, a })
+                },
+            ),
+            NativeFunction::simple0(sr, "new_mesh_builder", &[], |globals, _args, _kwargs| {
                 from_mesh_builder(globals, MeshBuilder::new())
-            },
-        ),
-        NativeFunction::simple0(
-            sr,
-            "mesh_builder_circle",
-            &["mesh_builder", "center", "radius", "color"],
-            |globals, args, _kwargs| {
-                let mesh_builder = to_mesh_builder_ref(globals, &args[0])?;
-                let center = expect_point(globals, &args[1])?;
-                let radius = Eval::expect_floatlike(globals, &args[2])? as f32;
-                let color = to_color_ref(globals, &args[3])?.clone();
-                mesh_builder.borrow_mut().circle(
-                    graphics::DrawMode::fill(),
-                    center,
-                    radius,
-                    2.0,  // tolerance
-                    color,
-                );
-                Ok(Value::Nil)
-            },
-        ),
-        NativeFunction::simple0(
-            sr,
-            "mesh_builder_build",
-            &["mesh_builder", "ctx"],
-            |globals, args, _kwargs| {
-                let mesh_builder = to_mesh_builder(globals, &args[0])?;
-                let ctx_refcell = to_ctx(globals, &args[1])?;
-                let mut ctx = ctx_refcell.borrow_mut();
-                let mesh = try_(globals, mesh_builder.build(ctx.get_mut()))?;
-                from_mesh(globals, mesh)
-            },
-        ),
-        NativeFunction::simple0(
-            sr,
-            "draw",
-            &["ctx", "drawable"],
-            |globals, args, _kwargs| {
-                let ctx_refcell = to_ctx(globals, &args[0])?;
-                let mut ctx = ctx_refcell.borrow_mut();
-                let drawable = to_drawable(globals, &args[1])?;
-                try_(globals, draw(ctx.get_mut(), &drawable))?;
-                Ok(Value::Nil)
-            },
-        ),
-        NativeFunction::simple0(
-            sr,
-            "size",
-            &["ctx"],
-            |globals, args, _kwargs| {
+            }),
+            NativeFunction::simple0(
+                sr,
+                "mesh_builder_circle",
+                &["mesh_builder", "center", "radius", "color"],
+                |globals, args, _kwargs| {
+                    let mesh_builder = to_mesh_builder_ref(globals, &args[0])?;
+                    let center = expect_point(globals, &args[1])?;
+                    let radius = Eval::expect_floatlike(globals, &args[2])? as f32;
+                    let color = to_color_ref(globals, &args[3])?.clone();
+                    mesh_builder.borrow_mut().circle(
+                        graphics::DrawMode::fill(),
+                        center,
+                        radius,
+                        2.0, // tolerance
+                        color,
+                    );
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "mesh_builder_build",
+                &["mesh_builder", "ctx"],
+                |globals, args, _kwargs| {
+                    let mesh_builder = to_mesh_builder(globals, &args[0])?;
+                    let ctx_refcell = to_ctx(globals, &args[1])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    let mesh = try_(globals, mesh_builder.build(ctx.get_mut()))?;
+                    from_mesh(globals, mesh)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "draw",
+                &["ctx", "drawable", "destination"],
+                |globals, args, _kwargs| {
+                    let ctx_refcell = to_ctx(globals, &args[0])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    let drawable = to_drawable(globals, &args[1])?;
+                    let destination = expect_point(globals, &args[2])?;
+                    try_(globals, draw(ctx.get_mut(), &drawable, destination))?;
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::simple0(sr, "size", &["ctx"], |globals, args, _kwargs| {
                 let ctx_refcell = to_ctx(globals, &args[0])?;
                 let ctx = ctx_refcell.borrow();
                 let (width, height) = graphics::drawable_size(ctx.get());
                 Ok(vec![Value::Float(width as f64), Value::Float(height as f64)].into())
-            },
-        ),
-        NativeFunction::simple0(
-            sr,
-            "start",
-            &["name", "author", "init", "update", "draw"],
-            |globals, args, _kwargs| {
-                struct State<'a> {
-                    globals: &'a mut Globals,
-                    update: &'a Value,
-                    draw: &'a Value,
-                }
+            }),
+            NativeFunction::simple0(
+                sr,
+                "start",
+                &["name", "author", "init", "update", "draw", "mouse_down"],
+                |globals, args, _kwargs| {
+                    struct State<'a> {
+                        globals: &'a mut Globals,
+                        update: &'a Value,
+                        draw: &'a Value,
+                        mouse_down: &'a Value,
+                    }
 
-                impl<'a> State<'a> {
-                    fn new(globals: &'a mut Globals, _ctx: &mut Context, update: &'a Value, draw: &'a Value) -> State<'a> {
-                        State {
-                            globals,
-                            update,
-                            draw,
+                    impl<'a> State<'a> {
+                        fn new(
+                            globals: &'a mut Globals,
+                            _ctx: &mut Context,
+                            update: &'a Value,
+                            draw: &'a Value,
+                            mouse_down: &'a Value,
+                        ) -> State<'a> {
+                            State {
+                                globals,
+                                update,
+                                draw,
+                                mouse_down,
+                            }
+                        }
+
+                        fn err(&self) -> Option<GameError> {
+                            if self.globals.exc_occurred() {
+                                Some(GameError::EventLoopError("Script error".to_owned()))
+                            } else {
+                                None
+                            }
                         }
                     }
 
-                    fn err(&self) -> Option<GameError> {
-                        if self.globals.exc_occurred() {
-                            Some(GameError::EventLoopError("Script error".to_owned()))
-                        } else {
-                            None
+                    impl<'a> EventHandler for State<'a> {
+                        fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+                            if let Some(e) = self.err() {
+                                return Err(e);
+                            }
+                            let update = self.update;
+                            if !update.is_nil() {
+                                to_game_result(with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    Eval::call(globals, update, vec![ctx_val.clone()])
+                                }))?;
+                            }
+                            Ok(())
+                        }
+
+                        fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+                            if let Some(e) = self.err() {
+                                return Err(e);
+                            }
+                            graphics::clear(ctx, graphics::BLACK);
+                            let draw = self.draw;
+                            if !draw.is_nil() {
+                                to_game_result(with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    Eval::call(globals, draw, vec![ctx_val.clone()])
+                                }))?;
+                            }
+                            graphics::present(ctx)?;
+                            ggez::timer::yield_now();
+                            Ok(())
+                        }
+
+                        fn mouse_button_down_event(
+                            &mut self,
+                            ctx: &mut Context,
+                            button: MouseButton,
+                            x: f32,
+                            y: f32,
+                        ) {
+                            if let Some(_) = self.err() {
+                                return;
+                            }
+                            let mouse_down = self.mouse_down;
+                            if !mouse_down.is_nil() {
+                                let button: Value = match button {
+                                    MouseButton::Left => self.globals.intern_str("left").into(),
+                                    MouseButton::Right => self.globals.intern_str("right").into(),
+                                    MouseButton::Middle => self.globals.intern_str("middle").into(),
+                                    MouseButton::Other(i) => Value::Int(i as i64),
+                                };
+                                let x = Value::Float(x as f64);
+                                let y = Value::Float(y as f64);
+                                let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    Eval::call(globals, mouse_down, vec![ctx_val.clone(), button, x, y])
+                                });
+                            }
                         }
                     }
-                }
 
-                impl<'a> EventHandler for State<'a> {
-                    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-                        if let Some(e) = self.err() {
-                            return Err(e);
-                        }
-                        let update = self.update;
-                        if !update.is_nil() {
-                            to_game_result(with_ctx(self.globals, ctx, |globals, ctx_val| {
-                                Eval::call(globals, update, vec![ctx_val.clone()])
-                            }))?;
-                        }
-                        Ok(())
+                    let name = Eval::expect_string(globals, &args[0])?;
+                    let author = Eval::expect_string(globals, &args[1])?;
+                    let (mut ctx, mut event_loop) =
+                        ContextBuilder::new(name, author).build().unwrap();
+                    let mut state = State::new(globals, &mut ctx, &args[3], &args[4], &args[5]);
+
+                    // call 'init'
+                    if !args[2].is_nil() {
+                        with_ctx(state.globals, &mut ctx, |globals, ctx_val| {
+                            Eval::call(globals, &args[2], vec![ctx_val.clone()])
+                        })?;
                     }
 
-                    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-                        if let Some(e) = self.err() {
-                            return Err(e);
+                    match event::run(&mut ctx, &mut event_loop, &mut state) {
+                        Ok(_) => Ok(Value::Nil),
+                        Err(e) => {
+                            if globals.exc_occurred() {
+                                Err(ErrorIndicator)
+                            } else {
+                                globals.set_exc_str(&format!("{:?}", e))
+                            }
                         }
-                        graphics::clear(ctx, graphics::BLACK);
-                        let draw = self.draw;
-                        if !draw.is_nil() {
-                            to_game_result(with_ctx(self.globals, ctx, |globals, ctx_val| {
-                                Eval::call(globals, draw, vec![ctx_val.clone()])
-                            }))?;
-                        }
-                        graphics::present(ctx)
                     }
-                }
-
-                let name = Eval::expect_string(globals, &args[0])?;
-                let author = Eval::expect_string(globals, &args[1])?;
-                let (mut ctx, mut event_loop) = ContextBuilder::new(name, author)
-                    .build()
-                    .unwrap();
-                let mut state = State::new(globals, &mut ctx, &args[3], &args[4]);
-
-                // call 'init'
-                if !args[2].is_nil() {
-                    with_ctx(state.globals, &mut ctx, |globals, ctx_val| {
-                        Eval::call(globals, &args[2], vec![ctx_val.clone()])
-                    })?;
-                }
-
-                match event::run(&mut ctx, &mut event_loop, &mut state) {
-                    Ok(_) => Ok(Value::Nil),
-                    Err(e) => if globals.exc_occurred() {
-                        Err(ErrorIndicator)
-                    } else {
-                        globals.set_exc_str(&format!("{:?}", e))
-                    },
-                }
-            },
-        ),
-        NativeFunction::simple0(
-            sr,
-            "main",
-            &[],
-            |globals, _args, _kwargs| {
+                },
+            ),
+            NativeFunction::simple0(sr, "main", &[], |globals, _args, _kwargs| {
                 struct State<'a> {
                     _globals: &'a mut Globals,
                 }
 
                 impl<'a> State<'a> {
                     pub fn new(_globals: &'a mut Globals, _ctx: &mut Context) -> State<'a> {
-                        State {
-                            _globals,
-                        }
+                        State { _globals }
                     }
                 }
 
@@ -232,26 +255,26 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             2.0,
                             graphics::WHITE,
                         )?;
-                        graphics::draw(ctx, &circle, (ggez::nalgebra::Point2::new(0.0, 0.0), ))?;
+                        graphics::draw(ctx, &circle, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
                         graphics::present(ctx)
                     }
                 }
 
-                let (mut ctx, mut event_loop) = ContextBuilder::new("foo", "author")
-                    .build()
-                    .unwrap();
+                let (mut ctx, mut event_loop) =
+                    ContextBuilder::new("foo", "author").build().unwrap();
                 let mut state = State::new(globals, &mut ctx);
 
                 match event::run(&mut ctx, &mut event_loop, &mut state) {
                     Ok(_) => Ok(Value::Nil),
-                    Err(e) => if globals.exc_occurred() {
-                        Err(mtots_core::ErrorIndicator)
-                    } else {
-                        globals.set_exc_str(&format!("{:?}", e))
-                    },
+                    Err(e) => {
+                        if globals.exc_occurred() {
+                            Err(mtots_core::ErrorIndicator)
+                        } else {
+                            globals.set_exc_str(&format!("{:?}", e))
+                        }
+                    }
                 }
-            },
-        ),
+            }),
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),
@@ -285,12 +308,16 @@ mod wctx {
         }
     }
 
-    pub(super) fn to_ctx<'a>(globals: &mut Globals, v: &'a Value) -> EvalResult<Ref<'a, RefCell<WrappedContext>>> {
+    pub(super) fn to_ctx<'a>(
+        globals: &mut Globals,
+        v: &'a Value,
+    ) -> EvalResult<Ref<'a, RefCell<WrappedContext>>> {
         Eval::expect_opaque(globals, v)
     }
 
     pub(super) fn with_ctx<F, R>(globals: &mut Globals, ctx: &mut Context, f: F) -> EvalResult<R>
-    where F: FnOnce(&mut Globals, &Value) -> EvalResult<R>
+    where
+        F: FnOnce(&mut Globals, &Value) -> EvalResult<R>,
     {
         let wctx = WrappedContext {
             ctx: unsafe { std::mem::transmute::<&'_ mut Context, &'static mut Context>(ctx) },
@@ -342,9 +369,10 @@ fn from_mesh_builder(_globals: &mut Globals, mesh_builder: MeshBuilder) -> EvalR
     Ok(opaque.into())
 }
 
-fn to_mesh_builder_ref<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<
-Ref<'a, RefCell<MeshBuilder>>
-> {
+fn to_mesh_builder_ref<'a>(
+    globals: &mut Globals,
+    value: &'a Value,
+) -> EvalResult<Ref<'a, RefCell<MeshBuilder>>> {
     Eval::expect_opaque(globals, value)
 }
 
@@ -367,8 +395,10 @@ enum EDrawable {
     Mesh(Mesh),
 }
 
-fn draw(ctx: &mut Context, drawable: &EDrawable) -> GameResult<()> {
+fn draw(ctx: &mut Context, drawable: &EDrawable, dest: Point) -> GameResult<()> {
     match drawable {
-        EDrawable::Mesh(mesh) => graphics::draw(ctx, mesh, graphics::DrawParam::default()),
+        EDrawable::Mesh(mesh) => {
+            graphics::draw(ctx, mesh, graphics::DrawParam::default().dest(dest))
+        }
     }
 }

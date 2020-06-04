@@ -7,11 +7,11 @@ use crate::Value;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+mod ggez;
 mod json;
 mod kiss3d;
 mod mfs;
 mod time;
-mod ggez;
 
 pub fn add_standard_modules(globals: &mut Globals) {
     add(globals, json::NAME, json::load);
