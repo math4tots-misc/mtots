@@ -1,7 +1,84 @@
+import _ggez
 
 
+class Color {
+    [opaque]
 
-def* on_update() {
-    [width, height] = yield :size
-    yield [:draw_circle, 4]
+    static def __call(r, g, b, a=1.0) = {
+        opaque = _ggez::new_color(r, g, b, a)
+        __malloc(Color, [opaque])
+    }
+}
+
+BLACK = Color(0, 0, 0)
+WHITE = Color(1, 1, 1)
+RED = Color(1, 0, 0)
+GREEN = Color(0, 1, 0)
+BLUE = Color(0, 0, 1)
+
+class Context {
+    [opaque]
+
+    static def __call(opaque) = {
+        __malloc(Context, [opaque])
+    }
+
+    def size(self) = _ggez::size(self.opaque)
+}
+
+class MeshBuilder {
+    [opaque]
+
+    static def __call() = {
+        __malloc(MeshBuilder, [_ggez::new_mesh_builder()])
+    }
+
+    def circle(self, center, radius, color) = {
+        _ggez::mesh_builder_circle(self.opaque, center, radius, color.opaque)
+        self
+    }
+
+    def build(self, ctx) = {
+        Drawable(_ggez::mesh_builder_build(self.opaque, ctx.opaque))
+    }
+}
+
+class Drawable {
+    [opaque]
+
+    static def __call(opaque) = __malloc(Drawable, [opaque])
+
+    def draw(self, ctx) = {
+        _ggez::draw(ctx.opaque, self.opaque)
+    }
+}
+
+def start(
+    name="name",
+    author="author",
+    init=nil,
+    update=nil,
+    draw=nil,
+) = {
+    _ggez::start(
+        name=name,
+        author=author,
+        init=if init { def(ctx) = init(Context(ctx)) } else { nil },
+        update=if update { def(ctx) = update(Context(ctx)) } else { nil },
+        draw=if draw { def(ctx) = draw(Context(ctx)) } else { nil },
+    )
+}
+
+def demo() = {
+    start(
+        name="demo",
+        init=def(ctx) {
+            print('init, size -> ' + str(ctx.size()))
+        },
+        draw=def(ctx) {
+            [width, height] = ctx.size()
+            MeshBuilder().circle([40, 40], 40, BLUE).build(ctx).draw(ctx)
+            MeshBuilder().circle([width - 40, height - 40], 40, RED).build(ctx).draw(ctx)
+        },
+    )
 }
