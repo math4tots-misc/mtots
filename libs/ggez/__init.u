@@ -71,12 +71,12 @@ def main(
         name=name,
         author=author,
         sleep_per_frame=sleep_per_frame,
-        init=if init is nil { nil } else { def(ctx) = init(Context(ctx)) },
-        update=if update is nil { nil } else { def(ctx) = update(Context(ctx)) },
-        draw=if draw is nil { nil } else { def(ctx) = draw(Context(ctx)) },
-        mouse_down=if mouse_down is nil { nil } else { def(ctx, *args) = mouse_down(Context(ctx), *args) },
-        key_down=if key_down is nil { nil } else { def(ctx, *args) = key_down(Context(ctx), *args) },
-        text_input=if text_input is nil { nil } else { def(ctx, *args) = text_input(Context(ctx), *args) },
+        init=nil.vmap(init, def(ctx) = init(Context(ctx))),
+        update=nil.vmap(update, def(ctx) = update(Context(ctx))),
+        draw=nil.vmap(draw, def(ctx) = draw(Context(ctx))),
+        mouse_down=nil.vmap(mouse_down, def(ctx, *args) = mouse_down(Context(ctx), *args)),
+        key_down=nil.vmap(key_down, def(ctx, *args) = key_down(Context(ctx), *args)),
+        text_input=nil.vmap(text_input, def(ctx, *args) = text_input(Context(ctx), *args)),
     )
 }
 
