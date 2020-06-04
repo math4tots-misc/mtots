@@ -7,8 +7,8 @@ use crate::HMap;
 use crate::NativeFunction;
 use crate::Opaque;
 use crate::RcStr;
-use crate::Value;
 use crate::Symbol;
+use crate::Value;
 use ggez::event;
 use ggez::event::EventHandler;
 use ggez::event::MouseButton;
@@ -114,13 +114,23 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::simple0(
                 sr,
                 "start",
-                &["name", "author", "sleep_per_frame", "init", "update", "draw", "mouse_down"],
+                &[
+                    "name",
+                    "author",
+                    "sleep_per_frame",
+                    "init",
+                    "update",
+                    "draw",
+                    "mouse_down",
+                    "text_input",
+                ],
                 |globals, args, _kwargs| {
                     struct State<'a> {
                         globals: &'a mut Globals,
                         update: &'a Value,
                         draw: &'a Value,
                         mouse_down: &'a Value,
+                        text_input: &'a Value,
 
                         sleep_per_frame: Option<std::time::Duration>,
 
@@ -137,6 +147,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             update: &'a Value,
                             draw: &'a Value,
                             mouse_down: &'a Value,
+                            text_input: &'a Value,
                         ) -> State<'a> {
                             let symbol_left = globals.intern_str("left");
                             let symbol_right = globals.intern_str("right");
@@ -147,6 +158,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 update,
                                 draw,
                                 mouse_down,
+                                text_input,
                                 symbol_left,
                                 symbol_right,
                                 symbol_middle,
@@ -217,7 +229,28 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 let x = Value::Float(x as f64);
                                 let y = Value::Float(y as f64);
                                 let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
-                                    Eval::call(globals, mouse_down, vec![ctx_val.clone(), button, x, y])
+                                    Eval::call(
+                                        globals,
+                                        mouse_down,
+                                        vec![ctx_val.clone(), button, x, y],
+                                    )
+                                });
+                            }
+                        }
+
+                        fn text_input_event(&mut self, ctx: &mut Context, c: char) {
+                            if let Some(_) = self.err() {
+                                return;
+                            }
+                            let text_input = self.text_input;
+                            if !text_input.is_nil() {
+                                let cstr = format!("{}", c);
+                                let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    Eval::call(
+                                        globals,
+                                        text_input,
+                                        vec![ctx_val.clone(), cstr.into()],
+                                    )
                                 });
                             }
                         }
@@ -229,13 +262,23 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let sleep_per_frame = if let Value::Nil = sleep_per_frame_val {
                         None
                     } else {
-                        Some(std::time::Duration::from_secs_f64(
-                            Eval::expect_floatlike(globals, sleep_per_frame_val)?))
+                        Some(std::time::Duration::from_secs_f64(Eval::expect_floatlike(
+                            globals,
+                            sleep_per_frame_val,
+                        )?))
                     };
                     let (mut ctx, mut event_loop) =
                         ContextBuilder::new(name, author).build().unwrap();
                     let init = &args[3];
-                    let mut state = State::new(globals, &mut ctx, sleep_per_frame, &args[4], &args[5], &args[6]);
+                    let mut state = State::new(
+                        globals,
+                        &mut ctx,
+                        sleep_per_frame,
+                        &args[4],
+                        &args[5],
+                        &args[6],
+                        &args[7],
+                    );
 
                     // call 'init'
                     if !init.is_nil() {

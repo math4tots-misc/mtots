@@ -62,6 +62,7 @@ def main(
     update=nil,
     draw=nil,
     mouse_down=nil,
+    text_input=nil,
 ) = {
     _ggez::start(
         name=name,
@@ -71,6 +72,7 @@ def main(
         update=if update is nil { nil } else { def(ctx) = update(Context(ctx)) },
         draw=if draw is nil { nil } else { def(ctx) = draw(Context(ctx)) },
         mouse_down=if mouse_down is nil { nil } else { def(ctx, *args) = mouse_down(Context(ctx), *args) },
+        text_input=if text_input is nil { nil } else { def(ctx, *args) = text_input(Context(ctx), *args) },
     )
 }
 
@@ -99,7 +101,7 @@ def demo() = {
             last_tick_time = if last_tick_time is nil { now } else { last_tick_time }
 
             if now - last_tick_time > .4 {
-                y = y + 20
+                y = min(y + 20, height - 40)
                 last_tick_time = now
             }
         },
@@ -122,6 +124,19 @@ def demo() = {
                 x = cx
                 y = cy
             }
-        }
+        },
+        text_input=def(ctx, c) = {
+            nonlocal x, y
+            print('text_input c = %s' % [c])
+            if c == 'a' {
+                x = x - 40
+            } elif c == 'd' {
+                x = x + 40
+            } elif c == 'w' {
+                y = y - 40
+            } elif c == 's' {
+                y = y + 40
+            }
+        },
     )
 }
