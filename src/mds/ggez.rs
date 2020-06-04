@@ -8,6 +8,7 @@ use crate::NativeFunction;
 use crate::Opaque;
 use crate::RcStr;
 use crate::Value;
+use crate::Symbol;
 use ggez::event;
 use ggez::event::EventHandler;
 use ggez::event::MouseButton;
@@ -113,28 +114,42 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::simple0(
                 sr,
                 "start",
-                &["name", "author", "init", "update", "draw", "mouse_down"],
+                &["name", "author", "sleep_per_frame", "init", "update", "draw", "mouse_down"],
                 |globals, args, _kwargs| {
                     struct State<'a> {
                         globals: &'a mut Globals,
                         update: &'a Value,
                         draw: &'a Value,
                         mouse_down: &'a Value,
+
+                        sleep_per_frame: Option<std::time::Duration>,
+
+                        symbol_left: Symbol,
+                        symbol_right: Symbol,
+                        symbol_middle: Symbol,
                     }
 
                     impl<'a> State<'a> {
                         fn new(
                             globals: &'a mut Globals,
                             _ctx: &mut Context,
+                            sleep_per_frame: Option<std::time::Duration>,
                             update: &'a Value,
                             draw: &'a Value,
                             mouse_down: &'a Value,
                         ) -> State<'a> {
+                            let symbol_left = globals.intern_str("left");
+                            let symbol_right = globals.intern_str("right");
+                            let symbol_middle = globals.intern_str("middle");
                             State {
                                 globals,
+                                sleep_per_frame,
                                 update,
                                 draw,
                                 mouse_down,
+                                symbol_left,
+                                symbol_right,
+                                symbol_middle,
                             }
                         }
 
@@ -173,7 +188,11 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 }))?;
                             }
                             graphics::present(ctx)?;
-                            ggez::timer::yield_now();
+                            if let Some(dur) = self.sleep_per_frame {
+                                std::thread::sleep(dur)
+                            } else {
+                                ggez::timer::yield_now();
+                            }
                             Ok(())
                         }
 
@@ -190,9 +209,9 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             let mouse_down = self.mouse_down;
                             if !mouse_down.is_nil() {
                                 let button: Value = match button {
-                                    MouseButton::Left => self.globals.intern_str("left").into(),
-                                    MouseButton::Right => self.globals.intern_str("right").into(),
-                                    MouseButton::Middle => self.globals.intern_str("middle").into(),
+                                    MouseButton::Left => self.symbol_left.into(),
+                                    MouseButton::Right => self.symbol_right.into(),
+                                    MouseButton::Middle => self.symbol_middle.into(),
                                     MouseButton::Other(i) => Value::Int(i as i64),
                                 };
                                 let x = Value::Float(x as f64);
@@ -206,14 +225,22 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
                     let name = Eval::expect_string(globals, &args[0])?;
                     let author = Eval::expect_string(globals, &args[1])?;
+                    let sleep_per_frame_val = &args[2];
+                    let sleep_per_frame = if let Value::Nil = sleep_per_frame_val {
+                        None
+                    } else {
+                        Some(std::time::Duration::from_secs_f64(
+                            Eval::expect_floatlike(globals, sleep_per_frame_val)?))
+                    };
                     let (mut ctx, mut event_loop) =
                         ContextBuilder::new(name, author).build().unwrap();
-                    let mut state = State::new(globals, &mut ctx, &args[3], &args[4], &args[5]);
+                    let init = &args[3];
+                    let mut state = State::new(globals, &mut ctx, sleep_per_frame, &args[4], &args[5], &args[6]);
 
                     // call 'init'
-                    if !args[2].is_nil() {
+                    if !init.is_nil() {
                         with_ctx(state.globals, &mut ctx, |globals, ctx_val| {
-                            Eval::call(globals, &args[2], vec![ctx_val.clone()])
+                            Eval::call(globals, &init, vec![ctx_val.clone()])
                         })?;
                     }
 
@@ -229,52 +256,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     }
                 },
             ),
-            NativeFunction::simple0(sr, "main", &[], |globals, _args, _kwargs| {
-                struct State<'a> {
-                    _globals: &'a mut Globals,
-                }
-
-                impl<'a> State<'a> {
-                    pub fn new(_globals: &'a mut Globals, _ctx: &mut Context) -> State<'a> {
-                        State { _globals }
-                    }
-                }
-
-                impl<'a> EventHandler for State<'a> {
-                    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
-                        Ok(())
-                    }
-
-                    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-                        graphics::clear(ctx, graphics::BLACK);
-                        let circle = graphics::Mesh::new_circle(
-                            ctx,
-                            graphics::DrawMode::fill(),
-                            ggez::nalgebra::Point2::new(200.0, 200.0),
-                            100.0,
-                            2.0,
-                            graphics::WHITE,
-                        )?;
-                        graphics::draw(ctx, &circle, (ggez::nalgebra::Point2::new(0.0, 0.0),))?;
-                        graphics::present(ctx)
-                    }
-                }
-
-                let (mut ctx, mut event_loop) =
-                    ContextBuilder::new("foo", "author").build().unwrap();
-                let mut state = State::new(globals, &mut ctx);
-
-                match event::run(&mut ctx, &mut event_loop, &mut state) {
-                    Ok(_) => Ok(Value::Nil),
-                    Err(e) => {
-                        if globals.exc_occurred() {
-                            Err(mtots_core::ErrorIndicator)
-                        } else {
-                            globals.set_exc_str(&format!("{:?}", e))
-                        }
-                    }
-                }
-            }),
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),

@@ -57,6 +57,7 @@ class Drawable {
 def main(
     name="name",
     author="author",
+    sleep_per_frame=nil,
     init=nil,
     update=nil,
     draw=nil,
@@ -65,19 +66,22 @@ def main(
     _ggez::start(
         name=name,
         author=author,
-        init=if init { def(ctx) = init(Context(ctx)) } else { nil },
-        update=if update { def(ctx) = update(Context(ctx)) } else { nil },
-        draw=if draw { def(ctx) = draw(Context(ctx)) } else { nil },
-        mouse_down=if mouse_down { def(ctx, *args) = mouse_down(Context(ctx), *args) } else { nil },
+        sleep_per_frame=sleep_per_frame,
+        init=if init is nil { nil } else { def(ctx) = init(Context(ctx)) },
+        update=if update is nil { nil } else { def(ctx) = update(Context(ctx)) },
+        draw=if draw is nil { nil } else { def(ctx) = draw(Context(ctx)) },
+        mouse_down=if mouse_down is nil { nil } else { def(ctx, *args) = mouse_down(Context(ctx), *args) },
     )
 }
 
 def demo() = {
+    import time
 
     width = 0
     height = 0
     x = 0
     y = 0
+    last_tick_time = nil
 
     main(
         name="demo",
@@ -87,6 +91,17 @@ def demo() = {
             x = width / 2
             y = height / 2
             print('init, size -> ' + str(ctx.size()))
+        },
+        update=def(ctx) {
+            nonlocal last_tick_time, y
+
+            now = time::now()
+            last_tick_time = if last_tick_time is nil { now } else { last_tick_time }
+
+            if now - last_tick_time > .4 {
+                y = y + 20
+                last_tick_time = now
+            }
         },
         draw=def(ctx) {
             MeshBuilder().circle([40, 40], 40, BLUE).build(ctx).draw(ctx)
@@ -103,8 +118,10 @@ def demo() = {
         mouse_down=def(ctx, button, cx, cy) = {
             nonlocal x, y
             print('button = %s, cx = %s, cy = %s' % [button, cx, cy])
-            x = cx
-            y = cy
+            if button == :left {
+                x = cx
+                y = cy
+            }
         }
     )
 }
