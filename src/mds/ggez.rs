@@ -11,6 +11,8 @@ use crate::Symbol;
 use crate::Value;
 use ggez::event;
 use ggez::event::EventHandler;
+use ggez::event::KeyCode;
+use ggez::event::KeyMods;
 use ggez::event::MouseButton;
 use ggez::graphics;
 use ggez::graphics::Color;
@@ -20,8 +22,6 @@ use ggez::Context;
 use ggez::ContextBuilder;
 use ggez::GameError;
 use ggez::GameResult;
-use ggez::event::KeyCode;
-use ggez::event::KeyMods;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -94,6 +94,11 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     from_mesh(globals, mesh)
                 },
             ),
+            NativeFunction::simple0(sr, "ctx_fps", &["ctx"], |globals, args, _kwargs| {
+                let ctx_refcell = to_ctx(globals, &args[0])?;
+                let ctx = ctx_refcell.borrow();
+                Ok(ggez::timer::fps(ctx.get()).into())
+            }),
             NativeFunction::simple0(
                 sr,
                 "draw",
@@ -121,10 +126,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 sr,
                 "start",
                 &[
+                    "context_class",
                     "name",
                     "author",
                     "sleep_per_frame",
-                    "init",
                     "update",
                     "draw",
                     "mouse_down",
@@ -134,12 +139,13 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 |globals, args, _kwargs| {
                     struct State<'a> {
                         globals: &'a mut Globals,
+                        context_class: &'a Value,
                         sleep_per_frame: Option<std::time::Duration>,
-                        update: &'a Value,
-                        draw: &'a Value,
-                        mouse_down: &'a Value,
-                        key_down: &'a Value,
-                        text_input: &'a Value,
+                        update: Rc<RefCell<Value>>,
+                        draw: Rc<RefCell<Value>>,
+                        mouse_down: Rc<RefCell<Value>>,
+                        key_down: Rc<RefCell<Value>>,
+                        text_input: Rc<RefCell<Value>>,
 
                         keycode_list: Vec<Value>,
 
@@ -158,12 +164,13 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         fn new(
                             globals: &'a mut Globals,
                             _ctx: &mut Context,
+                            context_class: &'a Value,
                             sleep_per_frame: Option<std::time::Duration>,
-                            update: &'a Value,
-                            draw: &'a Value,
-                            mouse_down: &'a Value,
-                            key_down: &'a Value,
-                            text_input: &'a Value,
+                            update: Rc<RefCell<Value>>,
+                            draw: Rc<RefCell<Value>>,
+                            mouse_down: Rc<RefCell<Value>>,
+                            key_down: Rc<RefCell<Value>>,
+                            text_input: Rc<RefCell<Value>>,
                         ) -> State<'a> {
                             let keycode_list = list_keycode_symbols(globals);
                             let symbol_shift = globals.intern_str("shift");
@@ -176,6 +183,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             let symbol_middle = globals.intern_str("middle");
                             State {
                                 globals,
+                                context_class,
                                 sleep_per_frame,
                                 update,
                                 draw,
@@ -206,7 +214,11 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             self.keycode_list[keycode as usize].clone()
                         }
 
-                        fn translate_modifiers(&self, keymods: KeyMods, repeat: bool) -> Vec<Value> {
+                        fn translate_modifiers(
+                            &self,
+                            keymods: KeyMods,
+                            repeat: bool,
+                        ) -> Vec<Value> {
                             let mut ret = Vec::new();
                             if keymods.contains(KeyMods::SHIFT) {
                                 ret.push(self.symbol_shift.into());
@@ -232,10 +244,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             if let Some(e) = self.err() {
                                 return Err(e);
                             }
-                            let update = self.update;
+                            let update = self.update.borrow().clone();
                             if !update.is_nil() {
+                                let context_class = self.context_class;
                                 to_game_result(with_ctx(self.globals, ctx, |globals, ctx_val| {
-                                    Eval::call(globals, update, vec![ctx_val.clone()])
+                                    let ctx_val = wrap_ctx(context_class, globals, ctx_val)?;
+                                    Eval::call(globals, &update, vec![ctx_val])
                                 }))?;
                             }
                             Ok(())
@@ -246,10 +260,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 return Err(e);
                             }
                             graphics::clear(ctx, graphics::BLACK);
-                            let draw = self.draw;
+                            let draw = self.draw.borrow().clone();
                             if !draw.is_nil() {
+                                let context_class = self.context_class;
                                 to_game_result(with_ctx(self.globals, ctx, |globals, ctx_val| {
-                                    Eval::call(globals, draw, vec![ctx_val.clone()])
+                                    let ctx_val = wrap_ctx(context_class, globals, ctx_val)?;
+                                    Eval::call(globals, &draw, vec![ctx_val])
                                 }))?;
                             }
                             graphics::present(ctx)?;
@@ -271,7 +287,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             if let Some(_) = self.err() {
                                 return;
                             }
-                            let mouse_down = self.mouse_down;
+                            let mouse_down = self.mouse_down.borrow().clone();
                             if !mouse_down.is_nil() {
                                 let button: Value = match button {
                                     MouseButton::Left => self.symbol_left.into(),
@@ -281,28 +297,38 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 };
                                 let x = Value::Float(x as f64);
                                 let y = Value::Float(y as f64);
+                                let context_class = self.context_class;
                                 let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    let ctx_val = wrap_ctx(context_class, globals, ctx_val)?;
                                     Eval::call(
                                         globals,
-                                        mouse_down,
+                                        &mouse_down,
                                         vec![ctx_val.clone(), button, x, y],
                                     )
                                 });
                             }
                         }
 
-                        fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, keymods: KeyMods, repeat: bool) {
+                        fn key_down_event(
+                            &mut self,
+                            ctx: &mut Context,
+                            keycode: KeyCode,
+                            keymods: KeyMods,
+                            repeat: bool,
+                        ) {
                             if let Some(_) = self.err() {
                                 return;
                             }
-                            let key_down = self.key_down;
+                            let key_down = self.key_down.borrow().clone();
                             if !key_down.is_nil() {
                                 let keycode = self.translate_keycode(keycode);
                                 let keymods = self.translate_modifiers(keymods, repeat);
+                                let context_class = self.context_class;
                                 let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    let ctx_val = wrap_ctx(context_class, globals, ctx_val)?;
                                     Eval::call(
                                         globals,
-                                        key_down,
+                                        &key_down,
                                         vec![ctx_val.clone(), keycode, keymods.into()],
                                     )
                                 });
@@ -313,13 +339,15 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             if let Some(_) = self.err() {
                                 return;
                             }
-                            let text_input = self.text_input;
+                            let text_input = self.text_input.borrow().clone();
                             if !text_input.is_nil() {
                                 let cstr = format!("{}", c);
+                                let context_class = self.context_class;
                                 let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    let ctx_val = wrap_ctx(context_class, globals, ctx_val)?;
                                     Eval::call(
                                         globals,
-                                        text_input,
+                                        &text_input,
                                         vec![ctx_val.clone(), cstr.into()],
                                     )
                                 });
@@ -327,9 +355,19 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         }
                     }
 
-                    let name = Eval::expect_string(globals, &args[0])?;
-                    let author = Eval::expect_string(globals, &args[1])?;
-                    let sleep_per_frame_val = &args[2];
+                    /// wraps the opaque ctx object with the userland provided class
+                    fn wrap_ctx(
+                        context_class: &Value,
+                        globals: &mut Globals,
+                        ctx_val: &Value,
+                    ) -> EvalResult<Value> {
+                        Eval::call(globals, context_class, vec![ctx_val.clone()])
+                    }
+
+                    let context_class = &args[0];
+                    let name = Eval::expect_string(globals, &args[1])?;
+                    let author = Eval::expect_string(globals, &args[2])?;
+                    let sleep_per_frame_val = &args[3];
                     let sleep_per_frame = if let Value::Nil = sleep_per_frame_val {
                         None
                     } else {
@@ -340,24 +378,22 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     };
                     let (mut ctx, mut event_loop) =
                         ContextBuilder::new(name, author).build().unwrap();
-                    let init = &args[3];
+                    let args4 = Eval::expect_cell(globals, &args[4])?.clone();
+                    let args5 = Eval::expect_cell(globals, &args[5])?.clone();
+                    let args6 = Eval::expect_cell(globals, &args[6])?.clone();
+                    let args7 = Eval::expect_cell(globals, &args[7])?.clone();
+                    let args8 = Eval::expect_cell(globals, &args[8])?.clone();
                     let mut state = State::new(
                         globals,
                         &mut ctx,
+                        context_class,
                         sleep_per_frame,
-                        &args[4],
-                        &args[5],
-                        &args[6],
-                        &args[7],
-                        &args[8],
+                        args4,
+                        args5,
+                        args6,
+                        args7,
+                        args8,
                     );
-
-                    // call 'init'
-                    if !init.is_nil() {
-                        with_ctx(state.globals, &mut ctx, |globals, ctx_val| {
-                            Eval::call(globals, &init, vec![ctx_val.clone()])
-                        })?;
-                    }
 
                     match event::run(&mut ctx, &mut event_loop, &mut state) {
                         Ok(_) => Ok(Value::Nil),
@@ -499,7 +535,6 @@ fn draw(ctx: &mut Context, drawable: &EDrawable, dest: Point) -> GameResult<()> 
     }
 }
 
-
 fn list_keycodes() -> Vec<KeyCode> {
     // TOOD: Figure out how to do this without having to copy and
     // paste the entire enum
@@ -625,7 +660,7 @@ fn list_keycodes() -> Vec<KeyCode> {
         KeyCode::Multiply,
         KeyCode::Mute,
         KeyCode::MyComputer,
-        KeyCode::NavigateForward, // also called "Prior"
+        KeyCode::NavigateForward,  // also called "Prior"
         KeyCode::NavigateBackward, // also called "Next"
         KeyCode::NextTrack,
         KeyCode::NoConvert,

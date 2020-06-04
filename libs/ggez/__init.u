@@ -19,11 +19,9 @@ BLUE = Color(0, 0, 1)
 class Context {
     [opaque]
 
-    static def __call(opaque) = {
-        __malloc(Context, [opaque])
-    }
-
     def size(self) = _ggez::size(self.opaque)
+
+    def fps(self) = _ggez::ctx_fps(self.opaque)
 }
 
 class MeshBuilder {
@@ -56,28 +54,65 @@ class Drawable {
 
 get_all_keycodes = _ggez::get_all_keycodes
 
-def main(
-    name="name",
-    author="author",
-    sleep_per_frame=nil,
-    init=nil,
-    update=nil,
-    draw=nil,
-    mouse_down=nil,
-    key_down=nil,
-    text_input=nil,
-) = {
-    _ggez::start(
-        name=name,
-        author=author,
-        sleep_per_frame=sleep_per_frame,
-        init=nil.vmap(init, def(ctx) = init(Context(ctx))),
-        update=nil.vmap(update, def(ctx) = update(Context(ctx))),
-        draw=nil.vmap(draw, def(ctx) = draw(Context(ctx))),
-        mouse_down=nil.vmap(mouse_down, def(ctx, *args) = mouse_down(Context(ctx), *args)),
-        key_down=nil.vmap(key_down, def(ctx, *args) = key_down(Context(ctx), *args)),
-        text_input=nil.vmap(text_input, def(ctx, *args) = text_input(Context(ctx), *args)),
-    )
+_app_info_keys = [
+    :name,
+    :author,
+    :sleep_per_frame,
+]
+
+_app_callback_keys = [
+    :update,
+    :draw,
+    :mouse_down,
+    :key_down,
+    :text_input,
+]
+
+class App {
+    [_info_table, _callback_table]
+
+    static def __call(name='name', author='author', sleep_per_frame=nil, **kwargs) = {
+        info_table = Table(
+            name=name,
+            author=author,
+            sleep_per_frame=sleep_per_frame,
+        )
+        callback_table = (
+            _app_callback_keys
+                .map(def(key) = [key, Cell(kwargs.get(key, nil))])
+                .to(Table)
+        )
+
+        "Ensure there are no extraneous fields"
+        assert_eq(callback_table.len(), (kwargs + callback_table).len())
+
+        __malloc(App, [info_table, callback_table])
+    }
+
+    def update(self, **kwargs) = {
+        """
+        Replace all the callbacks for an app.
+        Any callback that's not specified will be set to nil.
+        """
+        for key in _app_callback_keys {
+            self._callback_table.get(key).set(kwargs.get(key, nil))
+        }
+    }
+
+    def main(self) {
+        """
+        Starts the ggez event loop
+        """
+        _ggez::start(
+            context_class=Context,
+            **self._info_table.merge(
+                _app_callback_keys.map(def(key) = {
+                    [key, self._callback_table.get(key, nil)]
+                })
+                .to(Table)
+            )
+        )
+    }
 }
 
 def demo() = {
@@ -90,21 +125,34 @@ def demo() = {
     x = 0
     y = 0
     last_tick_time = nil
+    last_fps_print_time = nil
+    init = false
 
-    main(
+    app = App(
         name="demo",
-        init=def(ctx) {
-            nonlocal x, y, width, height
-            [width, height] = ctx.size()
-            x = width / 2
-            y = height / 2
-            print('init, size -> ' + str(ctx.size()))
-        },
         update=def(ctx) {
-            nonlocal last_tick_time, y
+            nonlocal last_tick_time, last_fps_print_time, x, y, width, height, init
+
+            if !init {
+                [width, height] = ctx.size()
+                x = width / 2
+                y = height / 2
+                print('init, size -> ' + str(ctx.size()))
+                init = true
+            }
 
             now = time::now()
             last_tick_time = if last_tick_time is nil { now } else { last_tick_time }
+            last_fps_print_time = if last_fps_print_time is nil {
+                now
+            } else {
+                last_fps_print_time
+            }
+
+            if now - last_fps_print_time > 2.1 {
+                print('fps = %r' % [ctx.fps()])
+                last_fps_print_time = now
+            }
 
             if now - last_tick_time > .4 {
                 y = min(y + 20, height - 40)
@@ -159,4 +207,6 @@ def demo() = {
             }
         }
     )
+
+    app.main()
 }
