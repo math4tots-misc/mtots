@@ -54,7 +54,7 @@ class Drawable {
     }
 }
 
-def start(
+def main(
     name="name",
     author="author",
     init=nil,
@@ -79,7 +79,7 @@ def demo() = {
     x = 0
     y = 0
 
-    start(
+    main(
         name="demo",
         init=def(ctx) {
             nonlocal x, y, width, height
