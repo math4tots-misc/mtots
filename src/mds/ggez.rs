@@ -20,6 +20,8 @@ use ggez::Context;
 use ggez::ContextBuilder;
 use ggez::GameError;
 use ggez::GameResult;
+use ggez::event::KeyCode;
+use ggez::event::KeyMods;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -111,6 +113,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let (width, height) = graphics::drawable_size(ctx.get());
                 Ok(vec![Value::Float(width as f64), Value::Float(height as f64)].into())
             }),
+            NativeFunction::simple0(sr, "get_all_keycodes", &[], |globals, _args, _kwargs| {
+                let keycodes = list_keycode_symbols(globals);
+                Ok(keycodes.into())
+            }),
             NativeFunction::simple0(
                 sr,
                 "start",
@@ -122,17 +128,26 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     "update",
                     "draw",
                     "mouse_down",
+                    "key_down",
                     "text_input",
                 ],
                 |globals, args, _kwargs| {
                     struct State<'a> {
                         globals: &'a mut Globals,
+                        sleep_per_frame: Option<std::time::Duration>,
                         update: &'a Value,
                         draw: &'a Value,
                         mouse_down: &'a Value,
+                        key_down: &'a Value,
                         text_input: &'a Value,
 
-                        sleep_per_frame: Option<std::time::Duration>,
+                        keycode_list: Vec<Value>,
+
+                        symbol_shift: Symbol,
+                        symbol_ctrl: Symbol,
+                        symbol_alt: Symbol,
+                        symbol_logo: Symbol,
+                        symbol_repeat: Symbol,
 
                         symbol_left: Symbol,
                         symbol_right: Symbol,
@@ -147,8 +162,15 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             update: &'a Value,
                             draw: &'a Value,
                             mouse_down: &'a Value,
+                            key_down: &'a Value,
                             text_input: &'a Value,
                         ) -> State<'a> {
+                            let keycode_list = list_keycode_symbols(globals);
+                            let symbol_shift = globals.intern_str("shift");
+                            let symbol_ctrl = globals.intern_str("ctrl");
+                            let symbol_alt = globals.intern_str("alt");
+                            let symbol_logo = globals.intern_str("logo");
+                            let symbol_repeat = globals.intern_str("repeat");
                             let symbol_left = globals.intern_str("left");
                             let symbol_right = globals.intern_str("right");
                             let symbol_middle = globals.intern_str("middle");
@@ -158,7 +180,14 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 update,
                                 draw,
                                 mouse_down,
+                                key_down,
                                 text_input,
+                                keycode_list,
+                                symbol_shift,
+                                symbol_ctrl,
+                                symbol_alt,
+                                symbol_logo,
+                                symbol_repeat,
                                 symbol_left,
                                 symbol_right,
                                 symbol_middle,
@@ -171,6 +200,30 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             } else {
                                 None
                             }
+                        }
+
+                        fn translate_keycode(&self, keycode: KeyCode) -> Value {
+                            self.keycode_list[keycode as usize].clone()
+                        }
+
+                        fn translate_modifiers(&self, keymods: KeyMods, repeat: bool) -> Vec<Value> {
+                            let mut ret = Vec::new();
+                            if keymods.contains(KeyMods::SHIFT) {
+                                ret.push(self.symbol_shift.into());
+                            }
+                            if keymods.contains(KeyMods::CTRL) {
+                                ret.push(self.symbol_ctrl.into());
+                            }
+                            if keymods.contains(KeyMods::ALT) {
+                                ret.push(self.symbol_alt.into());
+                            }
+                            if keymods.contains(KeyMods::LOGO) {
+                                ret.push(self.symbol_logo.into());
+                            }
+                            if repeat {
+                                ret.push(self.symbol_repeat.into());
+                            }
+                            ret
                         }
                     }
 
@@ -238,6 +291,24 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             }
                         }
 
+                        fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, keymods: KeyMods, repeat: bool) {
+                            if let Some(_) = self.err() {
+                                return;
+                            }
+                            let key_down = self.key_down;
+                            if !key_down.is_nil() {
+                                let keycode = self.translate_keycode(keycode);
+                                let keymods = self.translate_modifiers(keymods, repeat);
+                                let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    Eval::call(
+                                        globals,
+                                        key_down,
+                                        vec![ctx_val.clone(), keycode, keymods.into()],
+                                    )
+                                });
+                            }
+                        }
+
                         fn text_input_event(&mut self, ctx: &mut Context, c: char) {
                             if let Some(_) = self.err() {
                                 return;
@@ -278,6 +349,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         &args[5],
                         &args[6],
                         &args[7],
+                        &args[8],
                     );
 
                     // call 'init'
@@ -425,4 +497,185 @@ fn draw(ctx: &mut Context, drawable: &EDrawable, dest: Point) -> GameResult<()> 
             graphics::draw(ctx, mesh, graphics::DrawParam::default().dest(dest))
         }
     }
+}
+
+
+fn list_keycodes() -> Vec<KeyCode> {
+    // TOOD: Figure out how to do this without having to copy and
+    // paste the entire enum
+    let keycodes = vec![
+        KeyCode::Key1,
+        KeyCode::Key2,
+        KeyCode::Key3,
+        KeyCode::Key4,
+        KeyCode::Key5,
+        KeyCode::Key6,
+        KeyCode::Key7,
+        KeyCode::Key8,
+        KeyCode::Key9,
+        KeyCode::Key0,
+        KeyCode::A,
+        KeyCode::B,
+        KeyCode::C,
+        KeyCode::D,
+        KeyCode::E,
+        KeyCode::F,
+        KeyCode::G,
+        KeyCode::H,
+        KeyCode::I,
+        KeyCode::J,
+        KeyCode::K,
+        KeyCode::L,
+        KeyCode::M,
+        KeyCode::N,
+        KeyCode::O,
+        KeyCode::P,
+        KeyCode::Q,
+        KeyCode::R,
+        KeyCode::S,
+        KeyCode::T,
+        KeyCode::U,
+        KeyCode::V,
+        KeyCode::W,
+        KeyCode::X,
+        KeyCode::Y,
+        KeyCode::Z,
+        KeyCode::Escape,
+        KeyCode::F1,
+        KeyCode::F2,
+        KeyCode::F3,
+        KeyCode::F4,
+        KeyCode::F5,
+        KeyCode::F6,
+        KeyCode::F7,
+        KeyCode::F8,
+        KeyCode::F9,
+        KeyCode::F10,
+        KeyCode::F11,
+        KeyCode::F12,
+        KeyCode::F13,
+        KeyCode::F14,
+        KeyCode::F15,
+        KeyCode::F16,
+        KeyCode::F17,
+        KeyCode::F18,
+        KeyCode::F19,
+        KeyCode::F20,
+        KeyCode::F21,
+        KeyCode::F22,
+        KeyCode::F23,
+        KeyCode::F24,
+        KeyCode::Snapshot,
+        KeyCode::Scroll,
+        KeyCode::Pause,
+        KeyCode::Insert,
+        KeyCode::Home,
+        KeyCode::Delete,
+        KeyCode::End,
+        KeyCode::PageDown,
+        KeyCode::PageUp,
+        KeyCode::Left,
+        KeyCode::Up,
+        KeyCode::Right,
+        KeyCode::Down,
+        KeyCode::Back,
+        KeyCode::Return,
+        KeyCode::Space,
+        KeyCode::Compose,
+        KeyCode::Caret,
+        KeyCode::Numlock,
+        KeyCode::Numpad0,
+        KeyCode::Numpad1,
+        KeyCode::Numpad2,
+        KeyCode::Numpad3,
+        KeyCode::Numpad4,
+        KeyCode::Numpad5,
+        KeyCode::Numpad6,
+        KeyCode::Numpad7,
+        KeyCode::Numpad8,
+        KeyCode::Numpad9,
+        KeyCode::AbntC1,
+        KeyCode::AbntC2,
+        KeyCode::Add,
+        KeyCode::Apostrophe,
+        KeyCode::Apps,
+        KeyCode::At,
+        KeyCode::Ax,
+        KeyCode::Backslash,
+        KeyCode::Calculator,
+        KeyCode::Capital,
+        KeyCode::Colon,
+        KeyCode::Comma,
+        KeyCode::Convert,
+        KeyCode::Decimal,
+        KeyCode::Divide,
+        KeyCode::Equals,
+        KeyCode::Grave,
+        KeyCode::Kana,
+        KeyCode::Kanji,
+        KeyCode::LAlt,
+        KeyCode::LBracket,
+        KeyCode::LControl,
+        KeyCode::LShift,
+        KeyCode::LWin,
+        KeyCode::Mail,
+        KeyCode::MediaSelect,
+        KeyCode::MediaStop,
+        KeyCode::Minus,
+        KeyCode::Multiply,
+        KeyCode::Mute,
+        KeyCode::MyComputer,
+        KeyCode::NavigateForward, // also called "Prior"
+        KeyCode::NavigateBackward, // also called "Next"
+        KeyCode::NextTrack,
+        KeyCode::NoConvert,
+        KeyCode::NumpadComma,
+        KeyCode::NumpadEnter,
+        KeyCode::NumpadEquals,
+        KeyCode::OEM102,
+        KeyCode::Period,
+        KeyCode::PlayPause,
+        KeyCode::Power,
+        KeyCode::PrevTrack,
+        KeyCode::RAlt,
+        KeyCode::RBracket,
+        KeyCode::RControl,
+        KeyCode::RShift,
+        KeyCode::RWin,
+        KeyCode::Semicolon,
+        KeyCode::Slash,
+        KeyCode::Sleep,
+        KeyCode::Stop,
+        KeyCode::Subtract,
+        KeyCode::Sysrq,
+        KeyCode::Tab,
+        KeyCode::Underline,
+        KeyCode::Unlabeled,
+        KeyCode::VolumeDown,
+        KeyCode::VolumeUp,
+        KeyCode::Wake,
+        KeyCode::WebBack,
+        KeyCode::WebFavorites,
+        KeyCode::WebForward,
+        KeyCode::WebHome,
+        KeyCode::WebRefresh,
+        KeyCode::WebSearch,
+        KeyCode::WebStop,
+        KeyCode::Yen,
+        KeyCode::Copy,
+        KeyCode::Paste,
+        KeyCode::Cut,
+    ];
+    for (i, keycode) in keycodes.iter().enumerate() {
+        assert_eq!(i, *keycode as usize);
+    }
+    keycodes
+}
+
+fn list_keycode_symbols(globals: &mut Globals) -> Vec<Value> {
+    let mut ret = Vec::new();
+    for keycode in list_keycodes() {
+        ret.push(globals.intern_str(&format!("{:?}", keycode)).into());
+    }
+    ret.into()
 }

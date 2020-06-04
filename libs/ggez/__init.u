@@ -54,6 +54,8 @@ class Drawable {
     }
 }
 
+get_all_keycodes = _ggez::get_all_keycodes
+
 def main(
     name="name",
     author="author",
@@ -62,6 +64,7 @@ def main(
     update=nil,
     draw=nil,
     mouse_down=nil,
+    key_down=nil,
     text_input=nil,
 ) = {
     _ggez::start(
@@ -72,12 +75,15 @@ def main(
         update=if update is nil { nil } else { def(ctx) = update(Context(ctx)) },
         draw=if draw is nil { nil } else { def(ctx) = draw(Context(ctx)) },
         mouse_down=if mouse_down is nil { nil } else { def(ctx, *args) = mouse_down(Context(ctx), *args) },
+        key_down=if key_down is nil { nil } else { def(ctx, *args) = key_down(Context(ctx), *args) },
         text_input=if text_input is nil { nil } else { def(ctx, *args) = text_input(Context(ctx), *args) },
     )
 }
 
 def demo() = {
     import time
+
+    print(get_all_keycodes())
 
     width = 0
     height = 0
@@ -127,8 +133,8 @@ def demo() = {
         },
         text_input=def(ctx, c) = {
             nonlocal x, y
-            print('text_input c = %s' % [c])
-            if c == 'a' {
+            print('text_input c = %r' % [c])
+            r###" if c == 'a' {
                 x = x - 40
             } elif c == 'd' {
                 x = x + 40
@@ -136,7 +142,21 @@ def demo() = {
                 y = y - 40
             } elif c == 's' {
                 y = y + 40
-            }
+            } "###
         },
+        key_down=def(ctx, key, mods) = {
+            nonlocal x, y
+            print('key = %r, mods= %s' % [key, mods])
+
+            if key is :Left or key is :A {
+                x = x - 40
+            } elif key is :Right or key is :D {
+                x = x + 40
+            } elif key is :Up or key is :W {
+                y = y - 40
+            } elif key is :Down or key is :S {
+                y = y + 40
+            }
+        }
     )
 }
