@@ -90,6 +90,28 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     from_text(globals, text)
                 }
             ),
+            NativeFunction::simple0(
+                sr,
+                "text_width",
+                &["text", "ctx"],
+                |globals, args, _kwargs| {
+                    let text = to_text(globals, &args[0])?;
+                    let ctx_refcell = to_ctx(globals, &args[1])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    Ok((text.width(ctx.get_mut()) as f64).into())
+                }
+            ),
+            NativeFunction::simple0(
+                sr,
+                "text_height",
+                &["text", "ctx"],
+                |globals, args, _kwargs| {
+                    let text = to_text(globals, &args[0])?;
+                    let ctx_refcell = to_ctx(globals, &args[1])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    Ok((text.height(ctx.get_mut()) as f64).into())
+                }
+            ),
             NativeFunction::simple0(sr, "new_mesh_builder", &[], |globals, _args, _kwargs| {
                 from_mesh_builder(globals, MeshBuilder::new())
             }),
@@ -588,9 +610,30 @@ fn to_drawable<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a
     Eval::expect_opaque(globals, value)
 }
 
+fn to_text<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Text>> {
+    let drawable = to_drawable(globals, value)?;
+    if drawable.is_text() {
+        Ok(Ref::map(to_drawable(globals, value)?, |drawable| match drawable {
+            EDrawable::Text(text) => text,
+            _ => panic!("Expected Text"),
+        }))
+    } else {
+        globals.set_exc_str(&format!("Expected Drawable Text, but got a different drawable"))
+    }
+}
+
 enum EDrawable {
     Mesh(Mesh),
     Text(Text),
+}
+
+impl EDrawable {
+    fn is_text(&self) -> bool {
+        if let EDrawable::Text(_) = self { true } else { false }
+    }
+    // fn is_mesh(&self) -> bool {
+    //     if let EDrawable::Mesh(_) = self { true } else { false }
+    // }
 }
 
 fn draw(ctx: &mut Context, drawable: &EDrawable, dest: Point) -> GameResult<()> {

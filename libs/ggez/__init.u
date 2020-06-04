@@ -75,7 +75,12 @@ class Mesh(Drawable) {
     [opaque]
 }
 
-class SimpleText(Drawable) {
+trait BaseText(Drawable) {
+    def width(self, ctx) = _ggez::text_width(self.opaque, ctx.opaque)
+    def height(self, ctx) = _ggez::text_height(self.opaque, ctx.opaque)
+}
+
+class SimpleText(BaseText) {
     [opaque]
 
     static def __call(text, color=nil, scale=nil) = {
@@ -193,9 +198,10 @@ def demo() = {
             MeshBuilder().rect([0, 0], 80, 80, BLUE).build(ctx).draw(ctx, [x - 40, y - 40])
 
             fps = ctx.fps()
-            SimpleText('fps = %r' % [fps]).draw(ctx)
+            fps_text = SimpleText('fps = %r' % [fps])
+            fps_text.draw(ctx)
 
-            SimpleText('multiline\n  text').draw(ctx, [0, 40])
+            SimpleText('multiline\n  text').draw(ctx, [0, fps_text.height(ctx)])
         },
         mouse_down=def(ctx, button, cx, cy) = {
             nonlocal x, y
