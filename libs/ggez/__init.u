@@ -19,9 +19,18 @@ BLUE = Color(0, 0, 1)
 class Context {
     [opaque]
 
-    def size(self) = _ggez::size(self.opaque)
+    def size(self) = _ggez::ctx_size(self.opaque)
 
     def fps(self) = _ggez::ctx_fps(self.opaque)
+
+    def quit(self) = _ggez::ctx_quit(self.opaque)
+}
+
+trait Drawable {
+    def draw(self, ctx, dest=nil) = {
+        dest = dest or [0, 0]
+        _ggez::ctx_draw(ctx.opaque, self.opaque, dest)
+    }
 }
 
 class MeshBuilder {
@@ -31,24 +40,46 @@ class MeshBuilder {
         __malloc(MeshBuilder, [_ggez::new_mesh_builder()])
     }
 
-    def circle(self, center, radius, color) = {
-        _ggez::mesh_builder_circle(self.opaque, center, radius, color.opaque)
+    def circle(self, center, radius, color, tolerance=2.0) = {
+        _ggez::mesh_builder_circle(self.opaque, center, radius, tolerance, color.opaque)
         self
     }
 
+    def polygon(self, points, color) = {
+        """
+        NOTE: The points must be given in clockwise order!
+        """
+        _ggez::mesh_builder_polygon(self.opaque, points, color.opaque)
+        self
+    }
+
+    def rect(self, upper_left_point, width, height, color) = {
+        [x, y] = upper_left_point
+        self.polygon(
+            [
+                upper_left_point,
+                [x + width, y],
+                [x + width, y + height],
+                [x, y + height],
+            ],
+            color,
+        )
+    }
+
     def build(self, ctx) = {
-        Drawable(_ggez::mesh_builder_build(self.opaque, ctx.opaque))
+        Mesh(_ggez::mesh_builder_build(self.opaque, ctx.opaque))
     }
 }
 
-class Drawable {
+class Mesh(Drawable) {
+    [opaque]
+}
+
+class SimpleText(Drawable) {
     [opaque]
 
-    static def __call(opaque) = __malloc(Drawable, [opaque])
-
-    def draw(self, ctx, dest=nil) = {
-        dest = dest or [0, 0]
-        _ggez::draw(ctx.opaque, self.opaque, dest)
+    static def __call(text, color=nil, scale=nil) = {
+        __malloc(SimpleText, [_ggez::new_text_simple(text, color, scale)])
     }
 }
 
@@ -125,13 +156,13 @@ def demo() = {
     x = 0
     y = 0
     last_tick_time = nil
-    last_fps_print_time = nil
     init = false
+    print_key = false
 
     app = App(
         name="demo",
         update=def(ctx) {
-            nonlocal last_tick_time, last_fps_print_time, x, y, width, height, init
+            nonlocal last_tick_time, x, y, width, height, init
 
             if !init {
                 [width, height] = ctx.size()
@@ -143,16 +174,6 @@ def demo() = {
 
             now = time::now()
             last_tick_time = if last_tick_time is nil { now } else { last_tick_time }
-            last_fps_print_time = if last_fps_print_time is nil {
-                now
-            } else {
-                last_fps_print_time
-            }
-
-            if now - last_fps_print_time > 2.1 {
-                print('fps = %r' % [ctx.fps()])
-                last_fps_print_time = now
-            }
 
             if now - last_tick_time > .4 {
                 y = min(y + 20, height - 40)
@@ -160,16 +181,21 @@ def demo() = {
             }
         },
         draw=def(ctx) {
-            MeshBuilder().circle([40, 40], 40, BLUE).build(ctx).draw(ctx)
-            MeshBuilder().circle([width - 40, height - 40], 40, RED).build(ctx).draw(ctx)
+            MeshBuilder().circle([40, 40], 40, BLUE, 1.0).build(ctx).draw(ctx)
+            MeshBuilder().circle([width - 40, height - 40], 40, RED, 1.0).build(ctx).draw(ctx)
             (
                 MeshBuilder()
-                    .circle([width - 40, 40], 40, GREEN)
-                    .circle([40, height - 40], 40, WHITE)
+                    .circle([width - 40, 40], 40, GREEN, 1.0)
+                    .circle([40, height - 40], 40, WHITE, 1.0)
                     .build(ctx)
                     .draw(ctx)
             )
-            MeshBuilder().circle([0, 0], 40, BLUE).build(ctx).draw(ctx, [x, y])
+            MeshBuilder().rect([0, 0], 80, 80, BLUE).build(ctx).draw(ctx, [x - 40, y - 40])
+
+            fps = ctx.fps()
+            SimpleText('fps = %r' % [fps]).draw(ctx)
+
+            SimpleText('multiline\n  text').draw(ctx, [0, 40])
         },
         mouse_down=def(ctx, button, cx, cy) = {
             nonlocal x, y
@@ -181,7 +207,7 @@ def demo() = {
         },
         text_input=def(ctx, c) = {
             nonlocal x, y
-            print('text_input c = %r' % [c])
+            r###" print('text_input c = %r' % [c]) "###
             r###" if c == 'a' {
                 x = x - 40
             } elif c == 'd' {
@@ -193,8 +219,11 @@ def demo() = {
             } "###
         },
         key_down=def(ctx, key, mods) = {
-            nonlocal x, y
-            print('key = %r, mods= %s' % [key, mods])
+            nonlocal x, y, print_key
+
+            if print_key {
+                print('key = %r, mods= %s' % [key, mods])
+            }
 
             if key is :Left or key is :A {
                 x = x - 40
@@ -204,6 +233,10 @@ def demo() = {
                 y = y - 40
             } elif key is :Down or key is :S {
                 y = y + 40
+            } elif key is :P {
+                print_key = !print_key
+            } elif key is :Escape {
+                ctx.quit()
             }
         }
     )

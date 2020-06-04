@@ -18,6 +18,9 @@ use ggez::graphics;
 use ggez::graphics::Color;
 use ggez::graphics::Mesh;
 use ggez::graphics::MeshBuilder;
+use ggez::graphics::Text;
+use ggez::graphics::TextFragment;
+use ggez::graphics::Scale;
 use ggez::Context;
 use ggez::ContextBuilder;
 use ggez::GameError;
@@ -60,25 +63,75 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     from_color(globals, Color { r, g, b, a })
                 },
             ),
+            NativeFunction::simple0(
+                sr,
+                "new_text_simple",
+                &["text", "color", "scale"],
+                |globals, args, _kwargs| {
+                    let text = Eval::expect_string(globals, &args[0])?;
+                    let color = if let Value::Nil = &args[1] {
+                        None
+                    } else {
+                        Some(to_color_ref(globals, &args[1])?.clone())
+                    };
+                    let scale = if let Value::Nil = &args[2] {
+                        None
+                    } else {
+                        let factor = Eval::expect_floatlike(globals, &args[2])? as f32;
+                        Some(Scale { x: factor, y: factor })
+                    };
+                    let fragment = TextFragment {
+                        text: text.str().to_owned(),
+                        color,
+                        font: None,
+                        scale,
+                    };
+                    let text = Text::new(fragment);
+                    from_text(globals, text)
+                }
+            ),
             NativeFunction::simple0(sr, "new_mesh_builder", &[], |globals, _args, _kwargs| {
                 from_mesh_builder(globals, MeshBuilder::new())
             }),
             NativeFunction::simple0(
                 sr,
                 "mesh_builder_circle",
-                &["mesh_builder", "center", "radius", "color"],
+                &["mesh_builder", "center", "radius", "tolerance", "color"],
                 |globals, args, _kwargs| {
                     let mesh_builder = to_mesh_builder_ref(globals, &args[0])?;
                     let center = expect_point(globals, &args[1])?;
                     let radius = Eval::expect_floatlike(globals, &args[2])? as f32;
-                    let color = to_color_ref(globals, &args[3])?.clone();
+                    let tolerance = Eval::expect_floatlike(globals, &args[3])? as f32;
+                    let color = to_color_ref(globals, &args[4])?.clone();
                     mesh_builder.borrow_mut().circle(
                         graphics::DrawMode::fill(),
                         center,
                         radius,
-                        2.0, // tolerance
+                        tolerance,
                         color,
                     );
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "mesh_builder_polygon",
+                &["mesh_builder", "points", "color"],
+                |globals, args, _kwargs| {
+                    let mesh_builder = to_mesh_builder_ref(globals, &args[0])?;
+                    let points = {
+                        let mut points = Vec::new();
+                        for point in Eval::iterable_to_vec(globals, &args[1])? {
+                            points.push(expect_point(globals, &point)?);
+                        }
+                        points
+                    };
+                    let color = to_color_ref(globals, &args[2])?.clone();
+                    try_(globals, mesh_builder.borrow_mut().polygon(
+                        graphics::DrawMode::fill(),
+                        &points,
+                        color,
+                    ))?;
                     Ok(Value::Nil)
                 },
             ),
@@ -94,14 +147,9 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     from_mesh(globals, mesh)
                 },
             ),
-            NativeFunction::simple0(sr, "ctx_fps", &["ctx"], |globals, args, _kwargs| {
-                let ctx_refcell = to_ctx(globals, &args[0])?;
-                let ctx = ctx_refcell.borrow();
-                Ok(ggez::timer::fps(ctx.get()).into())
-            }),
             NativeFunction::simple0(
                 sr,
-                "draw",
+                "ctx_draw",
                 &["ctx", "drawable", "destination"],
                 |globals, args, _kwargs| {
                     let ctx_refcell = to_ctx(globals, &args[0])?;
@@ -112,11 +160,22 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(Value::Nil)
                 },
             ),
-            NativeFunction::simple0(sr, "size", &["ctx"], |globals, args, _kwargs| {
+            NativeFunction::simple0(sr, "ctx_size", &["ctx"], |globals, args, _kwargs| {
                 let ctx_refcell = to_ctx(globals, &args[0])?;
                 let ctx = ctx_refcell.borrow();
                 let (width, height) = graphics::drawable_size(ctx.get());
                 Ok(vec![Value::Float(width as f64), Value::Float(height as f64)].into())
+            }),
+            NativeFunction::simple0(sr, "ctx_fps", &["ctx"], |globals, args, _kwargs| {
+                let ctx_refcell = to_ctx(globals, &args[0])?;
+                let ctx = ctx_refcell.borrow();
+                Ok(ggez::timer::fps(ctx.get()).into())
+            }),
+            NativeFunction::simple0(sr, "ctx_quit", &["ctx"], |globals, args, _kwargs| {
+                let ctx_refcell = to_ctx(globals, &args[0])?;
+                let mut ctx = ctx_refcell.borrow_mut();
+                event::quit(ctx.get_mut());
+                Ok(Value::Nil)
             }),
             NativeFunction::simple0(sr, "get_all_keycodes", &[], |globals, _args, _kwargs| {
                 let keycodes = list_keycode_symbols(globals);
@@ -519,18 +578,28 @@ fn from_mesh(_globals: &mut Globals, mesh: Mesh) -> EvalResult<Value> {
     Ok(opaque.into())
 }
 
+fn from_text(_globals: &mut Globals, text: Text) -> EvalResult<Value> {
+    let drawable: EDrawable = EDrawable::Text(text);
+    let opaque = Opaque::new(drawable);
+    Ok(opaque.into())
+}
+
 fn to_drawable<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, EDrawable>> {
     Eval::expect_opaque(globals, value)
 }
 
 enum EDrawable {
     Mesh(Mesh),
+    Text(Text),
 }
 
 fn draw(ctx: &mut Context, drawable: &EDrawable, dest: Point) -> GameResult<()> {
     match drawable {
         EDrawable::Mesh(mesh) => {
             graphics::draw(ctx, mesh, graphics::DrawParam::default().dest(dest))
+        }
+        EDrawable::Text(text) => {
+            graphics::draw(ctx, text, graphics::DrawParam::default().dest(dest))
         }
     }
 }
