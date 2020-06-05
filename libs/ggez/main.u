@@ -1,7 +1,8 @@
 import _ggez
 import ggez
+import ..demo
 
 if __name == __main() {
     r###" _ggez::main() "###
-    ggez::demo()
+    demo::demo001()
 }
