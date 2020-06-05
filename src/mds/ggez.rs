@@ -18,9 +18,9 @@ use ggez::graphics;
 use ggez::graphics::Color;
 use ggez::graphics::Mesh;
 use ggez::graphics::MeshBuilder;
+use ggez::graphics::Scale;
 use ggez::graphics::Text;
 use ggez::graphics::TextFragment;
-use ggez::graphics::Scale;
 use ggez::Context;
 use ggez::ContextBuilder;
 use ggez::GameError;
@@ -78,7 +78,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         None
                     } else {
                         let factor = Eval::expect_floatlike(globals, &args[2])? as f32;
-                        Some(Scale { x: factor, y: factor })
+                        Some(Scale {
+                            x: factor,
+                            y: factor,
+                        })
                     };
                     let fragment = TextFragment {
                         text: text.str().to_owned(),
@@ -88,7 +91,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     };
                     let text = Text::new(fragment);
                     from_text(globals, text)
-                }
+                },
             ),
             NativeFunction::simple0(
                 sr,
@@ -99,7 +102,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let ctx_refcell = to_ctx(globals, &args[1])?;
                     let mut ctx = ctx_refcell.borrow_mut();
                     Ok((text.width(ctx.get_mut()) as f64).into())
-                }
+                },
             ),
             NativeFunction::simple0(
                 sr,
@@ -110,7 +113,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let ctx_refcell = to_ctx(globals, &args[1])?;
                     let mut ctx = ctx_refcell.borrow_mut();
                     Ok((text.height(ctx.get_mut()) as f64).into())
-                }
+                },
             ),
             NativeFunction::simple0(sr, "new_mesh_builder", &[], |globals, _args, _kwargs| {
                 from_mesh_builder(globals, MeshBuilder::new())
@@ -149,11 +152,14 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         points
                     };
                     let color = to_color_ref(globals, &args[2])?.clone();
-                    try_(globals, mesh_builder.borrow_mut().polygon(
-                        graphics::DrawMode::fill(),
-                        &points,
-                        color,
-                    ))?;
+                    try_(
+                        globals,
+                        mesh_builder.borrow_mut().polygon(
+                            graphics::DrawMode::fill(),
+                            &points,
+                            color,
+                        ),
+                    )?;
                     Ok(Value::Nil)
                 },
             ),
@@ -613,12 +619,17 @@ fn to_drawable<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a
 fn to_text<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Text>> {
     let drawable = to_drawable(globals, value)?;
     if drawable.is_text() {
-        Ok(Ref::map(to_drawable(globals, value)?, |drawable| match drawable {
-            EDrawable::Text(text) => text,
-            _ => panic!("Expected Text"),
-        }))
+        Ok(Ref::map(
+            to_drawable(globals, value)?,
+            |drawable| match drawable {
+                EDrawable::Text(text) => text,
+                _ => panic!("Expected Text"),
+            },
+        ))
     } else {
-        globals.set_exc_str(&format!("Expected Drawable Text, but got a different drawable"))
+        globals.set_exc_str(&format!(
+            "Expected Drawable Text, but got a different drawable"
+        ))
     }
 }
 
@@ -629,7 +640,11 @@ enum EDrawable {
 
 impl EDrawable {
     fn is_text(&self) -> bool {
-        if let EDrawable::Text(_) = self { true } else { false }
+        if let EDrawable::Text(_) = self {
+            true
+        } else {
+            false
+        }
     }
     // fn is_mesh(&self) -> bool {
     //     if let EDrawable::Mesh(_) = self { true } else { false }
