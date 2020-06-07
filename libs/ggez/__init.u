@@ -108,6 +108,7 @@ _app_callback_keys = [
     :mouse_down,
     :key_down,
     :text_input,
+    :gamepad_button_down,
 ]
 
 class App {

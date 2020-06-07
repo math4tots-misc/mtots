@@ -108,6 +108,23 @@ def update(app) {
             } else {
                 print('Unhandled key combo: [%r, %r]' % [key, mods])
             }
-        }
+        },
+        gamepad_button_down = def(ctx, button, gamepad) {
+            if button is :DPadLeft {
+                model.move_left()
+            } elif button is :DPadRight {
+                model.move_right()
+            } elif button is :DPadDown {
+                model.move_down()
+            } elif button is :South {
+                model.rotate()
+            } elif button is :East {
+                model.rotate(3)
+            } elif button is :North {
+                model.hard_drop()
+            } else {
+                print('Unrecognized gamepad button %r, %r' % [button, gamepad])
+            }
+        },
     )
 }
