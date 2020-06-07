@@ -48,7 +48,7 @@ def demo001() = {
                     .build(ctx)
                     .draw(ctx)
             )
-            ggez::MeshBuilder().rect([0, 0], 80, 80, BLUE).build(ctx).draw(ctx, [x - 40, y - 40])
+            ggez::MeshBuilder().rect(0, 0, 80, 80, BLUE).build(ctx).draw(ctx, [x - 40, y - 40])
 
             fps = ctx.fps()
             fps_text = ggez::SimpleText('fps = %r' % [fps])

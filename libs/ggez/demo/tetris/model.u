@@ -1,0 +1,500 @@
+# Tetris game model
+
+_DEFAULT_FALL_TIME = 0.5
+
+def _new_default_shape_selector() = {
+    import time
+
+    def _default_shape_selector() = {
+        # TODO: do something less silly
+        _shapes[hash(time::now()).divmod(_shapes.len())[1]]
+    }
+}
+
+def _new_always_same_selector(i) = {
+    def _always_same_selector() = _shapes[i]
+}
+
+class Model {
+    [
+        _board,
+        _live_piece_cell,
+        _last_fall_step_time_cell,
+        _fall_step_time_cell,
+        _state_cell,
+        _shape_selector,
+    ]
+
+    static def __call(board, live_piece=nil, shape_selector=nil) = {
+        __malloc(
+            Model,
+            [
+                board,
+                Cell(live_piece),
+                Cell(nil),
+                Cell(_DEFAULT_FALL_TIME),
+                Cell(:start),
+                nil.get(shape_selector, _new_default_shape_selector()),
+            ]
+        )
+    }
+
+    static def with_board_dim(r, c) = Model(Board(r, c))
+
+    def board(self) = self._board
+
+    def state(self) = self._state_cell.get()
+    def _set_state(self, state) = self._state_cell.set(state)
+
+    def piece(self) = self._live_piece_cell.get()
+    def _set_piece(self, piece) = self._live_piece_cell.set(piece)
+
+    def _fall_step_time(self) = self._fall_step_time_cell.get()
+
+    def _init(self, now) = {
+        self._last_fall_step_time_cell.set(now)
+    }
+
+    def _fall(self) = {
+        board = self.board()
+        piece = self.piece()
+        piece_down = piece.move_down()
+        if board.hits(piece.move_down()) {
+            board.fill(piece)
+            self._set_piece(nil)
+            self.board().clear_completed_rows()
+        } else {
+            self._set_piece(piece_down)
+        }
+    }
+
+    def _make_and_set_new_piece(self) {
+        # TODO: Make the shape choice random
+        shape = (self._shape_selector)()
+
+        start_r = if !shape[0].any() {
+            # The first row is empty, so start a little higher
+            -1
+        } else { 0 }
+
+        start_c = self.board().C() // 2 - 2
+
+        piece = Piece(shape, 0, start_r, start_c)
+
+        if self.board().hits(piece) {
+            self._set_state(:lose)
+        }
+
+        self._set_piece(piece)
+    }
+
+    def tick(self, now) = {
+        # Checks the model to see if it needs to be updated
+        # and will update as needed
+        state = self.state()
+        if state is :start {
+            self._set_state(:play)
+        } elif state is :play {
+            piece = self.piece()
+            if piece is nil {
+                self._make_and_set_new_piece()
+                self._last_fall_step_time_cell.set(now)
+            } else {
+                diff = now - self._last_fall_step_time_cell.get()
+                if diff >= self._fall_step_time() {
+                    self._fall()
+                    self._last_fall_step_time_cell.set(now)
+                }
+            }
+        } elif state is :lose {
+            # nothing to do
+        }
+    }
+
+    def R(self) = self.board().R()
+    def C(self) = self.board().C()
+
+    def dump(self) = {
+        piece_cells = nil.get(
+            nil.map(self.piece(), def(piece) = Set(piece.occupied_cells())),
+            []
+        )
+        board = self._board
+        '\n'.join(range(self.R()).map(def(r) = {
+            ''.join(range(self.C()).map(def(c) = {
+                rc = [r, c]
+                if piece_cells.has(rc) {
+                    'o'
+                } elif board.empty(rc) {
+                    '_'
+                } else {
+                    'x'
+                }
+            }))
+        })) + '\n'
+    }
+
+    def _move(self, rc) = {
+        piece = self.piece()
+        if piece is not nil {
+            moved_piece = piece.move(rc)
+            if !self.board().hits(moved_piece) {
+                self._set_piece(moved_piece)
+            }
+        }
+    }
+
+    def move_left(self) = self._move([0, -1])
+    def move_right(self) = self._move([0, 1])
+    def move_down(self) = self._move([1, 0])
+    def rotate(self, n=1) = {
+        piece = self.piece()
+        if piece is not nil {
+            rotated_piece = piece.rotate(n)
+            if !self.board().hits(rotated_piece) {
+                self._set_piece(rotated_piece)
+            }
+        }
+    }
+    def hard_drop(self) = {
+        while self.state() is :play and self.piece() is not nil {
+            self._fall()
+        }
+    }
+}
+
+
+class Board {
+    # Represents a tetris board, not including
+    # the live piece
+    [_rows]
+
+    static def __call(R, C) = {
+        assert(R > 0 and C > 0)
+        __malloc(Board, [
+            range(R).map(def(_) = @[false] * C).to(MutableList)
+        ])
+    }
+
+    static def default() = Board(20, 10)
+
+    def R(self) = self._rows.len()
+    def C(self) = self._rows[0].len()
+
+    def clear_completed_rows(self) {
+        R = self.R()
+        C = self.C()
+        old_rows = self._rows.move()
+        new_rows = @[]
+        for row in old_rows {
+            if !row.all() {
+                new_rows.push(row)
+            }
+        }
+
+        for _ in range(R - new_rows.len()) {
+            self._rows.push(@[false] * C)
+        }
+        self._rows.extend(new_rows.move())
+    }
+
+    def empty(self, rc) = {
+        # Checks whether the given [r, c] cell is empty
+        # in this board.
+        # A cell that is out of bounds is considered non-empty
+        [r, c] = rc
+        if c < 0 or r < 0 or c >= self.C() or r >= self.R() {
+            false
+        } else {
+            !self._rows[r][c]
+        }
+    }
+
+    def hits(self, piece) = {
+        # Checks whether a given Piece or [r, c] cell hits
+        # non-empty cells of the board
+        if type(piece) is Piece {
+            for rc in piece.occupied_cells() {
+                if !self.empty(rc) {
+                    return true
+                }
+            }
+            false
+        } else {
+            !self.empty(piece)
+        }
+    }
+
+    def* filled_cells(self) = {
+        for r in range(self.R()) {
+            for c in range(self.C()) {
+                if self._rows[r][c] {
+                    yield [r, c]
+                }
+            }
+        }
+    }
+
+    def fill_cell(self, rc) = {
+        if self.empty(rc) {
+            [r, c] = rc
+            self._rows[r][c] = true
+        }
+    }
+
+    def fill_piece(self, piece) = {
+        for [r, c] in piece.occupied_cells() {
+            self._rows[r][c] = true
+        }
+    }
+
+    def fill(self, piece) = {
+        # Fills a Piece or [r, c] cell in this board
+        if type(piece) is Piece {
+            self.fill_piece(piece)
+        } else {
+            self.fill_cell(piece)
+        }
+    }
+
+    def dump(self) = {
+        '\n'.join(range(self.R()).map(def(r) = {
+            row = self._rows[r]
+            ''.join(range(self.C()).map(def(c) = {
+                if row[c] { 'x' } else { '_' }
+            }))
+        })) + '\n'
+    }
+}
+
+class Piece {
+    # Represents a live piece on the Tetris board
+    #   shape:
+    #     determines which shape is currently live
+    #   rot:
+    #     the number of rotations that this piece
+    #     has undergone
+    #     Positive direction is clockwise
+    #   r:
+    #     the row position of the upper-left corner
+    #     described by shape
+    #   c:
+    #     the column position of the upper-left corner
+    #     described by shape
+    [_shape, _rot, _r, _c]
+
+    def* occupied_cells(self) {
+        rot = self._rot.divmod(4)[1]
+            # ensure rot is in range(4)
+
+        shape = self._shape
+        offset_r = self._r
+        offset_c = self._c
+
+        for r0 in range(4) {
+            for c0 in range(4) {
+                if shape[r0][c0] {
+                    [r1, c1] = if rot is 0 {
+                        [r0, c0]
+                    } elif rot is 1 {
+                        [c0, 3 - r0]
+                    } elif rot is 2 {
+                        [3 - r0, 3 - c0]
+                    } elif rot is 3 {
+                        [3 - c0, r0]
+                    }
+                    yield [offset_r + r1, offset_c + c1]
+                }
+            }
+        }
+    }
+
+    def origin(self) = Piece(self._shape, self._rot, 0, 0)
+
+    def dump(self) = {
+        cells = self.origin().occupied_cells().to(Set)
+        ''.join(range(4).map(def(r) =
+            ''.join(range(4).map(def(c) =
+                if cells.has([r, c]) { 'x' } else { ' ' }
+            )) + '\n'
+        ))
+    }
+
+    def rotate(self, n) = {
+        # Rotate clockwise 90 degrees 'n' times
+        Piece(self._shape, self._rot + n, self._r, self._c)
+    }
+
+    def move(self, rc) = {
+        [dr, dc] = rc
+        Piece(self._shape, self._rot, self._r + dr, self._c + dc)
+    }
+
+    def move_down(self) = self.move([1, 0])
+    def move_left(self) = self.move([0, -1])
+    def move_right(self) = self.move([0, 1])
+}
+
+_shapes = [
+    [
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+        [0, 0, 1, 0],
+    ],
+    [
+        [0, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, 1, 1, 1],
+        [0, 0, 0, 0],
+    ],
+    [
+        [0, 0, 0, 0],
+        [0, 1, 1, 0],
+        [0, 1, 1, 0],
+        [0, 0, 0, 0],
+    ],
+    [
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 1, 1, 1],
+        [0, 0, 0, 0],
+    ],
+    [
+        [0, 0, 0, 0],
+        [0, 1, 1, 1],
+        [0, 1, 0, 0],
+        [0, 0, 0, 0],
+    ],
+    [
+        [0, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, 1, 1, 0],
+        [0, 1, 0, 0],
+    ],
+    [
+        [0, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 1, 1, 0],
+        [0, 0, 1, 0],
+    ],
+]
+
+def __test_piece_rotate() {
+    piece = Piece(_shapes[0], 0, 0, 0)
+
+    assert_eq(
+        piece.dump(),
+        '\n'.join([
+            '  x ',
+            '  x ',
+            '  x ',
+            '  x ',
+        ]) + '\n',
+    )
+
+    assert_eq(
+        piece.rotate(1).dump(),
+        '\n'.join([
+            '    ',
+            '    ',
+            'xxxx',
+            '    ',
+        ]) + '\n',
+    )
+
+    assert_eq(
+        piece.rotate(2).dump(),
+        '\n'.join([
+            ' x  ',
+            ' x  ',
+            ' x  ',
+            ' x  ',
+        ]) + '\n',
+    )
+
+    assert_eq(
+        piece.rotate(3).dump(),
+        '\n'.join([
+            '    ',
+            'xxxx',
+            '    ',
+            '    ',
+        ]) + '\n',
+    )
+
+    assert_eq(piece.rotate(2).dump(), piece.rotate(-2).dump())
+    assert_eq(piece.rotate(3).dump(), piece.rotate(-1).dump())
+    assert_eq(piece.rotate(3).dump(), piece.rotate(7).dump())
+
+    # -------------
+
+    piece = Piece(_shapes[1], 0, 0, 0)
+
+    assert_eq(
+        piece.dump(),
+        '\n'.join([
+            '    ',
+            '  x ',
+            ' xxx',
+            '    ',
+        ]) + '\n',
+    )
+
+    assert_eq(
+        piece.rotate(1).dump(),
+        '\n'.join([
+            '    ',
+            ' x  ',
+            ' xx ',
+            ' x  ',
+        ]) + '\n',
+    )
+
+    assert_eq(
+        piece.rotate(2).dump(),
+        '\n'.join([
+            '    ',
+            'xxx ',
+            ' x  ',
+            '    ',
+        ]) + '\n',
+    )
+
+    assert_eq(
+        piece.rotate(3).dump(),
+        '\n'.join([
+            '  x ',
+            ' xx ',
+            '  x ',
+            '    ',
+        ]) + '\n',
+    )
+
+    assert_eq(piece.rotate(2).dump(), piece.rotate(-2).dump())
+    assert_eq(piece.rotate(3).dump(), piece.rotate(-1).dump())
+    assert_eq(piece.rotate(3).dump(), piece.rotate(7).dump())
+}
+
+def __test_model() {
+    model = Model(
+        board=Board(8, 5),
+        shape_selector=_new_always_same_selector(1),
+    )
+
+    for i in range(10) {
+        model.tick(i)
+    }
+
+    assert_eq(
+        model.dump(),
+        # __o__
+        # _ooo_
+        # _____
+        # _____
+        # _____
+        # _____
+        # __x__
+        # _xxx_
+    )
+}

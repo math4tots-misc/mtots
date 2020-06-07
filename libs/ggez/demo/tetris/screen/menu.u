@@ -1,0 +1,10 @@
+# The menu screen
+import ..play
+
+
+def update(app) {
+    0
+
+    # For now, just jump straight to the play screen
+    play::update(app)
+}

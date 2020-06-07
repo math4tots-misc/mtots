@@ -1,0 +1,19 @@
+# Just a simple tetris demo with mtots + ggez
+import ggez
+import .screen.menu
+import .screen.play
+
+
+def main() {
+
+    app = ggez::App(
+        name='tetris',
+    )
+    menu::update(app)
+    app.main()
+}
+
+
+if __name == __main() {
+    main()
+}

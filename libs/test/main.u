@@ -9,9 +9,15 @@ import os::UTF8
 import os::Process
 
 def main() {
-    [root_dir] = __args()
+    args = __args()
+    if args.len() is 1 {
+        [root_dir] = args
+        test_pkg = ''
+    } else {
+        [root_dir, test_pkg] = args
+    }
     root_dir = Path(root_dir).canon()
-    for module_name in _get_module_names(root_dir, '') {
+    for module_name in _get_module_names(root_dir, test_pkg) {
         print(module_name)
         module = __import(module_name)
         keys = module.keys().filter(def(k) = str(k).starts_with('__test_')).to(List)
@@ -28,7 +34,7 @@ def main() {
 }
 
 def* _get_module_names(root, package_name) {
-    for [dirpath, _subdirs, filepaths] in os::walk(root.join(package_name)) {
+    for [dirpath, _subdirs, filepaths] in os::walk(root.join(package_name.replace('.', os::sep))) {
         if filepaths.map(def(fp) = fp.basename()).has('__init.u') {
             yield str(dirpath.relpath(root)).replace(os::sep, '.')
         }

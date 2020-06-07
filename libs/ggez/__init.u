@@ -2,12 +2,19 @@ import _ggez
 
 
 class Color {
-    [opaque]
+    [opaque, r, g, b, a]
 
     static def __call(r, g, b, a=1.0) = {
         opaque = _ggez::new_color(r, g, b, a)
-        __malloc(Color, [opaque])
+        __malloc(Color, [opaque, r, g, b, a])
     }
+
+    def scale(self, r) = Color(
+        self.r * r,
+        self.g * r,
+        self.b * r,
+        self.a,
+    )
 }
 
 BLACK = Color(0, 0, 0)
@@ -53,11 +60,10 @@ class MeshBuilder {
         self
     }
 
-    def rect(self, upper_left_point, width, height, color) = {
-        [x, y] = upper_left_point
+    def rect(self, x, y, width, height, color) = {
         self.polygon(
             [
-                upper_left_point,
+                [x, y],
                 [x + width, y],
                 [x + width, y + height],
                 [x, y + height],
