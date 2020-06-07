@@ -1,0 +1,140 @@
+# The pause menu
+import ..play
+import ggez
+
+def update(app, model) {
+    items = [
+        :Resume,
+        :Restart,
+        :Quit,
+    ]
+
+    selected = 0
+
+    selected_color = ggez::Color(1, 0, 0)
+    unselected_color = ggez::Color(0.5, 0, 0)
+    _init = false
+
+    height = width = 0
+
+    def init(ctx) {
+        nonlocal height, width
+        [height, width] = ctx.size()
+    }
+
+    def down() {
+        nonlocal selected
+        selected += 1
+        selected = selected.divmod(items.len())[1]
+    }
+
+    def up() {
+        nonlocal selected
+        selected -= 1
+        selected = selected.divmod(items.len())[1]
+    }
+
+    def resume(ctx) {
+        play::update(app, model)
+    }
+
+    def restart(ctx) {
+        model.restart()
+        play::update(app, model)
+    }
+
+    def quit(ctx) {
+        ctx.quit()
+    }
+
+    def select(ctx) {
+        item = items[selected]
+        if item is :Resume {
+            resume(ctx)
+        } elif item is :Restart {
+            restart(ctx)
+        } elif item is :Quit {
+            quit(ctx)
+        } else {
+            print('Unrecognized item %r (%s)' % [item, selected])
+        }
+    }
+
+    app.update(
+        draw=def(ctx) {
+            nonlocal width, height
+            [width, height] = ctx.size()
+
+            scale = height / 30
+
+            fit_item_width = 0
+            fit_item_height = 0
+            for item in items {
+                item_text = ggez::SimpleText(str(item), scale=scale)
+                fit_item_height = max(fit_item_height, item_text.height(ctx))
+                fit_item_width = max(fit_item_width, item_text.width(ctx))
+            }
+
+            border_factor = 1.0
+
+            box_item_width = fit_item_width * (1 + border_factor)
+            box_item_height = fit_item_height * (1 + border_factor)
+
+            item_y = start_item_y = 0.25 * height
+            item_x = start_item_x = width / 2 - box_item_width / 2
+
+            for i in range(items.len()) {
+                item = items[i]
+
+                item_text = ggez::SimpleText(str(item), scale=scale)
+
+                color = if i == selected {
+                    selected_color
+                } else {
+                    unselected_color
+                }
+
+                box_y = item_y - fit_item_height * (border_factor / 2)
+                box_x = item_x - fit_item_width * (border_factor / 2)
+
+                ggez::MeshBuilder().rect(
+                    box_x,
+                    box_y,
+                    box_item_width,
+                    box_item_height,
+                    color,
+                ).build(ctx).draw(ctx)
+
+                item_text.draw(ctx, [item_x, item_y])
+
+                item_y += box_item_height
+            }
+        },
+        key_down=def(ctx, key, mods) {
+            if key is :Return or key is :Enter {
+                select(ctx)
+            } elif key is :Escape {
+                resume(ctx)
+            } elif key is :S or key is :Down {
+                down()
+            } elif key is :W or key is :Up {
+                up()
+            } else {
+                print('Unrecognized key %r (%r)' % [key, mods])
+            }
+        },
+        gamepad_button_down=def(ctx, btn, gamepad) {
+            if btn is :South {
+                select(ctx)
+            } elif btn is :East or btn is :Start {
+                resume(ctx)
+            } elif btn is :DPadDown {
+                down()
+            } elif btn is :DPadUp {
+                up()
+            } else {
+                print('Unrecognized button %r (%r)' % [btn, gamepad])
+            }
+        },
+    )
+}

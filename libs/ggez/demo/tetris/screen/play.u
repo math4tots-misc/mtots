@@ -3,6 +3,7 @@ import ggez
 import ...model::Model
 import ...model::Board
 import time
+import ..pause
 
 def update(app, model) {
     _init = false
@@ -12,8 +13,6 @@ def update(app, model) {
     board_screen_x = board_screen_y = 0
     width = height = board_screen_width = board_screen_height = nil
     cell_height = cell_width = nil
-
-    board = range(R).map(def(_) = [nil] * C).list()
 
     board_color = ggez::Color(0.3, 0.5, 0.8)
     background_color = ggez::Color(0.8, 0.5, 0.3).scale(0.5)
@@ -108,8 +107,8 @@ def update(app, model) {
         },
         key_down = def(ctx, key, mods) {
             if mods == [] or mods == [:repeat] {
-                if key is :Escape {
-                    ctx.quit()
+                if key is :Escape or key is :P {
+                    pause::update(app, model)
                 } elif key is :A or key is :Left {
                     model.move_left()
                 } elif key is :D or key is :Right {
@@ -142,6 +141,8 @@ def update(app, model) {
                 model.hard_drop()
             } elif button is :West {
                 model.restart()
+            } elif button is :Start {
+                pause::update(app, model)
             } else {
                 print('Unrecognized gamepad button %r, %r' % [button, gamepad])
             }
