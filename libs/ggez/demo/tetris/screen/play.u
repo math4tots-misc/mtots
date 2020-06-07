@@ -4,12 +4,10 @@ import ...model::Model
 import ...model::Board
 import time
 
-def update(app) {
+def update(app, model) {
     _init = false
 
-    [R, C] = [20, 10]
-
-    model = Model(Board(R, C))
+    [R, C] = [model.R(), model.C()]
 
     board_screen_x = board_screen_y = 0
     width = height = board_screen_width = board_screen_height = nil
@@ -74,6 +72,25 @@ def update(app) {
         })
     }
 
+    def draw_score(ctx) {
+        state = model.state()
+
+        rhs_x = width * 0.55
+        rhs_y = height * 0.1
+        score_text = ggez::SimpleText(
+            "cleared lines = " + str(model.cleared_line_count()),
+            scale=width / 50,
+        )
+        score_text.draw(ctx, [rhs_x, rhs_y])
+
+        if state is :lose {
+            go_text = ggez::SimpleText("GAME OVER")
+            text_width = go_text.width(ctx)
+            text_height = go_text.height(ctx)
+            go_text.draw(ctx, [width / 2 - text_width / 2, height / 2 - text_height / 2])
+        }
+    }
+
     app.update(
         update = def(ctx) {
             nonlocal _init
@@ -87,6 +104,7 @@ def update(app) {
             draw_background(ctx)
             draw_board_background(ctx)
             draw_board(ctx)
+            draw_score(ctx)
         },
         key_down = def(ctx, key, mods) {
             if mods == [] or mods == [:repeat] {
@@ -122,6 +140,8 @@ def update(app) {
                 model.rotate(3)
             } elif button is :North {
                 model.hard_drop()
+            } elif button is :West {
+                model.restart()
             } else {
                 print('Unrecognized gamepad button %r, %r' % [button, gamepad])
             }

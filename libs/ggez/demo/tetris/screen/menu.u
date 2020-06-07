@@ -1,10 +1,13 @@
 # The menu screen
 import ..play
+import ...model::Model
+import ...model::Board
 
 
 def update(app) {
-    0
+    [R, C] = [20, 10]
+    model = Model(Board(R, C))
 
     # For now, just jump straight to the play screen
-    play::update(app)
+    play::update(app, model)
 }

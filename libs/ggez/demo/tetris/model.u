@@ -23,18 +23,20 @@ class Model {
         _fall_step_time_cell,
         _state_cell,
         _shape_selector,
+        _cleared_line_count_cell,
     ]
 
-    static def __call(board, live_piece=nil, shape_selector=nil) = {
+    static def __call(board, live_piece=nil, fall_time=nil, shape_selector=nil) = {
         __malloc(
             Model,
             [
                 board,
                 Cell(live_piece),
                 Cell(nil),
-                Cell(_DEFAULT_FALL_TIME),
+                Cell(nil.get(fall_time, _DEFAULT_FALL_TIME)),
                 Cell(:start),
                 nil.get(shape_selector, _new_default_shape_selector()),
+                Cell(0),
             ]
         )
     }
@@ -51,9 +53,14 @@ class Model {
 
     def _fall_step_time(self) = self._fall_step_time_cell.get()
 
-    def _init(self, now) = {
-        self._last_fall_step_time_cell.set(now)
+    def restart(self) {
+        self.board().clear()
+        self._cleared_line_count_cell.set(0)
+        self._live_piece_cell.set(nil)
+        self._state_cell.set(:start)
     }
+
+    def cleared_line_count(self) = self._cleared_line_count_cell.get()
 
     def _fall(self) = {
         board = self.board()
@@ -62,7 +69,10 @@ class Model {
         if board.hits(piece.move_down()) {
             board.fill(piece)
             self._set_piece(nil)
-            self.board().clear_completed_rows()
+            self._cleared_line_count_cell.set(
+                self._cleared_line_count_cell.get() +
+                self.board().clear_completed_rows()
+            )
         } else {
             self._set_piece(piece_down)
         }
@@ -181,7 +191,9 @@ class Board {
     def R(self) = self._rows.len()
     def C(self) = self._rows[0].len()
 
-    def clear_completed_rows(self) {
+    def clear_completed_rows(self) = {
+        # Clears all completed rows from the board and returns
+        # the number of rows cleared
         R = self.R()
         C = self.C()
         old_rows = self._rows.move()
@@ -192,10 +204,21 @@ class Board {
             }
         }
 
-        for _ in range(R - new_rows.len()) {
+        clear_count = R - new_rows.len()
+        for _ in range(clear_count) {
             self._rows.push(@[false] * C)
         }
         self._rows.extend(new_rows.move())
+
+        clear_count
+    }
+
+    def clear(self) {
+        for r in range(self.R()) {
+            for c in range(self.C()) {
+                self._rows[r][c] = false
+            }
+        }
     }
 
     def empty(self, rc) = {
