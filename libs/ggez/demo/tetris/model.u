@@ -163,6 +163,16 @@ class Model {
             rotated_piece = piece.rotate(n)
             if !self.board().hits(rotated_piece) {
                 self._set_piece(rotated_piece)
+            } else {
+                # If the rotation would work by shifting the piece
+                # a little to the left or right, we allow it
+                for dc in [-1, 1, -2, 2, -3, 3] {
+                    adjusted_piece = rotated_piece.move([0, dc])
+                    if !self.board().hits(adjusted_piece) {
+                        self._set_piece(adjusted_piece)
+                        return
+                    }
+                }
             }
         }
     }
