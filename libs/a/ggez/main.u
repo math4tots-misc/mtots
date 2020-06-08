@@ -1,5 +1,5 @@
 import _ggez
-import ggez
+import a.ggez
 import ..demo
 
 if __name == __main() {

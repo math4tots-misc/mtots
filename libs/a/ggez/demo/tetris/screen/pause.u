@@ -1,6 +1,6 @@
 # The pause menu
 import ..play
-import ggez
+import a.ggez
 
 def update(app, model) {
     items = [

@@ -2,7 +2,7 @@
 #
 # ---
 # Did some profiling with
-#   cargo instruments --release --open -- libs -m ggez.demo.tetris
+#   cargo instruments --release --open -- libs -m a.ggez.demo.tetris
 #   It seems roughly 50% of the time is spent in the 'draw'
 #   callback of play.
 #
@@ -29,7 +29,7 @@
 # more complex wouldn't really be tenable with this sort of API.
 # ---
 #
-import ggez
+import a.ggez
 import ...model::Model
 import ...model::Board
 import time

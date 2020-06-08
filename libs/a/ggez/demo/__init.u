@@ -1,8 +1,8 @@
-import ggez
-import ggez::BLUE
-import ggez::RED
-import ggez::GREEN
-import ggez::WHITE
+import a.ggez
+import a.ggez::BLUE
+import a.ggez::RED
+import a.ggez::GREEN
+import a.ggez::WHITE
 
 def demo001() = {
     import time

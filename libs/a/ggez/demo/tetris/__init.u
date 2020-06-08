@@ -1,5 +1,5 @@
 # Just a simple tetris demo with mtots + ggez
-import ggez
+import a.ggez
 import .screen.menu
 import .screen.play
 
