@@ -1,4 +1,34 @@
 # The play screen
+#
+# ---
+# Did some profiling with
+#   cargo instruments --release --open -- libs -m ggez.demo.tetris
+#   It seems roughly 50% of the time is spent in the 'draw'
+#   callback of play.
+#
+# The relevant lines in the profiler looked something like this:
+# 41.08 s   99.0%    28.00 ms      ggez::event::run::h07c034247191fc79
+# 37.82 s   91.2%    16.00 ms        ...EventHandler$GT$::draw::h31b66df87e5fe65c
+# 21.74 s   52.4%    0 s               mtots::mds::ggez::wctx::with_ctx::hdbc1287be2d5e83a
+# 21.73 s   52.4%    0 s                 mtots_core::base::eval::Eval::call::ha0b27def1bc539fa
+#    Roughly
+#
+# This suggests ~91% of the total time was spent in the 'draw' callback overall, and
+# ~52% of the total time was spent in the actual script code (i.e. the 'draw' callback
+# writtten in mtots).
+# This disparity might be because 'yield_now' is called after the draw callback finishes
+# to allow the CPU to breathe
+#
+# The drop in performance due to design (i.e. calling a callback in script-land for
+# every frame) was more or less expected, though part of this exercise was to see
+# if this performance drop was tenable. Doing things this way definitely simplifies
+# the API quite a bit, since all the retain logic can be implemented in the script
+# itself
+#
+# For the mini tetris demo, this seems ok, but this does suggest to me that anything
+# more complex wouldn't really be tenable with this sort of API.
+# ---
+#
 import ggez
 import ...model::Model
 import ...model::Board
