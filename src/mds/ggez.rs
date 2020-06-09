@@ -32,7 +32,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub const NAME: &str = "_ggez";
+pub const NAME: &str = "a._ggez";
 
 type Point = ggez::mint::Point2<f32>;
 
