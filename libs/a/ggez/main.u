@@ -1,4 +1,4 @@
-import _ggez
+import a._ggez
 import a.ggez
 import ..demo
 
