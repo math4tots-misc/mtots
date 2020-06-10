@@ -13,7 +13,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-pub const NAME: &str = "_fs";
+pub const NAME: &str = "a._fs";
 
 pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let sr = globals.symbol_registry();

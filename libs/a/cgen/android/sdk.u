@@ -1,4 +1,4 @@
-import fs
+import a.fs
 import os
 import time
 import ..consts::_template_dir
