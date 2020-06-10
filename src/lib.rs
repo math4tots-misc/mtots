@@ -1,9 +1,8 @@
 extern crate mtots_core;
 
-extern crate kiss3d;
+extern crate mint;
 extern crate serde_json;
 extern crate three;
-extern crate mint;
 
 mod mds;
 

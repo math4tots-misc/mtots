@@ -12,7 +12,6 @@ description = "The mtots scripting language"
 [dependencies]
 mtots_core = { path = "../mtots_core", version = "0.1.0" }
 serde_json = { version = "1.0", features = ["preserve_order"] }
-kiss3d = "0.24"
 ggez = "0.5"
 three = "0.4"
 mint = "*"

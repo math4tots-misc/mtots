@@ -1,19 +1,19 @@
 //! three bindings
+use crate::mint;
+use crate::three;
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
+use crate::Opaque;
 use crate::RcStr;
 use crate::Value;
-use crate::three;
-use crate::mint;
-use crate::Opaque;
-use three::Geometry;
-use three::Window;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use three::Geometry;
+use three::Window;
 
 pub const NAME: &str = "a._three";
 

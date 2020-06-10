@@ -10,12 +10,12 @@ use crate::RcStr;
 use crate::Symbol;
 use crate::Value;
 use ggez::event;
+use ggez::event::Button;
 use ggez::event::EventHandler;
+use ggez::event::GamepadId;
 use ggez::event::KeyCode;
 use ggez::event::KeyMods;
 use ggez::event::MouseButton;
-use ggez::event::Button;
-use ggez::event::GamepadId;
 use ggez::graphics;
 use ggez::graphics::Color;
 use ggez::graphics::Mesh;
@@ -469,7 +469,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             }
                         }
 
-                        fn gamepad_button_down_event(&mut self, ctx: &mut Context, btn: Button, id: GamepadId) {
+                        fn gamepad_button_down_event(
+                            &mut self,
+                            ctx: &mut Context,
+                            btn: Button,
+                            id: GamepadId,
+                        ) {
                             if let Some(_) = self.err() {
                                 return;
                             }
@@ -720,10 +725,22 @@ fn list_gamepad_buttons(globals: &mut Globals) -> HashMap<Button, Value> {
         (Button::West, globals.intern_str("West").into()),
         (Button::C, globals.intern_str("C").into()),
         (Button::Z, globals.intern_str("Z").into()),
-        (Button::LeftTrigger, globals.intern_str("LeftTrigger").into()),
-        (Button::LeftTrigger2, globals.intern_str("LeftTrigger2").into()),
-        (Button::RightTrigger, globals.intern_str("RightTrigger").into()),
-        (Button::RightTrigger2, globals.intern_str("RightTrigger2").into()),
+        (
+            Button::LeftTrigger,
+            globals.intern_str("LeftTrigger").into(),
+        ),
+        (
+            Button::LeftTrigger2,
+            globals.intern_str("LeftTrigger2").into(),
+        ),
+        (
+            Button::RightTrigger,
+            globals.intern_str("RightTrigger").into(),
+        ),
+        (
+            Button::RightTrigger2,
+            globals.intern_str("RightTrigger2").into(),
+        ),
         (Button::Select, globals.intern_str("Select").into()),
         (Button::Start, globals.intern_str("Start").into()),
         (Button::Mode, globals.intern_str("Mode").into()),
@@ -734,7 +751,9 @@ fn list_gamepad_buttons(globals: &mut Globals) -> HashMap<Button, Value> {
         (Button::DPadLeft, globals.intern_str("DPadLeft").into()),
         (Button::DPadRight, globals.intern_str("DPadRight").into()),
         (Button::Unknown, globals.intern_str("Unknown").into()),
-    ].into_iter().collect()
+    ]
+    .into_iter()
+    .collect()
 }
 
 fn list_keycodes() -> Vec<KeyCode> {
