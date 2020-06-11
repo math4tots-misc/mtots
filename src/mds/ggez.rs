@@ -16,6 +16,7 @@ use ggez::event::GamepadId;
 use ggez::event::KeyCode;
 use ggez::event::KeyMods;
 use ggez::event::MouseButton;
+use ggez::event::Axis;
 use ggez::graphics;
 use ggez::graphics::Color;
 use ggez::graphics::Mesh;
@@ -233,6 +234,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     "key_down",
                     "text_input",
                     "gamepad_button_down",
+                    "gamepad_axis",
                 ],
                 |globals, args, _kwargs| {
                     struct State<'a> {
@@ -245,9 +247,11 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         key_down: Rc<RefCell<Value>>,
                         text_input: Rc<RefCell<Value>>,
                         gamepad_button_down: Rc<RefCell<Value>>,
+                        gamepad_axis: Rc<RefCell<Value>>,
 
                         keycode_list: Vec<Value>,
                         gamepad_button_map: HashMap<Button, Value>,
+                        gamepad_axis_map: HashMap<Axis, Value>,
                         gamepad_id_list: Vec<GamepadId>,
                         gamepad_id_map: HashMap<GamepadId, usize>,
 
@@ -274,9 +278,11 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             key_down: Rc<RefCell<Value>>,
                             text_input: Rc<RefCell<Value>>,
                             gamepad_button_down: Rc<RefCell<Value>>,
+                            gamepad_axis: Rc<RefCell<Value>>,
                         ) -> State<'a> {
                             let keycode_list = list_keycode_symbols(globals);
                             let gamepad_button_map = list_gamepad_buttons(globals);
+                            let gamepad_axis_map = list_gamepad_axes(globals);
                             let symbol_shift = globals.intern_str("shift");
                             let symbol_ctrl = globals.intern_str("ctrl");
                             let symbol_alt = globals.intern_str("alt");
@@ -295,8 +301,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 key_down,
                                 text_input,
                                 gamepad_button_down,
+                                gamepad_axis,
                                 keycode_list,
                                 gamepad_button_map,
+                                gamepad_axis_map,
                                 gamepad_id_list: Vec::new(),
                                 gamepad_id_map: HashMap::new(),
                                 symbol_shift,
@@ -324,6 +332,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
                         fn translate_button(&self, button: Button) -> Value {
                             self.gamepad_button_map.get(&button).cloned().unwrap()
+                        }
+
+                        fn translate_axis(&self, axis: Axis) -> Value {
+                            self.gamepad_axis_map.get(&axis).cloned().unwrap()
                         }
 
                         fn translate_gamepad_id(&mut self, id: GamepadId) -> Value {
@@ -501,6 +513,33 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 });
                             }
                         }
+
+                        fn gamepad_axis_event(
+                            &mut self,
+                            ctx: &mut Context,
+                            axis: Axis,
+                            value: f32,
+                            id: GamepadId,
+                        ) {
+                            if let Some(_) = self.err() {
+                                return;
+                            }
+                            let gamepad_axis = self.gamepad_axis.borrow().clone();
+                            if !gamepad_axis.is_nil() {
+                                let axis = self.translate_axis(axis);
+                                let value: Value = (value as f64).into();
+                                let id = self.translate_gamepad_id(id);
+                                let context_class = self.context_class;
+                                let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    let ctx_val = wrap_ctx(context_class, globals, ctx_val)?;
+                                    Eval::call(
+                                        globals,
+                                        &gamepad_axis,
+                                        vec![ctx_val.clone(), axis, value, id],
+                                    )
+                                });
+                            }
+                        }
                     }
 
                     /// wraps the opaque ctx object with the userland provided class
@@ -532,6 +571,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let args7 = Eval::expect_cell(globals, &args[7])?.clone();
                     let args8 = Eval::expect_cell(globals, &args[8])?.clone();
                     let args9 = Eval::expect_cell(globals, &args[9])?.clone();
+                    let args10 = Eval::expect_cell(globals, &args[10])?.clone();
                     let mut state = State::new(
                         globals,
                         &mut ctx,
@@ -543,6 +583,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         args7,
                         args8,
                         args9,
+                        args10,
                     );
 
                     match event::run(&mut ctx, &mut event_loop, &mut state) {
@@ -766,6 +807,22 @@ fn list_gamepad_buttons(globals: &mut Globals) -> HashMap<Button, Value> {
         (Button::DPadLeft, globals.intern_str("DPadLeft").into()),
         (Button::DPadRight, globals.intern_str("DPadRight").into()),
         (Button::Unknown, globals.intern_str("Unknown").into()),
+    ]
+    .into_iter()
+    .collect()
+}
+
+fn list_gamepad_axes(globals: &mut Globals) -> HashMap<Axis, Value> {
+    vec![
+        (Axis::LeftStickX, globals.intern_str("LeftStickX").into()),
+        (Axis::LeftStickY, globals.intern_str("LeftStickY").into()),
+        (Axis::LeftZ, globals.intern_str("LeftZ").into()),
+        (Axis::RightStickX, globals.intern_str("RightStickX").into()),
+        (Axis::RightStickY, globals.intern_str("RightStickY").into()),
+        (Axis::RightZ, globals.intern_str("RightZ").into()),
+        (Axis::DPadX, globals.intern_str("DPadX").into()),
+        (Axis::DPadY, globals.intern_str("DPadY").into()),
+        (Axis::Unknown, globals.intern_str("Unknown").into()),
     ]
     .into_iter()
     .collect()

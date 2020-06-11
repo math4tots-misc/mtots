@@ -23,6 +23,9 @@ acos = _math::acos
 atan = _math::atan
     # Computes atan in radians
 
+atan2 = _math::atan2
+    # Computes atan2 in radians
+
 sinh = _math::sinh
     # Hyperbolic sine
 

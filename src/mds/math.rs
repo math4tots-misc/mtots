@@ -42,6 +42,11 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.atan().into())
             }),
+            NativeFunction::simple0(sr, "atan2", &["y", "x"], |globals, args, _| {
+                let y = Eval::expect_floatlike(globals, &args[0])?;
+                let x = Eval::expect_floatlike(globals, &args[1])?;
+                Ok(y.atan2(x).into())
+            }),
             NativeFunction::simple0(sr, "sinh", &["x"], |globals, args, _| {
                 let x = Eval::expect_floatlike(globals, &args[0])?;
                 Ok(x.sinh().into())
