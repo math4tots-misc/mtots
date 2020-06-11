@@ -24,11 +24,15 @@ use ggez::graphics::MeshBuilder;
 use ggez::graphics::Scale;
 use ggez::graphics::Text;
 use ggez::graphics::TextFragment;
+use ggez::graphics::Image;
+use ggez::graphics::spritebatch::SpriteBatch;
+use ggez::graphics::spritebatch::SpriteIdx;
 use ggez::Context;
 use ggez::ContextBuilder;
 use ggez::GameError;
 use ggez::GameResult;
 use std::cell::Ref;
+use std::cell::RefMut;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -176,6 +180,85 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let mut ctx = ctx_refcell.borrow_mut();
                     let mesh = try_(globals, mesh_builder.build(ctx.get_mut()))?;
                     from_mesh(globals, mesh)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "new_image_from_colors",
+                &["ctx", "width", "height", "colors"],
+                |globals, args, _kwargs| {
+                    let ctx_refcell = to_ctx(globals, &args[0])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    let width = Eval::expect_usize(globals, &args[1])? as u16;
+                    let height = Eval::expect_usize(globals, &args[2])? as u16;
+                    let iterator = Eval::iter(globals, &args[3])?;
+                    let mut colors = Vec::new();
+                    while let Some(color) = Eval::next(globals, &iterator)? {
+                        let color = to_color_ref(globals, &color)?;
+                        let (r, g, b, a) = color.to_rgba();
+                        colors.extend(&[r, g, b, a]);
+                    }
+                    let image = try_(globals, Image::from_rgba8(ctx.get_mut(), width, height, &colors))?;
+                    from_image(globals, image)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "new_sprite_batch_from_image",
+                &["image"],
+                |globals, args, _kwargs| {
+                    let image = to_image(globals, &args[0])?;
+                    let sprite_batch = SpriteBatch::new(image.clone());
+                    from_sprite_batch(globals, sprite_batch)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "sprite_batch_add",
+                &["sprite_batch", "destination", "rotation", "scale", "offset"],
+                |globals, args, _kwargs| {
+                    let mut sprite_batch = to_sprite_batch_mut(globals, &args[0])?;
+                    let destination = expect_point(globals, &args[1])?;
+                    let rotation = Eval::expect_floatlike(globals, &args[2])? as f32;
+                    let (scale_x, scale_y) = expect_f32_pair(globals, &args[3])?;
+                    let (offset_x, offset_y) = expect_f32_pair(globals, &args[4])?;
+                    let params = graphics::DrawParam::default()
+                        .dest(destination)
+                        .rotation(rotation)
+                        .scale([scale_x, scale_y])
+                        .offset([offset_x, offset_y]);
+                    let sprite_id = sprite_batch.add(params);
+                    from_spriteidx(globals, sprite_id)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "sprite_batch_set",
+                &["sprite_batch", "spriteidx", "destination", "rotation", "scale", "offset"],
+                |globals, args, _kwargs| {
+                    let mut sprite_batch = to_sprite_batch_mut(globals, &args[0])?;
+                    let sprite_id = copy_spriteidx(globals, &args[1])?;
+                    let destination = expect_point(globals, &args[2])?;
+                    let rotation = Eval::expect_floatlike(globals, &args[3])? as f32;
+                    let (scale_x, scale_y) = expect_f32_pair(globals, &args[4])?;
+                    let (offset_x, offset_y) = expect_f32_pair(globals, &args[5])?;
+                    let params = graphics::DrawParam::default()
+                        .dest(destination)
+                        .rotation(rotation)
+                        .scale([scale_x, scale_y])
+                        .offset([offset_x, offset_y]);
+                    try_(globals, sprite_batch.set(sprite_id, params))?;
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "sprite_batch_clear",
+                &["sprite_batch"],
+                |globals, args, _kwargs| {
+                    let mut sprite_batch = to_sprite_batch_mut(globals, &args[0])?;
+                    sprite_batch.clear();
+                    Ok(Value::Nil)
                 },
             ),
             NativeFunction::simple0(
@@ -723,19 +806,37 @@ fn from_text(_globals: &mut Globals, text: Text) -> EvalResult<Value> {
     Ok(opaque.into())
 }
 
+fn from_spriteidx(_globals: &mut Globals, sid: SpriteIdx) -> EvalResult<Value> {
+    Ok(Opaque::new(sid).into())
+}
+
+fn copy_spriteidx(globals: &mut Globals, value: &Value) -> EvalResult<SpriteIdx> {
+    let sid: Ref<SpriteIdx> = Eval::expect_opaque(globals, value)?;
+    Ok(*sid)
+}
+
+fn from_image(_globals: &mut Globals, image: Image) -> EvalResult<Value> {
+    let drawable: EDrawable = EDrawable::Image(image);
+    let opaque = Opaque::new(drawable);
+    Ok(opaque.into())
+}
+
+fn from_sprite_batch(_globals: &mut Globals, sprite_batch: SpriteBatch) -> EvalResult<Value> {
+    let drawable: EDrawable = EDrawable::SpriteBatch(sprite_batch);
+    let opaque = Opaque::new(drawable);
+    Ok(opaque.into())
+}
+
 fn to_drawable<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, EDrawable>> {
     Eval::expect_opaque(globals, value)
 }
 
 fn to_text<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Text>> {
     let drawable = to_drawable(globals, value)?;
-    if drawable.is_text() {
+    if drawable.text().is_some() {
         Ok(Ref::map(
             to_drawable(globals, value)?,
-            |drawable| match drawable {
-                EDrawable::Text(text) => text,
-                _ => panic!("Expected Text"),
-            },
+            |drawable| drawable.text().unwrap()
         ))
     } else {
         globals.set_exc_str(&format!(
@@ -744,22 +845,66 @@ fn to_text<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Te
     }
 }
 
+fn to_image<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Image>> {
+    let drawable = to_drawable(globals, value)?;
+    if drawable.image().is_some() {
+        Ok(Ref::map(
+            to_drawable(globals, value)?,
+            |drawable| drawable.image().unwrap()
+        ))
+    } else {
+        globals.set_exc_str(&format!(
+            "Expected Drawable Image, but got a different drawable"
+        ))
+    }
+}
+
+fn to_sprite_batch_mut<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<RefMut<'a, SpriteBatch>> {
+    let mut drawable: RefMut<EDrawable> = Eval::expect_opaque_mut(globals, value)?;
+    if drawable.sprite_batch_mut().is_some() {
+        Ok(RefMut::map(
+            drawable,
+            |drawable| drawable.sprite_batch_mut().unwrap()
+        ))
+    } else {
+        globals.set_exc_str(&format!(
+            "Expected Drawable SpriteBatch, but got a different drawable"
+        ))
+    }
+}
+
 enum EDrawable {
     Mesh(Mesh),
     Text(Text),
+    Image(Image),
+    SpriteBatch(SpriteBatch),
 }
 
 impl EDrawable {
-    fn is_text(&self) -> bool {
-        if let EDrawable::Text(_) = self {
-            true
+    fn text(&self) -> Option<&Text> {
+        if let EDrawable::Text(text) = self {
+            Some(text)
         } else {
-            false
+            None
         }
     }
     // fn is_mesh(&self) -> bool {
     //     if let EDrawable::Mesh(_) = self { true } else { false }
     // }
+    fn image(&self) -> Option<&Image> {
+        if let EDrawable::Image(image) = self {
+            Some(image)
+        } else {
+            None
+        }
+    }
+    fn sprite_batch_mut(&mut self) -> Option<&mut SpriteBatch> {
+        if let EDrawable::SpriteBatch(sprite_batch) = self {
+            Some(sprite_batch)
+        } else {
+            None
+        }
+    }
 }
 
 fn draw(ctx: &mut Context, drawable: &EDrawable, params: graphics::DrawParam) -> GameResult<()> {
@@ -769,6 +914,12 @@ fn draw(ctx: &mut Context, drawable: &EDrawable, params: graphics::DrawParam) ->
         }
         EDrawable::Text(text) => {
             graphics::draw(ctx, text, params)
+        }
+        EDrawable::Image(image) => {
+            graphics::draw(ctx, image, params)
+        }
+        EDrawable::SpriteBatch(sprite_batch) => {
+            graphics::draw(ctx, sprite_batch, params)
         }
     }
 }

@@ -46,3 +46,7 @@ ln = _math::ln
 
 log2 = _math::log2
     # base 2 logarithm
+
+def divmod(a, b) = a.divmod(b)
+
+def sqrt(x) = x ** 0.5

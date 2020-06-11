@@ -4,9 +4,23 @@ import a._ggez
 class Color {
     [opaque, r, g, b, a]
 
-    static def __call(r, g, b, a=1.0) = {
-        opaque = _ggez::new_color(r, g, b, a)
-        __malloc(Color, [opaque, r, g, b, a])
+    static def __call(r, g=nil, b=nil, a=1.0) = {
+        if g is nil {
+            if type(r) is Color {
+                r
+            } elif type(r) is List and r.len() == 3 {
+                [r, g, b] = r
+                opaque = _ggez::new_color(r, g, b, a)
+                __malloc(Color, [opaque, r, g, b, a])
+            } else {
+                [r, g, b, a] = r
+                opaque = _ggez::new_color(r, g, b, a)
+                __malloc(Color, [opaque, r, g, b, a])
+            }
+        } else {
+            opaque = _ggez::new_color(r, g, b, a)
+            __malloc(Color, [opaque, r, g, b, a])
+        }
     }
 
     def scale(self, r) = Color(
@@ -104,6 +118,65 @@ class SimpleText(BaseText) {
     static def __call(text, color=nil, scale=nil) = {
         __malloc(SimpleText, [_ggez::new_text_simple(text, color, scale)])
     }
+}
+
+class Image(Drawable) {
+    [opaque]
+
+    static def colors(ctx, color_rows) = {
+        # Create a new image from a 2-D array of Colors
+        width = color_rows[0].len()
+        height = color_rows.len()
+        colors = @[]
+        for row in color_rows {
+            for color in row {
+                colors.push(Color(color).opaque)
+            }
+        }
+        colors = colors.move()
+        __malloc(Image, [_ggez::new_image_from_colors(ctx.opaque, width, height, colors)])
+    }
+}
+
+class SpriteBatch(Drawable) {
+    [opaque]
+
+    static def image(image) = {
+        # Create a SpriteBatch with an image
+        opaque = _ggez::new_sprite_batch_from_image(image.opaque)
+        __malloc(SpriteBatch, [opaque])
+    }
+
+    def add(self, dest=nil, rotation=nil, scale=nil, offset=nil) = {
+        # adds a new sprite in this spritebatch
+        # the parameters mirror those in Drawable().draw()
+        # Returns a SpriteId object that can be used to update the given sprite
+        if dest is nil { dest = [0, 0] }
+        if rotation is nil { rotation = 0 }
+        if scale is nil { scale = [1, 1] }
+        if offset is nil { offset = [0.5, 0.5] }
+        opaque = _ggez::sprite_batch_add(self.opaque, dest, rotation, scale, offset)
+        SpriteId(opaque)
+    }
+
+    def set(self, sprite_id, dest=nil, rotation=nil, scale=nil, offset=nil) = {
+        # updates the draw parameters for a sprite in this spritebatch
+        # the parameters mirror those in Drawable().draw()
+        if dest is nil { dest = [0, 0] }
+        if rotation is nil { rotation = 0 }
+        if scale is nil { scale = [1, 1] }
+        if offset is nil { offset = [0.5, 0.5] }
+        _ggez::sprite_batch_set(self.opaque, sprite_id.opaque, dest, rotation, scale, offset)
+    }
+
+    def clear(self) {
+        # Clears all the sprites in this batch
+        _ggez::sprite_batch_clear(self.opaque)
+    }
+}
+
+class SpriteId {
+    [opaque]
 }
 
 get_all_keycodes = _ggez::get_all_keycodes
