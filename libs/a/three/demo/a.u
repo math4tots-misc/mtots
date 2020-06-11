@@ -1,0 +1,47 @@
+import a.three
+import a.math
+
+
+def main() {
+    # Flat triangle demo
+
+    window = three::Window('some title')
+
+    # geometry = three::Geometry::with_vertices([
+    #     [-0.5, -0.5, -0.5],
+    #     [ 0.5, -0.5, -0.5],
+    #     [ 0.0,  0.5, -0.5],
+    # ])
+    geometry = three::Geometry::with_vertices([
+        [0, 0, -0.5],
+        [1, 0, -0.5],
+        [0, 1, -0.5],
+    ])
+
+    material = three::Material::basic(0xFFFF00)
+
+    mesh = window.factory().mesh(geometry, material)
+    mesh.set_position([0.0, 0.0, 2.5])
+
+    window.scene().add(mesh)
+    window.scene().set_background_color(0xC6F0FF)
+
+    # center = [0, 0]
+    # yextent = 1.0
+    # zrange = [-1, 1]
+    # camera = window.factory().orthographic_camera(center, yextent, zrange)
+
+    camera = window.factory().perspective_camera(60, [1, 50])
+    camera.look_at(eye=[0, 0, 10], target=[0, 0, 0])
+    rot = 0
+
+    window.main(camera, def() {
+        nonlocal rot
+        mesh.set_orientation([0, 0, 1, rot])
+        rot += 0.05
+    })
+}
+
+if __name == __main() {
+    main()
+}
