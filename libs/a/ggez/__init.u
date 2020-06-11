@@ -34,9 +34,21 @@ class Context {
 }
 
 trait Drawable {
-    def draw(self, ctx, dest=nil) = {
-        dest = dest or [0, 0]
-        _ggez::ctx_draw(ctx.opaque, self.opaque, dest)
+    def draw(self, ctx, dest=nil, rotation=nil, scale=nil, offset=nil) = {
+        # Draws the given drawable to the screen
+        #   ctx: Context object
+        #   dest: [x, y] pair indicating destination to draw to (defaults to [0, 0])
+        #   rotation: orientation of the graphic in radians (defaults to 0)
+        #   scale: [x, y] scale factors (defaults to [1, 1])
+        #   offset: offset from the center for transform operations like scale/rotation
+        #     [0, 0] meaning upper left corner, and [1, 1] meaning the lower right.
+        #     The Rust ggez library defaults this value to [0, 0], but
+        #     for convenience, this method defaults this value to [0.5, 0.5]
+        if dest is nil { dest = [0, 0] }
+        if rotation is nil { rotation = 0 }
+        if scale is nil { scale = [1, 1] }
+        if offset is nil { offset = [0.5, 0.5] }
+        _ggez::ctx_draw(ctx.opaque, self.opaque, dest, rotation, scale, offset)
     }
 }
 

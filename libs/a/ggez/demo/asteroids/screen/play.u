@@ -1,0 +1,75 @@
+# The play screen
+import a.ggez
+import a.math::TAU
+
+def update(app, model) {
+
+    height = width = nil
+    player_mesh = nil
+    background_mesh = nil
+    model_pos_x = model_pos_y = 0.5
+    rotation = 0.25
+        # Rotation from 0.0 to 1.0
+        # where 0.0 represents the ship pointing up, and
+        # 1.0 represents a full rotation
+    _init = false
+
+    def init(ctx) {
+        nonlocal height, width
+        nonlocal player_mesh, background_mesh
+        [width, height] = ctx.size()
+        player_mesh = build_player_mesh(ctx)
+        background_mesh = build_background_mesh(ctx)
+    }
+
+    def build_background_mesh(ctx) = {
+        ggez::MeshBuilder().rect(0, 0, width, height, ggez::BLACK).build(ctx)
+    }
+
+    def build_player_mesh(ctx) = {
+        player_width = width / 60
+        player_height = height / 30
+
+        print(['player_width', player_width, 'player_height', player_height])
+
+        ggez::MeshBuilder().polygon(
+            [
+                [player_width / 2, 0],
+                [0, player_height],
+                [player_width / 2, player_height * 0.75],
+                [player_width, player_height],
+            ],
+            ggez::WHITE,
+        ).build(ctx)
+    }
+
+    app.update(
+        update=def(ctx) {
+            nonlocal _init
+            if !_init {
+                init(ctx)
+                _init = true
+            }
+        },
+        draw=def(ctx) {
+            nonlocal height, width
+            [width, height] = ctx.size()
+            background_mesh.draw(ctx)
+            pos_x = model_pos_x * width
+            pos_y = model_pos_y * height
+            player_mesh.draw(ctx, dest=[pos_x, pos_y], rotation=rotation * TAU)
+        },
+        key_down=def(ctx, key, mods) {
+            if false {
+            } else {
+                print('Unrecognized key %r (%r)' % [key, mods])
+            }
+        },
+        gamepad_button_down=def(ctx, btn, gamepad) {
+            if false {
+            } else {
+                print('Unrecognized button %r (%r)' % [btn, gamepad])
+            }
+        },
+    )
+}

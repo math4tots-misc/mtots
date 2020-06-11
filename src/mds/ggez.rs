@@ -180,13 +180,21 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::simple0(
                 sr,
                 "ctx_draw",
-                &["ctx", "drawable", "destination"],
+                &["ctx", "drawable", "destination", "rotation", "scale", "offset"],
                 |globals, args, _kwargs| {
                     let ctx_refcell = to_ctx(globals, &args[0])?;
                     let mut ctx = ctx_refcell.borrow_mut();
                     let drawable = to_drawable(globals, &args[1])?;
                     let destination = expect_point(globals, &args[2])?;
-                    try_(globals, draw(ctx.get_mut(), &drawable, destination))?;
+                    let rotation = Eval::expect_floatlike(globals, &args[3])? as f32;
+                    let (scale_x, scale_y) = expect_f32_pair(globals, &args[4])?;
+                    let (offset_x, offset_y) = expect_f32_pair(globals, &args[5])?;
+                    let params = graphics::DrawParam::default()
+                        .dest(destination)
+                        .rotation(rotation)
+                        .scale([scale_x, scale_y])
+                        .offset([offset_x, offset_y]);
+                    try_(globals, draw(ctx.get_mut(), &drawable, params))?;
                     Ok(Value::Nil)
                 },
             ),
@@ -621,6 +629,13 @@ fn expect_point(globals: &mut Globals, point: &Value) -> EvalResult<Point> {
     Ok(mkpt(x as f32, y as f32))
 }
 
+fn expect_f32_pair(globals: &mut Globals, value: &Value) -> EvalResult<(f32, f32)> {
+    let (a, b) = Eval::unpack_pair(globals, value)?;
+    let a = Eval::expect_floatlike(globals, &a)? as f32;
+    let b = Eval::expect_floatlike(globals, &b)? as f32;
+    Ok((a, b))
+}
+
 fn from_color(_globals: &mut Globals, color: Color) -> EvalResult<Value> {
     let opaque = Opaque::new(color);
     Ok(opaque.into())
@@ -706,13 +721,13 @@ impl EDrawable {
     // }
 }
 
-fn draw(ctx: &mut Context, drawable: &EDrawable, dest: Point) -> GameResult<()> {
+fn draw(ctx: &mut Context, drawable: &EDrawable, params: graphics::DrawParam) -> GameResult<()> {
     match drawable {
         EDrawable::Mesh(mesh) => {
-            graphics::draw(ctx, mesh, graphics::DrawParam::default().dest(dest))
+            graphics::draw(ctx, mesh, params)
         }
         EDrawable::Text(text) => {
-            graphics::draw(ctx, text, graphics::DrawParam::default().dest(dest))
+            graphics::draw(ctx, text, params)
         }
     }
 }

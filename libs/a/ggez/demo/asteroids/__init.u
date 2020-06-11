@@ -1,0 +1,13 @@
+import a.ggez
+import .screen.play
+
+def main() {
+    app = ggez::App(name='asteroids')
+    play::update(app, nil)
+    app.main()
+}
+
+
+if __name == __main() {
+    main()
+}
