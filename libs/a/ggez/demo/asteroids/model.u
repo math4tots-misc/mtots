@@ -190,9 +190,7 @@ trait BodyLike {
         } else {
             self.bullets[self.next_reuse_bullet_index] = bullet
             self.next_reuse_bullet_index += 1
-            print(['next index', self.next_reuse_bullet_index, self.max_bullets])
             self.next_reuse_bullet_index %= self.max_bullets
-            print(['next index', self.next_reuse_bullet_index, self.max_bullets])
         }
         self._reset_sprite_ids()
     }

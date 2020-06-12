@@ -52,6 +52,8 @@ def update(app, model) {
             model.draw(ctx)
         },
         mouse_down=def(ctx, btn, x, y) {
+            # Mostly for debugging -- helps with figuring out coordinates of
+            # what's drawn
             print(['mouse', btn, x, y])
         },
         key_down=def(ctx, key, mods) {
