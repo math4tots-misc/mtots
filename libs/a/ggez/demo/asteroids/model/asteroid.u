@@ -81,7 +81,7 @@ print(image_layout)
 def _make_asteroid_image(ctx) = {
     # Create a new asteroid Image given a ggez::Context
     ggez::Image::colors(ctx, image_layout.map(def(row) = {
-        row.map(def(cell) = if cell { [1, 1, 1] } else { [0, 0, 0] })
+        row.map(def(cell) = if cell { [1, 1, 1] } else { [0, 0, 0, 0] })
     }))
 }
 
