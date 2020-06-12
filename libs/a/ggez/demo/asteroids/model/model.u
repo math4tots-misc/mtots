@@ -1,0 +1,58 @@
+import ..ship::Ship
+import ..bullet::Bullets
+import ..asteroid::Asteroids
+import a.math::atan2
+
+@class Model {
+    # The model that brings all the pieces together
+    [screen_width, screen_height, ship, bullets, asteroids]
+
+    static def __call() = {
+        __malloc(Model, [nil, nil, nil, nil, nil])
+    }
+
+    def init(self, ctx, screen_width, screen_height) {
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.ship = Ship(ctx, screen_width, screen_height)
+        self.bullets = Bullets(ctx, screen_width, screen_height)
+        self.asteroids = Asteroids(ctx, screen_width, screen_height)
+    }
+
+    def update(self, ctx, elapsed_time, input_axis_x, input_axis_y) {
+        self._update_ship_rotation(input_axis_x, input_axis_y)
+        self._update_ship_velocity(elapsed_time, input_axis_x, input_axis_y)
+        self.ship.update(ctx, elapsed_time)
+        self.bullets.update(ctx, elapsed_time, self.screen_width, self.screen_height)
+    }
+
+    def draw(self, ctx) {
+        [width, height] = [self.screen_width, self.screen_height]
+        self.ship.draw(ctx, width, height)
+        self.bullets.draw(ctx, width, height)
+    }
+
+    def shoot(self, ctx) {
+        [x, y] = self.ship.pos()
+        angle = self.ship.rot()
+        self.bullets.shoot(x, y, angle)
+    }
+
+    def process_movement_input(self, input_axis_x, input_axis_y) {
+        self._update_ship_rotation(input_axis_x, input_axis_y)
+        self._update_ship_velocity(input_axis_x, input_axis_y)
+    }
+
+    def _update_ship_rotation(self, input_axis_x, input_axis_y) {
+        if input_axis_x ** 2 + input_axis_y ** 2 > 0.25 {
+            self.ship.set_rot(atan2(input_axis_x, input_axis_y))
+        }
+    }
+
+    def _update_ship_velocity(self, elapsed_time, input_axis_x, input_axis_y) {
+        [dx, dy] = self.ship.velocity()
+        dx += input_axis_x * elapsed_time
+        dy += -input_axis_y * elapsed_time
+        self.ship.set_velocity([dx, dy])
+    }
+}

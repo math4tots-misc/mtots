@@ -1,0 +1,77 @@
+import ..body::BodyLike
+import ..body::Body
+import a.ggez
+import a.math::cos
+import a.math::sin
+
+@class Bullet(BodyLike) {
+    [body, sprite_id]
+    def body(self) = self.body
+
+    static def __call(x, y, dx, dy, radius) = {
+        body = Body(x, y, 0, dx, dy, 0, radius)
+        __malloc(Bullet, [body, nil])
+    }
+
+    def update(self, sprite_batch, elapsed_time, width, height) = {
+        self.body.update(elapsed_time)
+        sprite_batch.set(
+            self.sprite_id,
+            dest=[self.body.x * width, self.body.y * height],
+        )
+    }
+}
+
+@class Bullets {
+    [sprite_batch, bullets, max_bullets, next_reuse_bullet_index]
+
+    static def __call(ctx, screen_width, screen_height, max_bullets=10) = {
+        image = ggez::Image::colors(ctx, [
+            [[1, 1, 1], [1, 1, 1]],
+            [[1, 1, 1], [1, 1, 1]],
+        ])
+        sprite_batch = ggez::SpriteBatch::image(image)
+        bullets = @[]
+        __malloc(Bullets, [sprite_batch, bullets, max_bullets, 0])
+    }
+
+    def update(self, ctx, elapsed_time, width, height) {
+        sprite_batch = self.sprite_batch
+        for bullet in self.bullets.clone().move() {
+            bullet.update(sprite_batch, elapsed_time, width, height)
+        }
+    }
+
+    def draw(self, ctx, width, height) {
+        self.sprite_batch.draw(ctx)
+    }
+
+    def shoot(self, x, y, angle, bullet_radius=0.01, bullet_speed=1) {
+        # x, y: where the bullet will start
+        # angle: the angle to shoot the bullet from
+        #        in radians, where 0 implies north
+        #        and positive angle aligns with clockwise
+        #        rotation
+        dx = bullet_speed * sin(angle)
+        dy = bullet_speed * -cos(angle)
+        bullet = Bullet(x, y, dx, dy, bullet_radius)
+        if self.bullets.len() < self.max_bullets {
+            self.bullets.push(bullet)
+        } else {
+            self.bullets[self.next_reuse_bullet_index] = bullet
+            self.next_reuse_bullet_index += 1
+            self.next_reuse_bullet_index %= self.max_bullets
+        }
+        self._reset_sprite_ids()
+    }
+
+    def _reset_sprite_ids(self) {
+        sprite_batch = self.sprite_batch
+        sprite_batch.clear()
+        for bullet in self.bullets.clone().move() {
+            bullet.sprite_id = sprite_batch.add(
+                dest=[bullet.x(), bullet.y()],
+            )
+        }
+    }
+}

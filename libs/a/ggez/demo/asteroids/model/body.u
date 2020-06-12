@@ -1,0 +1,72 @@
+import a.math::fmod
+import a.math::TAU
+
+trait BodyLike {
+    # Either a Body, or a class that wraps one
+    # Either way, subclasses should implement a 'body()'
+    # method that returns the representative Body
+    def x(self) = self.body().x
+    def y(self) = self.body().y
+    def pos(self) = {
+        body = self.body()
+        [body.x, body.y]
+    }
+    def set_pos(self, xy) {
+        body = self.body()
+        [body.x, body.y] = xy
+    }
+    def rot(self) = self.body().rot
+    def set_rot(self, rot) {
+        self.body().rot = rot
+    }
+    def dx(self) = self.body().dx
+    def dy(self) = self.body().dy
+    def velocity(self) = {
+        body = self.body()
+        [body.dx, body.dy]
+    }
+    def set_velocity(self, dxdy) {
+        body = self.body()
+        [body.dx, body.dy] = dxdy
+    }
+    def drot(self) = self.body().drot
+    def radius(self) = self.body().radius
+    def hits(self, other) = {
+        # determines whether two BodyLikes are hitting each other
+        a_x = self.x()
+        a_y = self.y()
+        a_r = self.radius()
+        b_x = other.x()
+        b_y = other.y()
+        b_r = other.radius()
+        (b_x - a_x) ** 2 + (b_y - a_y) ** 2 <= (a_r + b_r) ** 2
+    }
+}
+
+@class Body(BodyLike) {
+    # Represents a single element that can be displayed
+    # on the screen and can potentially collide with other
+    # bodies
+    #
+    #  x, y: coordinates of this Body's location
+    #  rot: rotation of this Body
+    #  dx, dy: this Body's velocity
+    #  drot: the velocity of this Body's rotation
+    #  radius: the size of Body's hit-circle
+    #
+    [x, y, rot, dx, dy, drot, radius]
+
+    def update(self, elapsed_time) {
+        # Updates the position of this body based on
+        # current velocity and elapsed time, and then
+        # moves the corresponding body in the sprite_batch
+        x = self.x + elapsed_time * self.dx
+        y = self.y + elapsed_time * self.dy
+        rot = self.rot + elapsed_time * self.drot
+        self.x = fmod(x, 1)
+        self.y = fmod(y, 1)
+        self.rot = fmod(rot, TAU)
+    }
+
+    def body(self) = self
+}

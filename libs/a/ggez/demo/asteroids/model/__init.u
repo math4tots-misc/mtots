@@ -1,0 +1,17 @@
+# Model for the Asteroids game
+# In the model, we primarily work with
+# a coordinate system that spans from [0, 0] in the
+# upper left corner to [1, 1] in the lower-right corner,
+# so that we can work with coordinates independent
+# of screen size.
+import a.math::fmod
+import a.math::TAU
+import a.math::atan2
+import a.ggez
+import .model::Model
+
+def normalize(xy) = {
+    [x, y] = xy
+    len = (x * x + y * y) ** 0.5
+    [x / len, y / len]
+}

@@ -1,0 +1,11 @@
+import ..body::Body
+import ..body::BodyLike
+
+@class Asteroid {
+}
+
+@class Asteroids {
+    static def __call(ctx, width, height) = {
+        __malloc(Asteroids, [])
+    }
+}
