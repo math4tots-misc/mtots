@@ -1,11 +1,91 @@
 import ..body::Body
 import ..body::BodyLike
+import a.math::emod
+import a.math::TAU
+import a.ggez
+import time
 
-@class Asteroid {
+@class Asteroid(BodyLike) {
+    [body, sprite_id]
+
+    def body(self) = self.body
+
+    def update(self, sprite_batch, elapsed_time, width, height) = {
+        self.body.update(elapsed_time)
+        sprite_batch.set(
+            self.sprite_id,
+            dest=[self.body.x * width, self.body.y * height],
+            rotation=self.body.rot,
+            scale=[10, 10],
+        )
+    }
 }
 
 @class Asteroids {
+    [sprite_batch, asteroids]
+
     static def __call(ctx, width, height) = {
-        __malloc(Asteroids, [])
+        image = _make_asteroid_image(ctx)
+        sprite_batch = ggez::SpriteBatch::image(image)
+        asteroids = @[]
+        __malloc(Asteroids, [sprite_batch, asteroids])
     }
+
+    def spawn(self) = {
+        x = rand(100) / 100
+        y = rand(100) / 100
+        rot = (rand(100) - 50) / 100 * TAU
+        dx = (rand(100) - 50) / 1000
+        dy = (rand(100) - 50) / 1000
+        dr = (rand(100) - 50) / 400 * TAU
+        radius = 0.2
+        body = Body(x, y, rot, dx, dy, dr, radius)
+        asteroid = Asteroid(body, nil)
+        self.asteroids.push(asteroid)
+        self._reset_sprite_ids()
+    }
+
+    def update(self, ctx, elapsed_time, width, height) {
+        sprite_batch = self.sprite_batch
+        for asteroid in self.asteroids.clone().move() {
+            asteroid.update(sprite_batch, elapsed_time, width, height)
+        }
+    }
+
+    def draw(self, ctx, width, height) {
+        self.sprite_batch.draw(ctx)
+    }
+
+    def _reset_sprite_ids(self) {
+        self.sprite_batch.clear()
+        for asteroid in self.asteroids.clone().move() {
+            asteroid.sprite_id = self.sprite_batch.add()
+        }
+    }
+}
+
+image_layout = (
+    # 00010000
+    # 00111100
+    # 01111110
+    # 11111111
+    # 11111111
+    # 01111100
+    # 00111100
+    # 00011100
+).trim().lines().map(def(line) = {
+    line.chars().map(def(s) = s == '1').to(List)
+}).to(List)
+print(image_layout)
+
+def _make_asteroid_image(ctx) = {
+    # Create a new asteroid Image given a ggez::Context
+    ggez::Image::colors(ctx, image_layout.map(def(row) = {
+        row.map(def(cell) = if cell { [1, 1, 1] } else { [0, 0, 0] })
+    }))
+}
+
+def rand(n) = {
+    # Really quick and dirty random number generation
+    emod(hash(time::now() + 0.5), n)
 }

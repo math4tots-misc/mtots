@@ -316,25 +316,41 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 event::quit(ctx.get_mut());
                 Ok(Value::Nil)
             }),
-            NativeFunction::simple0(sr, "ctx_set_drawable_size", &["ctx", "w", "h"], |globals, args, _kwargs| {
-                let ctx_refcell = to_ctx(globals, &args[0])?;
-                let mut ctx = ctx_refcell.borrow_mut();
-                let w = Eval::expect_floatlike(globals, &args[1])? as f32;
-                let h = Eval::expect_floatlike(globals, &args[2])? as f32;
-                try_(globals, ggez::graphics::set_drawable_size(ctx.get_mut(), w, h))?;
-                Ok(Value::Nil)
-            }),
-            NativeFunction::simple0(sr, "ctx_set_screen_coordinates", &["ctx", "x", "y", "w", "h"], |globals, args, _kwargs| {
-                let ctx_refcell = to_ctx(globals, &args[0])?;
-                let mut ctx = ctx_refcell.borrow_mut();
-                let x = Eval::expect_floatlike(globals, &args[1])? as f32;
-                let y = Eval::expect_floatlike(globals, &args[2])? as f32;
-                let w = Eval::expect_floatlike(globals, &args[3])? as f32;
-                let h = Eval::expect_floatlike(globals, &args[4])? as f32;
-                let rect = ggez::graphics::Rect { x, y, w, h };
-                try_(globals, ggez::graphics::set_screen_coordinates(ctx.get_mut(), rect))?;
-                Ok(Value::Nil)
-            }),
+            NativeFunction::simple0(
+                sr,
+                "ctx_set_drawable_size",
+                &["ctx", "w", "h"],
+                |globals, args, _kwargs| {
+                    let ctx_refcell = to_ctx(globals, &args[0])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    let w = Eval::expect_floatlike(globals, &args[1])? as f32;
+                    let h = Eval::expect_floatlike(globals, &args[2])? as f32;
+                    try_(
+                        globals,
+                        ggez::graphics::set_drawable_size(ctx.get_mut(), w, h),
+                    )?;
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::simple0(
+                sr,
+                "ctx_set_screen_coordinates",
+                &["ctx", "x", "y", "w", "h"],
+                |globals, args, _kwargs| {
+                    let ctx_refcell = to_ctx(globals, &args[0])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    let x = Eval::expect_floatlike(globals, &args[1])? as f32;
+                    let y = Eval::expect_floatlike(globals, &args[2])? as f32;
+                    let w = Eval::expect_floatlike(globals, &args[3])? as f32;
+                    let h = Eval::expect_floatlike(globals, &args[4])? as f32;
+                    let rect = ggez::graphics::Rect { x, y, w, h };
+                    try_(
+                        globals,
+                        ggez::graphics::set_screen_coordinates(ctx.get_mut(), rect),
+                    )?;
+                    Ok(Value::Nil)
+                },
+            ),
             NativeFunction::simple0(sr, "get_all_keycodes", &[], |globals, _args, _kwargs| {
                 let keycodes = list_keycode_symbols(globals);
                 Ok(keycodes.into())

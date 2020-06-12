@@ -17,6 +17,9 @@ import a.math::atan2
         self.ship = Ship(ctx, screen_width, screen_height)
         self.bullets = Bullets(ctx, screen_width, screen_height)
         self.asteroids = Asteroids(ctx, screen_width, screen_height)
+        for _ in range(10) {
+            self.asteroids.spawn()
+        }
     }
 
     def update(self, ctx, elapsed_time, input_axis_x, input_axis_y) {
@@ -24,12 +27,14 @@ import a.math::atan2
         self._update_ship_velocity(elapsed_time, input_axis_x, input_axis_y)
         self.ship.update(ctx, elapsed_time)
         self.bullets.update(ctx, elapsed_time, self.screen_width, self.screen_height)
+        self.asteroids.update(ctx, elapsed_time, self.screen_width, self.screen_height)
     }
 
     def draw(self, ctx) {
         [width, height] = [self.screen_width, self.screen_height]
         self.ship.draw(ctx, width, height)
         self.bullets.draw(ctx, width, height)
+        self.asteroids.draw(ctx, width, height)
     }
 
     def shoot(self, ctx) {
