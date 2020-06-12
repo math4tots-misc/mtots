@@ -5,7 +5,7 @@ import a.math::PI
 import a.math::atan2
 import a.math::cos
 import a.math::sin
-import time
+import a.time
 
 @class Bullet {
     [sprite_id, x, y, dx, dy]

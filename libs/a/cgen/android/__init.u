@@ -2,8 +2,8 @@ r###"
 Model of an android project
 "###
 import a.fs
-import os
-import time
+import a.os
+import a.time
 import .sdk::SDK
 
 class Project {

@@ -32,7 +32,7 @@
 import a.ggez
 import ...model::Model
 import ...model::Board
-import time
+import a.time
 import ..pause
 
 def update(app, model) {

@@ -1,6 +1,6 @@
 import a.fs
-import os
-import time
+import a.os
+import a.time
 import ..consts::_template_dir
 
 class SDK {

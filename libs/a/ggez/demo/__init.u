@@ -5,7 +5,7 @@ import a.ggez::GREEN
 import a.ggez::WHITE
 
 def demo001() = {
-    import time
+    import a.time
 
     print(ggez::get_all_keycodes())
 

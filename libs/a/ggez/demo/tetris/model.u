@@ -3,7 +3,7 @@
 _DEFAULT_FALL_TIME = 0.5
 
 def _new_default_shape_selector() = {
-    import time
+    import a.time
 
     def _default_shape_selector() = {
         # TODO: do something less silly

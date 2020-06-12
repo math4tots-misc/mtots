@@ -3,7 +3,7 @@ import ..body::BodyLike
 import a.math::emod
 import a.math::TAU
 import a.ggez
-import time
+import a.time
 
 @class Asteroid(BodyLike) {
     [body, sprite_id]
