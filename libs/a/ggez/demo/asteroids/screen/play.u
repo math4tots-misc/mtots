@@ -11,12 +11,6 @@ import time
     [sprite_id, x, y, dx, dy]
 }
 
-def normalize(xy) = {
-    [x, y] = xy
-    len = (x * x + y * y) ** 0.5
-    [x / len, y / len]
-}
-
 def update(app, model) {
 
     W = H = 800
@@ -27,6 +21,10 @@ def update(app, model) {
 
     def build_background_mesh(ctx) = {
         ggez::MeshBuilder().rect(0, 0, W, H, ggez::BLACK).build(ctx)
+    }
+
+    def force_rotation_update() {
+        model.update_ship_rotation(input_axis_x * 10, input_axis_y * 10)
     }
 
     app.update(
@@ -57,8 +55,35 @@ def update(app, model) {
             print(['mouse', btn, x, y])
         },
         key_down=def(ctx, key, mods) {
+            nonlocal input_axis_x, input_axis_y
             if key is :Escape {
                 ctx.quit()
+            } elif key is :A {
+                input_axis_x = -0.5
+                force_rotation_update()
+            } elif key is :D {
+                input_axis_x = 0.5
+                force_rotation_update()
+            } elif key is :W {
+                input_axis_y = 0.5
+                force_rotation_update()
+            } elif key is :S {
+                input_axis_y = -0.5
+                force_rotation_update()
+            } elif key is :J {
+                model.shoot(ctx)
+            } else {
+                print('Unrecognized key %r (%r)' % [key, mods])
+            }
+        },
+        key_up=def(ctx, key, mods) {
+            nonlocal input_axis_x, input_axis_y
+            if key is :A or key is :D {
+                input_axis_x = 0
+                force_rotation_update()
+            } elif key is :W or key is :S {
+                input_axis_y = 0
+                force_rotation_update()
             } else {
                 print('Unrecognized key %r (%r)' % [key, mods])
             }

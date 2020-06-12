@@ -9,9 +9,3 @@ import a.math::TAU
 import a.math::atan2
 import a.ggez
 import .model::Model
-
-def normalize(xy) = {
-    [x, y] = xy
-    len = (x * x + y * y) ** 0.5
-    [x / len, y / len]
-}

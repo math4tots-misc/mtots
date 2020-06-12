@@ -351,6 +351,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     "draw",
                     "mouse_down",
                     "key_down",
+                    "key_up",
                     "text_input",
                     "gamepad_button_down",
                     "gamepad_axis",
@@ -364,6 +365,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         draw: Rc<RefCell<Value>>,
                         mouse_down: Rc<RefCell<Value>>,
                         key_down: Rc<RefCell<Value>>,
+                        key_up: Rc<RefCell<Value>>,
                         text_input: Rc<RefCell<Value>>,
                         gamepad_button_down: Rc<RefCell<Value>>,
                         gamepad_axis: Rc<RefCell<Value>>,
@@ -395,6 +397,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             draw: Rc<RefCell<Value>>,
                             mouse_down: Rc<RefCell<Value>>,
                             key_down: Rc<RefCell<Value>>,
+                            key_up: Rc<RefCell<Value>>,
                             text_input: Rc<RefCell<Value>>,
                             gamepad_button_down: Rc<RefCell<Value>>,
                             gamepad_axis: Rc<RefCell<Value>>,
@@ -418,6 +421,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 draw,
                                 mouse_down,
                                 key_down,
+                                key_up,
                                 text_input,
                                 gamepad_button_down,
                                 gamepad_axis,
@@ -589,6 +593,31 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             }
                         }
 
+                        fn key_up_event(
+                            &mut self,
+                            ctx: &mut Context,
+                            keycode: KeyCode,
+                            keymods: KeyMods,
+                        ) {
+                            if let Some(_) = self.err() {
+                                return;
+                            }
+                            let key_up = self.key_up.borrow().clone();
+                            if !key_up.is_nil() {
+                                let keycode = self.translate_keycode(keycode);
+                                let keymods = self.translate_modifiers(keymods, false);
+                                let context_class = self.context_class;
+                                let _r = with_ctx(self.globals, ctx, |globals, ctx_val| {
+                                    let ctx_val = wrap_ctx(context_class, globals, ctx_val)?;
+                                    Eval::call(
+                                        globals,
+                                        &key_up,
+                                        vec![ctx_val.clone(), keycode, keymods.into()],
+                                    )
+                                });
+                            }
+                        }
+
                         fn text_input_event(&mut self, ctx: &mut Context, c: char) {
                             if let Some(_) = self.err() {
                                 return;
@@ -691,6 +720,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let args8 = Eval::expect_cell(globals, &args[8])?.clone();
                     let args9 = Eval::expect_cell(globals, &args[9])?.clone();
                     let args10 = Eval::expect_cell(globals, &args[10])?.clone();
+                    let args11 = Eval::expect_cell(globals, &args[11])?.clone();
                     let mut state = State::new(
                         globals,
                         &mut ctx,
@@ -703,6 +733,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         args8,
                         args9,
                         args10,
+                        args11,
                     );
 
                     match event::run(&mut ctx, &mut event_loop, &mut state) {

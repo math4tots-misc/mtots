@@ -20,7 +20,7 @@ import a.math::atan2
     }
 
     def update(self, ctx, elapsed_time, input_axis_x, input_axis_y) {
-        self._update_ship_rotation(input_axis_x, input_axis_y)
+        self.update_ship_rotation(input_axis_x, input_axis_y)
         self._update_ship_velocity(elapsed_time, input_axis_x, input_axis_y)
         self.ship.update(ctx, elapsed_time)
         self.bullets.update(ctx, elapsed_time, self.screen_width, self.screen_height)
@@ -39,11 +39,11 @@ import a.math::atan2
     }
 
     def process_movement_input(self, input_axis_x, input_axis_y) {
-        self._update_ship_rotation(input_axis_x, input_axis_y)
+        self.update_ship_rotation(input_axis_x, input_axis_y)
         self._update_ship_velocity(input_axis_x, input_axis_y)
     }
 
-    def _update_ship_rotation(self, input_axis_x, input_axis_y) {
+    def update_ship_rotation(self, input_axis_x, input_axis_y) {
         if input_axis_x ** 2 + input_axis_y ** 2 > 0.25 {
             self.ship.set_rot(atan2(input_axis_x, input_axis_y))
         }
