@@ -45,6 +45,14 @@ class Context {
     def fps(self) = _ggez::ctx_fps(self.opaque)
 
     def quit(self) = _ggez::ctx_quit(self.opaque)
+
+    def set_window_size(self, width, height) {
+        _ggez::ctx_set_drawable_size(self.opaque, width, height)
+    }
+
+    def set_screen_coordinates(self, x, y, width, height) {
+        _ggez::ctx_set_screen_coordinates(self.opaque, x, y, width, height)
+    }
 }
 
 trait Drawable {
@@ -218,13 +226,38 @@ class App {
         __malloc(App, [info_table, callback_table])
     }
 
-    def update(self, **kwargs) = {
+    def update(self, init=nil, update=nil, **kwargs) = {
         """
         Replace all the callbacks for an app.
         Any callback that's not specified will be set to nil.
         """
+        if init is not nil {
+            old_update = update
+            initialized = false
+            def update(ctx) {
+                nonlocal initialized
+                if !initialized {
+                    init(ctx)
+                    initialized = true
+                }
+                if old_update is not nil {
+                    old_update(ctx)
+                }
+            }
+        }
         for key in _app_callback_keys {
-            self._callback_table.get(key).set(kwargs.get(key, nil))
+            self._callback_table.get(key).set(
+                if key is :update {
+                    update
+                } else {
+                    kwargs.get(key, nil)
+                }
+            )
+        }
+        for key in kwargs.keys() {
+            if !_app_callback_keys.has(key) {
+                __raise(RuntimeError, 'Unrecognized update key: %r' % [key])
+            }
         }
     }
 

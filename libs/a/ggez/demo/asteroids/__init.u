@@ -1,9 +1,11 @@
 import a.ggez
 import .screen.play
+import .model::Model
 
 def main() {
     app = ggez::App(name='asteroids')
-    play::update(app, nil)
+    model = Model()
+    play::update(app, model)
     app.main()
 }
 

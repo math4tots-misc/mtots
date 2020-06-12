@@ -10,30 +10,30 @@ use crate::RcStr;
 use crate::Symbol;
 use crate::Value;
 use ggez::event;
+use ggez::event::Axis;
 use ggez::event::Button;
 use ggez::event::EventHandler;
 use ggez::event::GamepadId;
 use ggez::event::KeyCode;
 use ggez::event::KeyMods;
 use ggez::event::MouseButton;
-use ggez::event::Axis;
 use ggez::graphics;
+use ggez::graphics::spritebatch::SpriteBatch;
+use ggez::graphics::spritebatch::SpriteIdx;
 use ggez::graphics::Color;
+use ggez::graphics::Image;
 use ggez::graphics::Mesh;
 use ggez::graphics::MeshBuilder;
 use ggez::graphics::Scale;
 use ggez::graphics::Text;
 use ggez::graphics::TextFragment;
-use ggez::graphics::Image;
-use ggez::graphics::spritebatch::SpriteBatch;
-use ggez::graphics::spritebatch::SpriteIdx;
 use ggez::Context;
 use ggez::ContextBuilder;
 use ggez::GameError;
 use ggez::GameResult;
 use std::cell::Ref;
-use std::cell::RefMut;
 use std::cell::RefCell;
+use std::cell::RefMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -198,7 +198,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         let (r, g, b, a) = color.to_rgba();
                         colors.extend(&[r, g, b, a]);
                     }
-                    let image = try_(globals, Image::from_rgba8(ctx.get_mut(), width, height, &colors))?;
+                    let image = try_(
+                        globals,
+                        Image::from_rgba8(ctx.get_mut(), width, height, &colors),
+                    )?;
                     from_image(globals, image)
                 },
             ),
@@ -234,7 +237,14 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::simple0(
                 sr,
                 "sprite_batch_set",
-                &["sprite_batch", "spriteidx", "destination", "rotation", "scale", "offset"],
+                &[
+                    "sprite_batch",
+                    "spriteidx",
+                    "destination",
+                    "rotation",
+                    "scale",
+                    "offset",
+                ],
                 |globals, args, _kwargs| {
                     let mut sprite_batch = to_sprite_batch_mut(globals, &args[0])?;
                     let sprite_id = copy_spriteidx(globals, &args[1])?;
@@ -264,7 +274,14 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::simple0(
                 sr,
                 "ctx_draw",
-                &["ctx", "drawable", "destination", "rotation", "scale", "offset"],
+                &[
+                    "ctx",
+                    "drawable",
+                    "destination",
+                    "rotation",
+                    "scale",
+                    "offset",
+                ],
                 |globals, args, _kwargs| {
                     let ctx_refcell = to_ctx(globals, &args[0])?;
                     let mut ctx = ctx_refcell.borrow_mut();
@@ -297,6 +314,25 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let ctx_refcell = to_ctx(globals, &args[0])?;
                 let mut ctx = ctx_refcell.borrow_mut();
                 event::quit(ctx.get_mut());
+                Ok(Value::Nil)
+            }),
+            NativeFunction::simple0(sr, "ctx_set_drawable_size", &["ctx", "w", "h"], |globals, args, _kwargs| {
+                let ctx_refcell = to_ctx(globals, &args[0])?;
+                let mut ctx = ctx_refcell.borrow_mut();
+                let w = Eval::expect_floatlike(globals, &args[1])? as f32;
+                let h = Eval::expect_floatlike(globals, &args[2])? as f32;
+                try_(globals, ggez::graphics::set_drawable_size(ctx.get_mut(), w, h))?;
+                Ok(Value::Nil)
+            }),
+            NativeFunction::simple0(sr, "ctx_set_screen_coordinates", &["ctx", "x", "y", "w", "h"], |globals, args, _kwargs| {
+                let ctx_refcell = to_ctx(globals, &args[0])?;
+                let mut ctx = ctx_refcell.borrow_mut();
+                let x = Eval::expect_floatlike(globals, &args[1])? as f32;
+                let y = Eval::expect_floatlike(globals, &args[2])? as f32;
+                let w = Eval::expect_floatlike(globals, &args[3])? as f32;
+                let h = Eval::expect_floatlike(globals, &args[4])? as f32;
+                let rect = ggez::graphics::Rect { x, y, w, h };
+                try_(globals, ggez::graphics::set_screen_coordinates(ctx.get_mut(), rect))?;
                 Ok(Value::Nil)
             }),
             NativeFunction::simple0(sr, "get_all_keycodes", &[], |globals, _args, _kwargs| {
@@ -834,10 +870,9 @@ fn to_drawable<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a
 fn to_text<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Text>> {
     let drawable = to_drawable(globals, value)?;
     if drawable.text().is_some() {
-        Ok(Ref::map(
-            to_drawable(globals, value)?,
-            |drawable| drawable.text().unwrap()
-        ))
+        Ok(Ref::map(to_drawable(globals, value)?, |drawable| {
+            drawable.text().unwrap()
+        }))
     } else {
         globals.set_exc_str(&format!(
             "Expected Drawable Text, but got a different drawable"
@@ -848,10 +883,9 @@ fn to_text<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Te
 fn to_image<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Image>> {
     let drawable = to_drawable(globals, value)?;
     if drawable.image().is_some() {
-        Ok(Ref::map(
-            to_drawable(globals, value)?,
-            |drawable| drawable.image().unwrap()
-        ))
+        Ok(Ref::map(to_drawable(globals, value)?, |drawable| {
+            drawable.image().unwrap()
+        }))
     } else {
         globals.set_exc_str(&format!(
             "Expected Drawable Image, but got a different drawable"
@@ -859,13 +893,15 @@ fn to_image<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, I
     }
 }
 
-fn to_sprite_batch_mut<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<RefMut<'a, SpriteBatch>> {
+fn to_sprite_batch_mut<'a>(
+    globals: &mut Globals,
+    value: &'a Value,
+) -> EvalResult<RefMut<'a, SpriteBatch>> {
     let mut drawable: RefMut<EDrawable> = Eval::expect_opaque_mut(globals, value)?;
     if drawable.sprite_batch_mut().is_some() {
-        Ok(RefMut::map(
-            drawable,
-            |drawable| drawable.sprite_batch_mut().unwrap()
-        ))
+        Ok(RefMut::map(drawable, |drawable| {
+            drawable.sprite_batch_mut().unwrap()
+        }))
     } else {
         globals.set_exc_str(&format!(
             "Expected Drawable SpriteBatch, but got a different drawable"
@@ -909,18 +945,10 @@ impl EDrawable {
 
 fn draw(ctx: &mut Context, drawable: &EDrawable, params: graphics::DrawParam) -> GameResult<()> {
     match drawable {
-        EDrawable::Mesh(mesh) => {
-            graphics::draw(ctx, mesh, params)
-        }
-        EDrawable::Text(text) => {
-            graphics::draw(ctx, text, params)
-        }
-        EDrawable::Image(image) => {
-            graphics::draw(ctx, image, params)
-        }
-        EDrawable::SpriteBatch(sprite_batch) => {
-            graphics::draw(ctx, sprite_batch, params)
-        }
+        EDrawable::Mesh(mesh) => graphics::draw(ctx, mesh, params),
+        EDrawable::Text(text) => graphics::draw(ctx, text, params),
+        EDrawable::Image(image) => graphics::draw(ctx, image, params),
+        EDrawable::SpriteBatch(sprite_batch) => graphics::draw(ctx, sprite_batch, params),
     }
 }
 

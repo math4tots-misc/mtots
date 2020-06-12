@@ -18,183 +18,41 @@ def normalize(xy) = {
 }
 
 def update(app, model) {
-    height = width = nil
-    player_mesh = nil
+
+    W = H = 800
+
     background_mesh = nil
-    model_pos_x = model_pos_y = 0.5
-    controller_axis_x = 0
-    controller_axis_y = 0
-    velocity_x = 0
-    velocity_y = 0
-    rotation = 0
     last_update_time = nil
-    _init = false
-
-    bullet_image = bullet_batch = nil
-    bullets = @[]
-
-    def init(ctx) {
-        nonlocal height, width
-        nonlocal player_mesh, background_mesh
-        nonlocal last_update_time
-        nonlocal bullet_image, bullet_batch
-        [width, height] = ctx.size()
-        player_mesh = build_player_mesh(ctx)
-        background_mesh = build_background_mesh(ctx)
-        last_update_time = time::now()
-
-        bullet_image = ggez::Image::colors(ctx, [
-            [[1, 1, 1], [1, 1, 1]],
-            [[1, 1, 1], [1, 1, 1]],
-        ])
-        bullet_batch = ggez::SpriteBatch::image(bullet_image)
-    }
+    input_axis_x = input_axis_y = 0
 
     def build_background_mesh(ctx) = {
-        ggez::MeshBuilder().rect(0, 0, width, height, ggez::BLACK).build(ctx)
-    }
-
-    def build_player_mesh(ctx) = {
-        player_width = width / 60
-        player_height = height / 30
-
-        ggez::MeshBuilder().polygon(
-            [
-                [0, -player_height / 2],
-                [-player_width / 2, player_height / 2],
-                [0, player_height * (-0.5 + 0.75)],
-                [player_width / 2, player_height / 2],
-            ],
-            ggez::WHITE,
-        ).build(ctx)
-    }
-
-    def shoot() {
-        model_bullet_x = model_pos_x
-        model_bullet_y = model_pos_y
-        model_bullet_dy = -sin(rotation + PI/2)
-        model_bullet_dx = -cos(rotation + PI/2)
-        print([model_bullet_x, model_bullet_y, model_bullet_dx, model_bullet_dy])
-        screen_x = model_bullet_x * width
-        screen_y = model_bullet_y * height
-        sprite_id = bullet_batch.add(dest=[screen_x, screen_y])
-        bullet = Bullet(
-            sprite_id,
-            model_bullet_x,
-            model_bullet_y,
-            model_bullet_dx,
-            model_bullet_dy,
-        )
-
-        for i in range(bullets.len()) {
-            if bullets[i] is nil {
-                bullets[i] = bullet
-                return
-            }
-        }
-        bullets.push(bullet)
-    }
-
-    def update_bullets(diff) {
-        nonlocal bullets
-        if bullets {
-            if bullets.clone().any(def(x) = x is nil) {
-                bullet_batch.clear()
-                bullets = bullets.move().filter(def(x) = x).to(MutableList)
-                for bullet in bullets.clone().move() {
-                    model_x = bullet.x
-                    model_y = bullet.y
-                    screen_x = model_x * width
-                    screen_y = model_y * height
-                    bullet.sprite_id = bullet_batch.add(dest=[screen_x, screen_y])
-                }
-            }
-            for i in range(bullets.len()) {
-                bullet = bullets[i]
-                if bullet is not nil {
-                    model_x = bullet.x
-                    model_y = bullet.y
-                    model_dx = bullet.dx
-                    model_dy = bullet.dy
-                    model_x += model_dx * diff
-                    model_y += model_dy * diff
-                    if model_x < 0 or model_x > 1.0 or model_y < 0 or model_y > 1.0 {
-                        bullets[i] = nil
-                    } else {
-                        bullet.x = model_x
-                        bullet.y = model_y
-                        screen_x = model_x * width
-                        screen_y = model_y * height
-                        sprite_id = bullet.sprite_id
-                        bullet_batch.set(sprite_id, dest=[screen_x, screen_y])
-                    }
-                }
-            }
-        }
-    }
-
-    def update_rotation() {
-        nonlocal rotation
-        if controller_axis_x ** 2 + controller_axis_y ** 2 > 0.25 {
-            rotation = TAU * 0.25 + atan2(-controller_axis_y, controller_axis_x)
-        }
-    }
-
-    def update_velocity(diff) {
-        nonlocal velocity_x, velocity_y
-        velocity_x += controller_axis_x * diff
-        velocity_y += -controller_axis_y * diff
-    }
-
-    def normalize_val(x) = {
-        while x < 0 {
-            x += 1
-        }
-        while x > 1 {
-            x -= 1
-        }
-        x
-    }
-
-    def fix_pos() {
-        nonlocal model_pos_x, model_pos_y
-        model_pos_x = normalize_val(model_pos_x)
-        model_pos_y = normalize_val(model_pos_y)
-    }
-
-    def update_pos(diff) {
-        nonlocal model_pos_x, model_pos_y
-        model_pos_x += velocity_x * diff
-        model_pos_y += velocity_y * diff
-        fix_pos()
+        ggez::MeshBuilder().rect(0, 0, W, H, ggez::BLACK).build(ctx)
     }
 
     app.update(
+        init=def(ctx) {
+            nonlocal background_mesh
+            nonlocal last_update_time
+            ctx.set_window_size(W, H)
+            ctx.set_screen_coordinates(0, 0, W, H)
+            model.init(ctx, W, H)
+            background_mesh = build_background_mesh(ctx)
+            last_update_time = time::now()
+        },
         update=def(ctx) {
-            nonlocal _init
-            if !_init {
-                init(ctx)
-                _init = true
-            }
-
             nonlocal last_update_time
             now = time::now()
             diff = now - last_update_time
             last_update_time = now
 
-            update_bullets(diff)
-            update_velocity(diff)
-            update_pos(diff)
-            # print(['pos', model_pos_x, model_pos_y])
+            model.update(ctx, diff, input_axis_x, input_axis_y)
         },
         draw=def(ctx) {
-            nonlocal height, width
-            [width, height] = ctx.size()
             background_mesh.draw(ctx)
-            pos_x = model_pos_x * width
-            pos_y = model_pos_y * height
-            player_mesh.draw(ctx, dest=[pos_x, pos_y], rotation=rotation)
-            bullet_batch.draw(ctx)
+            model.draw(ctx)
+        },
+        mouse_down=def(ctx, btn, x, y) {
+            print(['mouse', btn, x, y])
         },
         key_down=def(ctx, key, mods) {
             if key is :Escape {
@@ -205,19 +63,17 @@ def update(app, model) {
         },
         gamepad_button_down=def(ctx, btn, gamepad) {
             if btn is :South {
-                shoot()
+                model.shoot(ctx)
             } else {
                 print('Unrecognized button %r (%r)' % [btn, gamepad])
             }
         },
         gamepad_axis=def(ctx, axis, val, gamepad) {
-            nonlocal controller_axis_x, controller_axis_y
+            nonlocal input_axis_x, input_axis_y
             if axis is :LeftStickY {
-                controller_axis_y = val
-                update_rotation()
+                input_axis_y = val
             } elif axis is :LeftStickX {
-                controller_axis_x = val
-                update_rotation()
+                input_axis_x = val
             } else {
                 print('Unrecognized axis %r, (%r, %r)' % [axis, val, gamepad])
             }

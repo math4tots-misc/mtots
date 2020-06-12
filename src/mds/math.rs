@@ -76,6 +76,50 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let y = Eval::expect_floatlike(globals, &args[1])?;
                 Ok(x.log(y).into())
             }),
+            NativeFunction::sdnew(
+                sr,
+                "emod",
+                (&["a", "b"], &[], None, None),
+                Some("Euclidean modulo on integers"),
+                |globals, args, _| {
+                    let x = Eval::expect_int(globals, &args[0])?;
+                    let y = Eval::expect_int(globals, &args[1])?;
+                    Ok(x.rem_euclid(y).into())
+                },
+            ),
+            NativeFunction::sdnew(
+                sr,
+                "ediv",
+                (&["a", "b"], &[], None, None),
+                Some("Euclidean division on integers"),
+                |globals, args, _| {
+                    let x = Eval::expect_int(globals, &args[0])?;
+                    let y = Eval::expect_int(globals, &args[1])?;
+                    Ok(x.div_euclid(y).into())
+                },
+            ),
+            NativeFunction::sdnew(
+                sr,
+                "fmod",
+                (&["a", "b"], &[], None, None),
+                Some("Euclidean modulo on floats"),
+                |globals, args, _| {
+                    let x = Eval::expect_floatlike(globals, &args[0])?;
+                    let y = Eval::expect_floatlike(globals, &args[1])?;
+                    Ok(x.rem_euclid(y).into())
+                },
+            ),
+            NativeFunction::sdnew(
+                sr,
+                "fdiv",
+                (&["a", "b"], &[], None, None),
+                Some("Euclidean division on floats"),
+                |globals, args, _| {
+                    let x = Eval::expect_floatlike(globals, &args[0])?;
+                    let y = Eval::expect_floatlike(globals, &args[1])?;
+                    Ok(x.div_euclid(y).into())
+                },
+            ),
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),

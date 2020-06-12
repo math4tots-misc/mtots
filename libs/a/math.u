@@ -47,6 +47,20 @@ ln = _math::ln
 log2 = _math::log2
     # base 2 logarithm
 
+emod = _math::emod
+    # Euclidean modulo on intgers
+    # See efmod for Euclidean modulo for floats
+
+ediv = _math::ediv
+    # Euclidean division for integers
+    # See efdiv for Euclidean division for floats
+
+fmod = _math::fmod
+    # Euclidean modulo for floats
+
+fdiv = _math::fdiv
+    # Euclidean division for floats
+
 def divmod(a, b) = a.divmod(b)
 
 def sqrt(x) = x ** 0.5

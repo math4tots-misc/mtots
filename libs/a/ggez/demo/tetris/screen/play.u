@@ -36,8 +36,6 @@ import time
 import ..pause
 
 def update(app, model) {
-    _init = false
-
     [R, C] = [model.R(), model.C()]
 
     board_screen_x = board_screen_y = 0
@@ -48,19 +46,6 @@ def update(app, model) {
     background_color = ggez::Color(0.8, 0.5, 0.3).scale(0.5)
     piece_color = ggez::Color(1.0, 0.0, 0.7)
     filled_color = ggez::Color(0.8, 0.8, 0.8)
-
-    def init(ctx) {
-        nonlocal width, height, board_screen_height, board_screen_width
-        nonlocal board_screen_x, board_screen_y
-        nonlocal cell_width, cell_height
-        [width, height] = ctx.size()
-        board_screen_x = width * 0.05
-        board_screen_y = height * 0.05
-        board_screen_width = (width * 0.9) / 2
-        board_screen_height = height * 0.9
-        cell_height = board_screen_height / R
-        cell_width = board_screen_width / C
-    }
 
     def draw_background(ctx) {
         ggez::MeshBuilder().rect(
@@ -121,12 +106,19 @@ def update(app, model) {
     }
 
     app.update(
+        init = def(ctx) {
+            nonlocal width, height, board_screen_height, board_screen_width
+            nonlocal board_screen_x, board_screen_y
+            nonlocal cell_width, cell_height
+            [width, height] = ctx.size()
+            board_screen_x = width * 0.05
+            board_screen_y = height * 0.05
+            board_screen_width = (width * 0.9) / 2
+            board_screen_height = height * 0.9
+            cell_height = board_screen_height / R
+            cell_width = board_screen_width / C
+        },
         update = def(ctx) {
-            nonlocal _init
-            if _init is false {
-                init(ctx)
-                _init = true
-            }
             model.tick(time::now())
         },
         draw = def(ctx) {
