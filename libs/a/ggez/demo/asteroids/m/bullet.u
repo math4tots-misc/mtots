@@ -1,0 +1,13 @@
+import ..body::BodyLike
+import ..body::Body
+
+RADIUS = 0.004
+    # The radius of a bullet
+
+class Bullet(BodyLike) {
+    [body]
+    static def __call(*args, **kwargs) = {
+        __malloc(Bullet, [Body(radius=RADIUS, *args, **kwargs)])
+    }
+    def body(self) = self.body
+}

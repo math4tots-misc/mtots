@@ -1,0 +1,17 @@
+import ..body::BodyLike
+import ..body::Body
+
+DEFAULT_SIZE = 10
+
+SIZE_TO_RADIUS_FACTOR = 0.01
+
+class Asteroid(BodyLike) {
+    [body, _size]
+    static def __call(*args, **kwargs) = {
+        size = kwargs.get(:size, DEFAULT_SIZE)
+        radius = DEFAULT_SIZE * SIZE_TO_RADIUS_FACTOR
+        __malloc(Asteroid, [Body(radius=radius, *args, **kwargs), size])
+    }
+    def body(self) = self.body
+    def asteroid_size(self) = self._size
+}

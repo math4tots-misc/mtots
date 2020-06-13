@@ -1,0 +1,32 @@
+trait BodyLike {
+    def x(self) = self.body().x
+    def y(self) = self.body().y
+    def pos(self) = [self.x(), self.y()]
+    def set_pos(self, xy) = [self.body().x, self.body().y] = xy
+    def rot(self) = self.body().rot
+    def set_rot(self, rot) = self.body().rot = rot
+    def dx(self) = self.body().dx
+    def dy(self) = self.body().dy
+    def set_velocity(self, dxdy) = [self.body().dx, self.body().dy] = dxdy
+    def drot(self) = self.body().drot
+    def set_drot(self, drot) = self.body().drot = drot
+    def radius(self) = self.body().radius
+    def update(self, elapsed_time) = self.body().update(elapsed_time)
+    def hits(self, other) = {
+        [ax, ay] = self.pos()
+        [bx, by] = other.pos()
+        ar = self.radius()
+        br = self.radius()
+        (ax - bx) ** 2 + (ay - by) ** 2 < (ar + br) ** 2
+    }
+}
+
+@class Body(BodyLike) {
+    [x, y, rot, dx, dy, drot, radius]
+    def body(self) = self
+    def update(self, elapsed_time) {
+        self.x += elapsed_time * self.dx
+        self.y += elapsed_time * self.dy
+        self.rot += elapsed_time * self.drot
+    }
+}

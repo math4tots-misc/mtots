@@ -1,0 +1,12 @@
+import ..ship::Ship
+import ..asteroid::Asteroid
+import ..bullet::Bullet
+
+@class World {
+    [ship, bullets, asteroids]
+
+    def __call() = {
+        ship = Ship(0.5, 0.5, 0, 0, 0, 0)
+        __malloc(World, [ship, [], []])
+    }
+}
