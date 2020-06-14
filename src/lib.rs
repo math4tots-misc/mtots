@@ -1,5 +1,6 @@
 extern crate mtots_core;
 
+extern crate dbin;
 extern crate mint;
 extern crate serde_json;
 extern crate three;
