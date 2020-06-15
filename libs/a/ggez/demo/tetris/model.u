@@ -4,10 +4,12 @@ _DEFAULT_FALL_TIME = 0.5
 
 def _new_default_shape_selector() = {
     import a.time
+    import a.rand
 
     def _default_shape_selector() = {
         # TODO: do something less silly
-        _shapes[hash(time::now()).divmod(_shapes.len())[1]]
+        i = rand::int(0, _shapes.len())
+        _shapes[i]
     }
 }
 

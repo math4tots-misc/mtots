@@ -159,10 +159,8 @@ def update(app, model) {
                 model.rotate()
             } elif button is :East {
                 model.rotate(3)
-            } elif button is :North {
+            } elif button is :North or button is :West {
                 model.hard_drop()
-            } elif button is :West {
-                model.restart()
             } elif button is :Start {
                 pause::update(app, model)
             } else {
