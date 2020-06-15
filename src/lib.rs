@@ -2,6 +2,9 @@ extern crate mtots_core;
 
 extern crate dbin;
 extern crate mint;
+extern crate rand;
+extern crate rand_chacha;
+extern crate rand_core;
 extern crate serde_json;
 extern crate three;
 

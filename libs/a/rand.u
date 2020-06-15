@@ -1,0 +1,56 @@
+import a._rand
+
+class Rng {
+    # Random number generator
+    # May be seede with an Int or a 32-byte sequence
+    [opaque]
+
+    static def __call(seed=nil) = {
+        opaque = if seed is nil {
+            _rand::new_rng()
+        } else {
+            _rand::new_rng_seeded(seed)
+        }
+        __malloc(Rng, [opaque])
+    }
+
+    def int(self, low=nil, high=nil) = {
+        # Generates a random integer with provided [low, high)
+        # bounds. If no bounds are provided, it will uniformly
+        # select from all possible integers
+        if low is nil and high is nil {
+            _rand::rng_gen_int(self.opaque)
+        } else {
+            _rand::rng_gen_int_range(self.opaque, low, high)
+        }
+    }
+
+    def float(self, low=nil, high=nil) = {
+        # Generates a random float with provided [low, high)
+        # bounds. If no bounds are provided, it will unformly
+        # select from all possible floats
+        if low is nil and high is nil {
+            _rand::rng_gen_float(self.opaque)
+        } else {
+            _rand::rng_gen_float_range(self.opaque, low, high)
+        }
+    }
+}
+
+_DEFAULT = nil
+
+def default() = {
+    nonlocal _DEFAULT
+    if _DEFAULT is nil {
+        _DEFAULT = Rng()
+    }
+    _DEFAULT
+}
+
+def int(low=nil, high=nil) = {
+    default().int(low, high)
+}
+
+def float(low=nil, high=nil) = {
+    default().float(low, high)
+}

@@ -10,6 +10,7 @@ use std::rc::Rc;
 mod dbin;
 mod ggez;
 mod json;
+mod rand;
 mod three;
 
 pub fn add_standard_modules(globals: &mut Globals) {
@@ -17,6 +18,7 @@ pub fn add_standard_modules(globals: &mut Globals) {
     add(globals, ggez::NAME, ggez::load);
     add(globals, three::NAME, three::load);
     add(globals, dbin::NAME, dbin::load);
+    add(globals, rand::NAME, rand::load);
 }
 
 fn add<F>(globals: &mut Globals, name: &'static str, body: F)

@@ -1,0 +1,15 @@
+import a.rand
+
+
+def __test_rand() {
+    assert_eq(type(rand::int()), Int)
+    assert_eq(type(rand::float()), Float)
+
+    # the default RNG is unpredictable, but
+    # the seeded one should be reproducible
+    rng = rand::Rng(0)
+    assert_eq(rng.int(0, 100), 2)
+    assert_eq(rng.int(0, 100), 98)
+    assert_eq(rng.int(0, 100), 86)
+    assert_eq(rng.float(0, 100), 18.582534785914696)
+}
