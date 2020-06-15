@@ -1,9 +1,5 @@
 //! dbin bindings -- for declaratively parsing binary files
 //! Stil WIP...
-#![allow(dead_code)]
-mod context;
-mod pat;
-
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
@@ -12,9 +8,8 @@ use crate::NativeFunction;
 use crate::Opaque;
 use crate::RcStr;
 use crate::Value;
-use context::Context;
-// use context::Scope;
-use pat::Pattern;
+use dbin::Data;
+use dbin::Pattern;
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -55,15 +50,15 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::simple0(
                 sr,
                 "pattern_parse",
-                &["pat", "bytes"],
+                &["pattern", "bytes"],
                 |globals, args, _| {
                     let pattern = expect_pattern(globals, &args[0])?;
                     let bytes = Eval::expect_bytes(globals, &args[1])?;
-                    let data = match pattern.parse(globals, &bytes) {
+                    let data = match pattern.parse(&bytes) {
                         Ok(data) => data,
                         Err(error) => return globals.set_exc_str(&format!("{:?}", error)),
                     };
-                    Ok(data)
+                    Ok(translate_data(&data))
                 },
             ),
             NativeFunction::simple0(sr, "new_pattern_exact", &["bytes"], |globals, args, _| {
@@ -71,11 +66,16 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let pat = Pattern::Exact(bytes.into());
                 Ok(from_pattern_raw(pat))
             }),
-            NativeFunction::simple0(sr, "new_pattern_map", &["pat", "f"], |globals, args, _| {
-                let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
-                let pat = Pattern::Exact(bytes.into());
-                Ok(from_pattern_raw(pat))
-            }),
+            NativeFunction::simple0(
+                sr,
+                "new_pattern_array",
+                &["pat", "f"],
+                |globals, args, _| {
+                    let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
+                    let pat = Pattern::Exact(bytes.into());
+                    Ok(from_pattern_raw(pat))
+                },
+            ),
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),
@@ -100,4 +100,14 @@ fn from_pattern(pattern: Rc<Pattern>) -> Value {
 
 fn expect_pattern<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Rc<Pattern>>> {
     Eval::expect_opaque(globals, value)
+}
+
+fn translate_data(data: &Data) -> Value {
+    match data {
+        Data::Int(i) => Value::Int(*i),
+        Data::Float(f) => Value::Float(*f),
+        Data::Bytes(bytes) => Value::Bytes(bytes.clone()),
+        Data::String(s) => Value::String(s.as_ref().into()),
+        Data::Seq(seq) => Value::List(Rc::new(seq.iter().map(translate_data).collect())),
+    }
 }
