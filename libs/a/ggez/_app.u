@@ -1,0 +1,90 @@
+import a._ggez
+
+_app_info_keys = [
+    :name,
+    :author,
+    :sleep_per_frame,
+]
+
+_app_callback_keys = [
+    :update,
+    :draw,
+    :mouse_down,
+    :key_down,
+    :key_up,
+    :text_input,
+    :gamepad_button_down,
+    :gamepad_axis,
+]
+
+class App {
+    [_info_table, _callback_table]
+
+    static def __call(name='name', author='author', sleep_per_frame=nil, **kwargs) = {
+        info_table = Table(
+            name=name,
+            author=author,
+            sleep_per_frame=sleep_per_frame,
+        )
+        callback_table = (
+            _app_callback_keys
+                .map(def(key) = [key, Cell(kwargs.get(key, nil))])
+                .to(Table)
+        )
+
+        "Ensure there are no extraneous fields"
+        assert_eq(callback_table.len(), (kwargs + callback_table).len())
+
+        __malloc(App, [info_table, callback_table])
+    }
+
+    def update(self, init=nil, update=nil, **kwargs) = {
+        """
+        Replace all the callbacks for an app.
+        Any callback that's not specified will be set to nil.
+        """
+        if init is not nil {
+            old_update = update
+            initialized = false
+            def update(ctx) {
+                nonlocal initialized
+                if !initialized {
+                    init(ctx)
+                    initialized = true
+                }
+                if old_update is not nil {
+                    old_update(ctx)
+                }
+            }
+        }
+        for key in _app_callback_keys {
+            self._callback_table.get(key).set(
+                if key is :update {
+                    update
+                } else {
+                    kwargs.get(key, nil)
+                }
+            )
+        }
+        for key in kwargs.keys() {
+            if !_app_callback_keys.has(key) {
+                __raise(RuntimeError, 'Unrecognized update key: %r' % [key])
+            }
+        }
+    }
+
+    def main(self) {
+        """
+        Starts the ggez event loop
+        """
+        _ggez::start(
+            context_class=Context,
+            **self._info_table.merge(
+                _app_callback_keys.map(def(key) = {
+                    [key, self._callback_table.get(key)]
+                })
+                .to(Table)
+            )
+        )
+    }
+}

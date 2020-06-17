@@ -1,0 +1,19 @@
+import a._ggez
+
+class Context {
+    [opaque]
+
+    def size(self) = _ggez::ctx_size(self.opaque)
+
+    def fps(self) = _ggez::ctx_fps(self.opaque)
+
+    def quit(self) = _ggez::ctx_quit(self.opaque)
+
+    def set_window_size(self, width, height) {
+        _ggez::ctx_set_drawable_size(self.opaque, width, height)
+    }
+
+    def set_screen_coordinates(self, x, y, width, height) {
+        _ggez::ctx_set_screen_coordinates(self.opaque, x, y, width, height)
+    }
+}

@@ -1,0 +1,133 @@
+import a._ggez
+
+trait Drawable {
+    def draw(self, ctx, dest=nil, rotation=nil, scale=nil, offset=nil) = {
+        # Draws the given drawable to the screen
+        #   ctx: Context object
+        #   dest: [x, y] pair indicating destination to draw to (defaults to [0, 0])
+        #   rotation: orientation of the graphic in radians (defaults to 0)
+        #   scale: [x, y] scale factors (defaults to [1, 1])
+        #   offset: offset from the center for transform operations like scale/rotation
+        #     [0, 0] meaning upper left corner, and [1, 1] meaning the lower right.
+        #     The Rust ggez library defaults this value to [0, 0], but
+        #     for convenience, this method defaults this value to [0.5, 0.5]
+        if dest is nil { dest = [0, 0] }
+        if rotation is nil { rotation = 0 }
+        if scale is nil { scale = [1, 1] }
+        if offset is nil { offset = [0.5, 0.5] }
+        _ggez::ctx_draw(ctx.opaque, self.opaque, dest, rotation, scale, offset)
+    }
+}
+
+class MeshBuilder {
+    [opaque]
+
+    static def __call() = {
+        __malloc(MeshBuilder, [_ggez::new_mesh_builder()])
+    }
+
+    def circle(self, center, radius, color, tolerance=2.0) = {
+        _ggez::mesh_builder_circle(self.opaque, center, radius, tolerance, color.opaque)
+        self
+    }
+
+    def polygon(self, points, color) = {
+        """
+        NOTE: The points must be given in clockwise order!
+        """
+        _ggez::mesh_builder_polygon(self.opaque, points, color.opaque)
+        self
+    }
+
+    def rect(self, x, y, width, height, color) = {
+        self.polygon(
+            [
+                [x, y],
+                [x + width, y],
+                [x + width, y + height],
+                [x, y + height],
+            ],
+            color,
+        )
+    }
+
+    def build(self, ctx) = {
+        Mesh(_ggez::mesh_builder_build(self.opaque, ctx.opaque))
+    }
+}
+
+class Mesh(Drawable) {
+    [opaque]
+}
+
+trait BaseText(Drawable) {
+    def width(self, ctx) = _ggez::text_width(self.opaque, ctx.opaque)
+    def height(self, ctx) = _ggez::text_height(self.opaque, ctx.opaque)
+}
+
+class SimpleText(BaseText) {
+    [opaque]
+
+    static def __call(text, color=nil, scale=nil) = {
+        __malloc(SimpleText, [_ggez::new_text_simple(text, color, scale)])
+    }
+}
+
+class Image(Drawable) {
+    [opaque]
+
+    static def colors(ctx, color_rows) = {
+        # Create a new image from a 2-D array of Colors
+        width = color_rows[0].len()
+        height = color_rows.len()
+        colors = @[]
+        for row in color_rows {
+            for color in row {
+                colors.push(Color(color).opaque)
+            }
+        }
+        colors = colors.move()
+        __malloc(Image, [_ggez::new_image_from_colors(ctx.opaque, width, height, colors)])
+    }
+}
+
+class SpriteBatch(Drawable) {
+    [opaque]
+
+    static def image(image) = {
+        # Create a SpriteBatch with an image
+        opaque = _ggez::new_sprite_batch_from_image(image.opaque)
+        __malloc(SpriteBatch, [opaque])
+    }
+
+    def add(self, dest=nil, rotation=nil, scale=nil, offset=nil) = {
+        # adds a new sprite in this spritebatch
+        # the parameters mirror those in Drawable().draw()
+        # Returns a SpriteId object that can be used to update the given sprite
+        if dest is nil { dest = [0, 0] }
+        if rotation is nil { rotation = 0 }
+        if scale is nil { scale = [1, 1] }
+        if offset is nil { offset = [0.5, 0.5] }
+        opaque = _ggez::sprite_batch_add(self.opaque, dest, rotation, scale, offset)
+        SpriteId(opaque)
+    }
+
+    def set(self, sprite_id, dest=nil, rotation=nil, scale=nil, offset=nil) = {
+        # updates the draw parameters for a sprite in this spritebatch
+        # the parameters mirror those in Drawable().draw()
+        if dest is nil { dest = [0, 0] }
+        if rotation is nil { rotation = 0 }
+        if scale is nil { scale = [1, 1] }
+        if offset is nil { offset = [0.5, 0.5] }
+        _ggez::sprite_batch_set(self.opaque, sprite_id.opaque, dest, rotation, scale, offset)
+    }
+
+    def clear(self) {
+        # Clears all the sprites in this batch
+        _ggez::sprite_batch_clear(self.opaque)
+    }
+}
+
+class SpriteId {
+    [opaque]
+}

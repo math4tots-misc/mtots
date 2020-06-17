@@ -107,7 +107,7 @@ fn translate_data(data: &Data) -> Value {
         Data::Int(i) => Value::Int(*i),
         Data::Float(f) => Value::Float(*f),
         Data::Bytes(bytes) => Value::Bytes(bytes.clone()),
-        Data::String(s) => Value::String(s.as_ref().into()),
+        Data::String(s) => Value::String(s.into()),
         Data::Seq(seq) => Value::List(Rc::new(seq.iter().map(translate_data).collect())),
     }
 }
