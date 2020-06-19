@@ -1,0 +1,12 @@
+# Draw Models
+# Because drawing things explicitly is much more annoying
+
+
+trait DrawModel {
+}
+
+@class Circle {
+    [_radius]
+}
+
+
