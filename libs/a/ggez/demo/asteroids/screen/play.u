@@ -84,8 +84,6 @@ def update(app, model) {
             } elif key is :W or key is :S {
                 input_axis_y = 0
                 force_rotation_update()
-            } else {
-                print('Unrecognized key %r (%r)' % [key, mods])
             }
         },
         gamepad_button_down=def(ctx, btn, gamepad) {
