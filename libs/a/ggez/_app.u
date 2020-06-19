@@ -1,4 +1,5 @@
 import a._ggez
+import .._ctx::Context
 
 _app_info_keys = [
     :name,

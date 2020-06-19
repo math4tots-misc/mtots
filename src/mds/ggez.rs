@@ -18,6 +18,7 @@ use ggez::event::KeyCode;
 use ggez::event::KeyMods;
 use ggez::event::MouseButton;
 use ggez::graphics;
+use ggez::graphics::Canvas;
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics::spritebatch::SpriteIdx;
 use ggez::graphics::Color;
@@ -298,6 +299,70 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     try_(globals, draw(ctx.get_mut(), &drawable, params))?;
                     Ok(Value::Nil)
                 },
+            ),
+            NativeFunction::sdnew(
+                sr,
+                "ctx_drawables_to_image",
+                (&["ctx", "drawables_with_params", "width", "height", "samples"], &[], None, None),
+                Some(concat!(
+                    "Accepts a List of drawables_with_params, width and height of the image, ",
+                    "and the number of samples for anti-aliasing, and returns ",
+                    "an image\n",
+                    "The params are expected to be provided as a 4-tuple of ",
+                    "[scale, rotation, x, y]"
+                )),
+                |globals, args, _kwargs| {
+                    let ctx_refcell = to_ctx(globals, &args[0])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    let ctx = ctx.get_mut();
+                    let drawables_with_params = Eval::expect_list(globals, &args[1])?;
+                    let width = expect_u16(globals, &args[2])?;
+                    let height = expect_u16(globals, &args[3])?;
+                    let samples = expect_u32(globals, &args[4])?;
+                    let samples = match ggez::conf::NumSamples::from_u32(samples) {
+                        Some(samples) => samples,
+                        None => {
+                            return globals.set_exc_str(&format!(
+                                "Invalid sample count ({})", samples,
+                            ))
+                        }
+                    };
+
+                    fn draw_all(
+                        ctx: &mut Context,
+                        globals: &mut Globals,
+                        drawables_with_params: &Vec<Value>,
+                    ) -> EvalResult<()> {
+                        for drawable_with_params in drawables_with_params {
+                            let (drawable, params) = Eval::unpack_pair(globals, drawable_with_params)?;
+                            let drawable = to_drawable(globals, &drawable)?;
+                            let (scale, rot, x, y) = expect_4_f32(globals, &params)?;
+                            try_(globals, draw(
+                                ctx,
+                                &drawable,
+                                graphics::DrawParam::default()
+                                    .offset([0.5, 0.5])
+                                    .rotation(rot)
+                                    .scale([scale, scale])
+                                    .dest([x, y]),
+                            ))?;
+                        }
+                        Ok(())
+                    }
+
+                    let canvas = try_(globals, Canvas::new(
+                        ctx,
+                        width,
+                        height,
+                        samples,
+                    ))?;
+                    ggez::graphics::set_canvas(ctx, Some(&canvas));
+                    let r = draw_all(ctx, globals, drawables_with_params);
+                    ggez::graphics::set_canvas(ctx, None);
+                    r?;
+
+                    from_image(globals, canvas.into_inner())
+                }
             ),
             NativeFunction::simple0(sr, "ctx_size", &["ctx"], |globals, args, _kwargs| {
                 let ctx_refcell = to_ctx(globals, &args[0])?;
@@ -829,6 +894,16 @@ mod wctx {
 use wctx::to_ctx;
 use wctx::with_ctx;
 
+fn expect_u16(globals: &mut Globals, v: &Value) -> EvalResult<u16> {
+    let x = Eval::expect_int(globals, v)?;
+    Eval::check_u16(globals, x)
+}
+
+fn expect_u32(globals: &mut Globals, v: &Value) -> EvalResult<u32> {
+    let x = Eval::expect_int(globals, v)?;
+    Eval::check_u32(globals, x)
+}
+
 fn expect_point(globals: &mut Globals, point: &Value) -> EvalResult<Point> {
     let (x, y) = Eval::unpack_pair(globals, point)?;
     let x = Eval::expect_floatlike(globals, &x)?;
@@ -841,6 +916,15 @@ fn expect_f32_pair(globals: &mut Globals, value: &Value) -> EvalResult<(f32, f32
     let a = Eval::expect_floatlike(globals, &a)? as f32;
     let b = Eval::expect_floatlike(globals, &b)? as f32;
     Ok((a, b))
+}
+
+fn expect_4_f32(globals: &mut Globals, value: &Value) -> EvalResult<(f32, f32, f32, f32)> {
+    let (a, b, c, d) = Eval::unpack4(globals, value)?;
+    let a = Eval::expect_floatlike(globals, &a)? as f32;
+    let b = Eval::expect_floatlike(globals, &b)? as f32;
+    let c = Eval::expect_floatlike(globals, &c)? as f32;
+    let d = Eval::expect_floatlike(globals, &d)? as f32;
+    Ok((a, b, c, d))
 }
 
 fn from_color(_globals: &mut Globals, color: Color) -> EvalResult<Value> {

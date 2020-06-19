@@ -1,4 +1,5 @@
 import a._ggez
+import .._color::Color
 
 trait Drawable {
     def draw(self, ctx, dest=nil, rotation=nil, scale=nil, offset=nil) = {
@@ -58,6 +59,18 @@ class MeshBuilder {
 
 class Mesh(Drawable) {
     [opaque]
+
+    static def circle(ctx, *args, **kwargs) = {
+        MeshBuilder().circle(*args, **kwargs).build(ctx)
+    }
+
+    static def rect(ctx, *args, **kwargs) = {
+        MeshBuilder().rect(*args, **kwargs).build(ctx)
+    }
+
+    static def polygon(ctx, *args, **kwargs) = {
+        MeshBuilder().polygon(*args, **kwargs).build(ctx)
+    }
 }
 
 trait BaseText(Drawable) {
@@ -90,6 +103,40 @@ class Image(Drawable) {
         __malloc(Image, [_ggez::new_image_from_colors(ctx.opaque, width, height, colors)])
     }
 }
+
+## Yuck... unfortunately this method seems to be broken...
+# {
+#     static def from_drawables(
+#             ctx,
+#             drawables_with_params,
+#             width,
+#             height,
+#             nsamples=0) = {
+#         # Expects:
+#         #   - ctx: a ggez context object
+#         #   - drawables_with_params:
+#         #       a list of [drawable, scale, rotation, x, y] tuples,
+#         #   - width of canvas
+#         #   - height of canvas
+#         #   - nsamples for antialiasing (must be 0, 1, 2, 4, 8 or 16, defaults to 0)
+#         raw_drawables_with_params = @[]
+#         for [drawable, scale, rotation, x, y] in drawables_with_params {
+#             raw_drawables_with_params.push(
+#                 [drawable.opaque, [scale, rotation, x, y]]
+#             )
+#         }
+
+#         opaque = _ggez::ctx_drawables_to_image(
+#             ctx.opaque,
+#             raw_drawables_with_params.move(),
+#             width,
+#             height,
+#             nsamples,
+#         )
+
+#         __malloc(Image, [opaque])
+#     }
+# }
 
 class SpriteBatch(Drawable) {
     [opaque]
