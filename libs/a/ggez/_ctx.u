@@ -1,6 +1,6 @@
 import a._ggez
 
-class Context {
+case class Context {
     [opaque]
 
     def size(self) = _ggez::ctx_size(self.opaque)

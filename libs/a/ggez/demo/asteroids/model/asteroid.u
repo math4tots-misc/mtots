@@ -9,6 +9,8 @@ import a.rand as rng
 @class Asteroid(BodyLike) {
     [body, sprite_id]
 
+    new(*args, **kwargs) = new(*args, **kwargs)
+
     def body(self) = self.body
 
     def update(self, sprite_batch, elapsed_time, width, height) = {

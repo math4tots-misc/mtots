@@ -56,6 +56,8 @@ trait BodyLike {
     #
     [x, y, rot, dx, dy, drot, radius]
 
+    new(*args, **kwargs) = new(*args, **kwargs)
+
     def update(self, elapsed_time) {
         # Updates the position of this body based on
         # current velocity and elapsed time, and then

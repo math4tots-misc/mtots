@@ -302,7 +302,7 @@ class Board {
     }
 }
 
-class Piece {
+@class Piece {
     # Represents a live piece on the Tetris board
     #   shape:
     #     determines which shape is currently live
@@ -317,6 +317,8 @@ class Piece {
     #     the column position of the upper-left corner
     #     described by shape
     [_shape, _rot, _r, _c]
+
+    new(shape, rot, r, c) = new(shape, rot, r, c)
 
     def* occupied_cells(self) {
         rot = self._rot.divmod(4)[1]

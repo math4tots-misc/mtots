@@ -18,9 +18,9 @@ use ggez::event::KeyCode;
 use ggez::event::KeyMods;
 use ggez::event::MouseButton;
 use ggez::graphics;
-use ggez::graphics::Canvas;
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::graphics::spritebatch::SpriteIdx;
+use ggez::graphics::Canvas;
 use ggez::graphics::Color;
 use ggez::graphics::Image;
 use ggez::graphics::Mesh;
@@ -303,7 +303,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::sdnew(
                 sr,
                 "ctx_drawables_to_image",
-                (&["ctx", "drawables_with_params", "width", "height", "samples"], &[], None, None),
+                (
+                    &["ctx", "drawables_with_params", "width", "height", "samples"],
+                    &[],
+                    None,
+                    None,
+                ),
                 Some(concat!(
                     "Accepts a List of drawables_with_params, width and height of the image, ",
                     "and the number of samples for anti-aliasing, and returns ",
@@ -324,9 +329,8 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let samples = match ggez::conf::NumSamples::from_u32(samples) {
                         Some(samples) => samples,
                         None => {
-                            return globals.set_exc_str(&format!(
-                                "Invalid sample count ({})", samples,
-                            ))
+                            return globals
+                                .set_exc_str(&format!("Invalid sample count ({})", samples,))
                         }
                     };
 
@@ -336,35 +340,34 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                         drawables_with_params: &Vec<Value>,
                     ) -> EvalResult<()> {
                         for drawable_with_params in drawables_with_params {
-                            let (drawable, params) = Eval::unpack_pair(globals, drawable_with_params)?;
+                            let (drawable, params) =
+                                Eval::unpack_pair(globals, drawable_with_params)?;
                             let drawable = to_drawable(globals, &drawable)?;
                             let (scale, rot, x, y) = expect_4_f32(globals, &params)?;
-                            try_(globals, draw(
-                                ctx,
-                                &drawable,
-                                graphics::DrawParam::default()
-                                    .offset([0.5, 0.5])
-                                    .rotation(rot)
-                                    .scale([scale, scale])
-                                    .dest([x, y]),
-                            ))?;
+                            try_(
+                                globals,
+                                draw(
+                                    ctx,
+                                    &drawable,
+                                    graphics::DrawParam::default()
+                                        .offset([0.5, 0.5])
+                                        .rotation(rot)
+                                        .scale([scale, scale])
+                                        .dest([x, y]),
+                                ),
+                            )?;
                         }
                         Ok(())
                     }
 
-                    let canvas = try_(globals, Canvas::new(
-                        ctx,
-                        width,
-                        height,
-                        samples,
-                    ))?;
+                    let canvas = try_(globals, Canvas::new(ctx, width, height, samples))?;
                     ggez::graphics::set_canvas(ctx, Some(&canvas));
                     let r = draw_all(ctx, globals, drawables_with_params);
                     ggez::graphics::set_canvas(ctx, None);
                     r?;
 
                     from_image(globals, canvas.into_inner())
-                }
+                },
             ),
             NativeFunction::simple0(sr, "ctx_size", &["ctx"], |globals, args, _kwargs| {
                 let ctx_refcell = to_ctx(globals, &args[0])?;

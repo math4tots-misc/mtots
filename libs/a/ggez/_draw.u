@@ -23,7 +23,7 @@ trait Drawable {
 class MeshBuilder {
     [opaque]
 
-    static def __call() = {
+    new() = {
         __malloc(MeshBuilder, [_ggez::new_mesh_builder()])
     }
 
@@ -57,7 +57,7 @@ class MeshBuilder {
     }
 }
 
-class Mesh(Drawable) {
+case class Mesh(Drawable) {
     [opaque]
 
     static def circle(ctx, *args, **kwargs) = {
@@ -175,6 +175,6 @@ class SpriteBatch(Drawable) {
     }
 }
 
-class SpriteId {
+case class SpriteId {
     [opaque]
 }
