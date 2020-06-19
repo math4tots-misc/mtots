@@ -4,6 +4,7 @@ import a.math::emod
 import a.math::TAU
 import a.ggez
 import a.time
+import a.rand as rng
 
 @class Asteroid(BodyLike) {
     [body, sprite_id]
@@ -65,14 +66,10 @@ import a.time
 }
 
 image_layout = (
-    # 00010000
-    # 00111100
-    # 01111110
     # 11111111
     # 11111111
-    # 01111100
-    # 00111100
-    # 00011100
+    # 11111111
+    # 11111111
 ).trim().lines().map(def(line) = {
     line.chars().map(def(s) = s == '1').to(List)
 }).to(List)
@@ -96,11 +93,12 @@ def _make_asteroid_image(ctx) = {
     # )
 
     ggez::Image::colors(ctx, image_layout.map(def(row) = {
-        row.map(def(cell) = if cell { [1, 1, 1] } else { [0, 0, 0, 0] })
+        row.map(def(cell) = if cell { [1, 0.5, 1] } else { [0, 0, 0, 0] })
     }))
 }
 
 def rand(n) = {
     # Really quick and dirty random number generation
-    emod(hash(time::now() + 0.5), n)
+    # emod(hash(time::now() + 0.5), n)
+    rng::int(0, n)
 }

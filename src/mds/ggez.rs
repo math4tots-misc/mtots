@@ -309,7 +309,9 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     "and the number of samples for anti-aliasing, and returns ",
                     "an image\n",
                     "The params are expected to be provided as a 4-tuple of ",
-                    "[scale, rotation, x, y]"
+                    "[scale, rotation, x, y]\n",
+                    "NOTE: I've never actually managed to get this to work... ",
+                    "It seems to panic when I actually try to use it\n"
                 )),
                 |globals, args, _kwargs| {
                     let ctx_refcell = to_ctx(globals, &args[0])?;
