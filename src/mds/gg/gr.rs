@@ -1,42 +1,13 @@
 //! Functions for dealing with graphics
 use super::to_wctx;
-
-
-
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
-
 use crate::RcStr;
-
 use crate::Value;
-
-
-
-
-
-
-
-
 use ggez::graphics;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 use std::cell::RefCell;
-
 use std::collections::HashMap;
 use std::rc::Rc;
 

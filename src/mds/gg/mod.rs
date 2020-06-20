@@ -8,15 +8,11 @@ use super::add;
 use crate::EvalResult;
 use crate::Globals;
 use crate::Stashable;
-
+use gamepad::GamepadRegistry;
 use ggez::GameError;
 use ggez::GameResult;
-
 use wctx::to_wctx;
 use wctx::with_wctx;
-
-
-use gamepad::GamepadRegistry;
 
 pub(super) fn add_gg_modules(globals: &mut Globals) {
     add(globals, gr::NAME, gr::load);
