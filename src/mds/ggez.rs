@@ -206,6 +206,28 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     from_image(globals, image)
                 },
             ),
+            NativeFunction::sdnew(
+                sr,
+                "new_image_from_rect",
+                (&["ctx", "width", "height", "color"], &[], None, None),
+                Some("Convenience function for creating a rectangle image with a solid color"),
+                |globals, args, _kwargs| {
+                    let ctx_refcell = to_ctx(globals, &args[0])?;
+                    let mut ctx = ctx_refcell.borrow_mut();
+                    let width = Eval::expect_usize(globals, &args[1])?;
+                    let height = Eval::expect_usize(globals, &args[2])?;
+                    let (r, g, b, a) = to_color_ref(globals, &args[3])?.clone().into();
+                    let len = width * height;
+                    let mut buffer = Vec::with_capacity(len);
+                    for _ in 0..len {
+                        buffer.extend(&[r, g, b, a]);
+                    }
+                    let width = Eval::check_u16(globals, width as i64)?;
+                    let height = Eval::check_u16(globals, height as i64)?;
+                    let image = try_(globals, Image::from_rgba8(ctx.get_mut(), width, height, &buffer))?;
+                    from_image(globals, image)
+                },
+            ),
             NativeFunction::simple0(
                 sr,
                 "new_sprite_batch_from_image",

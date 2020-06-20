@@ -102,6 +102,18 @@ class Image(Drawable) {
         colors = colors.move()
         __malloc(Image, [_ggez::new_image_from_colors(ctx.opaque, width, height, colors)])
     }
+
+    static def rect(ctx, width, height, color) = {
+        __malloc(
+            Image,
+            [_ggez::new_image_from_rect(
+                ctx.opaque,
+                width,
+                height,
+                Color(color).opaque,
+            )]
+        )
+    }
 }
 
 ## Yuck... unfortunately this method seems to be broken...

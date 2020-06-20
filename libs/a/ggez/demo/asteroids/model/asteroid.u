@@ -94,9 +94,11 @@ def _make_asteroid_image(ctx) = {
     #     height=100,
     # )
 
-    ggez::Image::colors(ctx, image_layout.map(def(row) = {
-        row.map(def(cell) = if cell { [1, 0.5, 1] } else { [0, 0, 0, 0] })
-    }))
+    # ggez::Image::colors(ctx, image_layout.map(def(row) = {
+    #     row.map(def(cell) = if cell { [1, 0.5, 1] } else { [0, 0, 0, 0] })
+    # }))
+
+    ggez::Image::rect(ctx, 4, 6, [0.5, 0.5, 1])
 }
 
 def rand(n) = {
