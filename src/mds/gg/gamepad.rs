@@ -31,6 +31,7 @@ impl GamepadRegistry {
         }
     }
 
+    #[allow(dead_code)]
     pub fn id(&self, index: i64) -> Option<GamepadId> {
         self.ids.get(index as u64 as usize).cloned()
     }

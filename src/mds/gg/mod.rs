@@ -8,13 +8,13 @@ use super::add;
 use crate::EvalResult;
 use crate::Globals;
 use crate::Stashable;
-use ggez::event::GamepadId;
+
 use ggez::GameError;
 use ggez::GameResult;
-use std::collections::HashMap;
+
 use wctx::to_wctx;
 use wctx::with_wctx;
-use wctx::WrappedContext;
+
 
 use gamepad::GamepadRegistry;
 
@@ -30,6 +30,7 @@ fn try_<R>(globals: &mut Globals, r: GameResult<R>) -> EvalResult<R> {
     }
 }
 
+#[allow(dead_code)]
 fn to_game_result<R>(eval_result: EvalResult<R>) -> GameResult<R> {
     match eval_result {
         Ok(r) => Ok(r),

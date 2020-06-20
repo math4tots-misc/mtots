@@ -1,16 +1,16 @@
 //! Functions for dealing with event handling
-use super::to_wctx;
+
 use super::try_;
 use super::with_wctx;
 use super::Shared;
 use crate::Class;
-use crate::ErrorIndicator;
+
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
-use crate::Opaque;
+
 use crate::RcStr;
 use crate::Symbol;
 use crate::Value;
@@ -23,23 +23,23 @@ use ggez::event::KeyCode;
 use ggez::event::KeyMods;
 use ggez::event::MouseButton;
 use ggez::graphics;
-use ggez::graphics::spritebatch::SpriteBatch;
-use ggez::graphics::spritebatch::SpriteIdx;
-use ggez::graphics::Canvas;
-use ggez::graphics::Color;
-use ggez::graphics::Image;
-use ggez::graphics::Mesh;
-use ggez::graphics::MeshBuilder;
-use ggez::graphics::Scale;
-use ggez::graphics::Text;
-use ggez::graphics::TextFragment;
+
+
+
+
+
+
+
+
+
+
 use ggez::Context;
 use ggez::ContextBuilder;
-use ggez::GameError;
+
 use ggez::GameResult;
-use std::cell::Ref;
+
 use std::cell::RefCell;
-use std::cell::RefMut;
+
 use std::collections::HashMap;
 use std::rc::Rc;
 
