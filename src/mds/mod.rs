@@ -12,6 +12,7 @@ mod ggez;
 mod json;
 mod rand;
 mod three;
+mod gg;
 
 pub fn add_standard_modules(globals: &mut Globals) {
     add(globals, json::NAME, json::load);
@@ -19,6 +20,7 @@ pub fn add_standard_modules(globals: &mut Globals) {
     add(globals, three::NAME, three::load);
     add(globals, dbin::NAME, dbin::load);
     add(globals, rand::NAME, rand::load);
+    gg::add_gg_modules(globals);
 }
 
 fn add<F>(globals: &mut Globals, name: &'static str, body: F)
