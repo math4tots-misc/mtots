@@ -9,7 +9,7 @@ app = App()
 
 app.update(
     init=def(ctx) {
-        print('init')
+        print('init -> %r' % [ctx.graphics().size()])
     },
     mouse_down=def(ctx, btn, x, y) {
         print([:mouse_down, btn, x, y])

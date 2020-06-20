@@ -1,4 +1,5 @@
 import a.gg._nev
+import a.gg._ngr
 
 class Context {
     # Context object
@@ -23,4 +24,9 @@ class Context {
 
 class Graphics {
     [opaque]
+
+    def size(self) = {
+        # Returns
+        _ngr::size(self.opaque)
+    }
 }
