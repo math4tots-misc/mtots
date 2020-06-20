@@ -8,11 +8,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 mod dbin;
+mod gg;
 mod ggez;
 mod json;
 mod rand;
 mod three;
-mod gg;
 
 pub fn add_standard_modules(globals: &mut Globals) {
     add(globals, json::NAME, json::load);

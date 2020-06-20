@@ -1,4 +1,6 @@
-//! JSON bindings
+//! Functions for dealing with graphics
+use super::to_wctx;
+use super::with_wctx;
 use crate::ErrorIndicator;
 use crate::Eval;
 use crate::EvalResult;
@@ -38,13 +40,7 @@ use std::cell::RefMut;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-pub const NAME: &str = "a.ggez.n._ctx";
-
-type Point = ggez::mint::Point2<f32>;
-
-fn mkpt(x: f32, y: f32) -> Point {
-    Point { x, y }
-}
+pub const NAME: &str = "a.gg._ngr";
 
 pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let sr = globals.symbol_registry();
@@ -52,9 +48,25 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-            NativeFunction::simple0(sr, "ctx_size", &["ctx"], |globals, args, _kwargs| {
-                let ctx_refcell = to_ctx(globals, &args[0])?;
-                let ctx = ctx_refcell.borrow();
+            NativeFunction::sdnew0(sr, "size", &["ctx"], Some(concat!(
+                "Returns the size of the window's underlying drawable in pixels as [width, height].\n",
+                "Returns zeros if window doesn't exist.",
+            )),|globals, args, _kwargs| {
+                let ctx = to_wctx(globals, &args[0])?;
+                let (width, height) = graphics::drawable_size(ctx.get());
+                Ok(vec![Value::Float(width as f64), Value::Float(height as f64)].into())
+            }),
+            NativeFunction::sdnew0(sr, "set_fullscreen", &["ctx", "type"], Some(concat!(
+                "Sets the window to fullscreen or back\n",
+                "type = 0 implies windowed mode\n",
+                "type = 1 implies true fullscreen\n",
+                "  used to be preferred 'cause it can have small performance\n",
+                "  benefits over windowed fullscreen\n",
+                "type = 2 implies windowed fullscreen\n",
+                "  generally preferred over real fullscreen these days\n",
+                "  'cause it plays nicer with multiple monitors\n",
+            )),|globals, args, _kwargs| {
+                let ctx = to_wctx(globals, &args[0])?;
                 let (width, height) = graphics::drawable_size(ctx.get());
                 Ok(vec![Value::Float(width as f64), Value::Float(height as f64)].into())
             }),

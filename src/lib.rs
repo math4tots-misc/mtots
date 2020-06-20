@@ -1,6 +1,7 @@
 extern crate mtots_core;
 
 extern crate dbin;
+extern crate ggez;
 extern crate mint;
 extern crate rand;
 extern crate rand_chacha;
@@ -29,6 +30,7 @@ pub use mtots_core::GeneratorResult;
 pub use mtots_core::Globals;
 pub use mtots_core::HMap;
 pub use mtots_core::Module;
+pub use mtots_core::NativeClosure;
 pub use mtots_core::NativeFunction;
 pub use mtots_core::NativeFunctions;
 pub use mtots_core::NativeIterator;
@@ -38,6 +40,7 @@ pub use mtots_core::ParameterKind;
 pub use mtots_core::ParseError;
 pub use mtots_core::RcPath;
 pub use mtots_core::RcStr;
+pub use mtots_core::Stashable;
 pub use mtots_core::Symbol;
 pub use mtots_core::SymbolRegistryHandle;
 pub use mtots_core::Table;

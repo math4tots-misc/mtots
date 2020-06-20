@@ -224,7 +224,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     }
                     let width = Eval::check_u16(globals, width as i64)?;
                     let height = Eval::check_u16(globals, height as i64)?;
-                    let image = try_(globals, Image::from_rgba8(ctx.get_mut(), width, height, &buffer))?;
+                    let image = try_(
+                        globals,
+                        Image::from_rgba8(ctx.get_mut(), width, height, &buffer),
+                    )?;
                     from_image(globals, image)
                 },
             ),

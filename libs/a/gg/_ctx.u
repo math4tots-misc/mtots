@@ -1,0 +1,23 @@
+
+class Context {
+    # Context object
+    #
+    # You should never manually create a Context object yourself.
+    # instead, you'll be passed an instance in (all?) callbacks
+    # you pass to the event loop.
+    #
+    # NOTE: You should never hold on to a reference to a Context
+    # object past the lifetime of a event callback. If you do
+    # gg will check for it, and cause a panic.
+    # Fundamentally, the issue is that the Context objects have
+    # to be managed by the external game/platform library, and
+    # can't always be fully owned by the mtots runtime.
+    #
+    [opaque]
+
+    def graphics(self) = __malloc(Graphics, [self.opaque])
+}
+
+class Graphics {
+    [opaque]
+}
