@@ -1,0 +1,83 @@
+import a.gg._nev
+import .._ctx::Context
+
+_app_callback_keys = [
+    :update,
+    :draw,
+    :mouse_down,
+    :mouse_up,
+    :mouse_motion,
+    :mouse_wheel,
+    :key_down,
+    :key_up,
+    :text_input,
+    :gamepad_button_down,
+    :gamepad_axis,
+    :resize,
+]
+
+class App {
+    [_name, _author, _sleep_per_frame, _callback_table]
+
+    new(name='name', author='author', sleep_per_frame=nil) = {
+        callback_table = (
+            _app_callback_keys
+                .map(def(key) = [key, Cell(nil)])
+                .to(Table)
+        )
+
+        new(
+            _name=name,
+            _author=author,
+            _sleep_per_frame=sleep_per_frame,
+            _callback_table=callback_table,
+        )
+    }
+
+    def update(self, init=nil, update=nil, **kwargs) = {
+        """
+        Replace all the callbacks for an app.
+        Any callback that's not specified will be set to nil.
+        """
+        if init is not nil {
+            old_update = update
+            initialized = false
+            def update(ctx) {
+                nonlocal initialized
+                if !initialized {
+                    init(ctx)
+                    initialized = true
+                }
+                if old_update is not nil {
+                    old_update(ctx)
+                }
+            }
+        }
+        for key in _app_callback_keys {
+            self._callback_table.get(key).set(
+                if key is :update {
+                    update
+                } else {
+                    kwargs.get(key, nil)
+                }
+            )
+        }
+        for key in kwargs.keys() {
+            if !_app_callback_keys.has(key) {
+                __raise(RuntimeError('Unrecognized update key: %r' % [key]))
+            }
+        }
+    }
+
+    def start(self) = {
+        # Starts the app
+        # This method may or may not return
+        _nev::start(
+            context_class=Context,
+            name=self._name,
+            author=self._author,
+            sleep_per_frame=self._sleep_per_frame,
+            **self._callback_table
+        )
+    }
+}

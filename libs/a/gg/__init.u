@@ -1,42 +1,31 @@
 import a.gg._nev
 import a.gg._ngr
 import ._ctx::Context
-
-updated = false
-drawn = false
+import ._app::App
 
 
-_nev::start(
-    context_class=Context,
-    name="some-game",
-    author="author",
-    sleep_per_frame=nil,
-    update=Cell(def(ctx) {
-        nonlocal updated
-        if !updated {
-            print('first update')
-            updated = true
-        }
-    }),
-    draw=Cell(def(ctx) {
-        nonlocal drawn
-        if !drawn {
-            print('first draw')
-            drawn = true
-        }
-    }),
-    mouse_down=Cell(def(ctx, btn, x, y) = {
+
+app = App()
+
+app.update(
+    init=def(ctx) {
+        print('init')
+    },
+    mouse_down=def(ctx, btn, x, y) {
         print([:mouse_down, btn, x, y])
-    }),
-    mouse_up=Cell(nil),
-    mouse_motion=Cell(nil),
-    mouse_wheel=Cell(nil),
-    key_down=Cell(nil),
-    key_up=Cell(nil),
-    text_input=Cell(nil),
-    gamepad_button_down=Cell(nil),
-    gamepad_axis=Cell(nil),
-    resize=Cell(def(ctx, width, height) = {
+    },
+    key_down=def(ctx, keycode, keymods) {
+        if keycode is :Escape {
+            ctx.quit()
+        }
+        # print([:key_down, keycode, keymods])
+    },
+    text_input=def(ctx, ch) {
+        print([:text_input, ch])
+    },
+    resize=def(ctx, width, height) = {
         print(['new width', width, 'new height', height])
-    })
+    },
 )
+
+app.start()

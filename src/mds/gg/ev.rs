@@ -1,4 +1,5 @@
 //! Functions for dealing with event handling
+use super::to_wctx_mut;
 use super::try_;
 use super::with_wctx;
 use super::Shared;
@@ -34,131 +35,138 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
     let mut map = HashMap::<RcStr, Value>::new();
 
     map.extend(
-        vec![NativeFunction::sdnew0(
-            sr,
-            "start",
-            &[
-                "context_class",
-                "name",
-                "author",
-                "sleep_per_frame",
-                "update",
-                "draw",
-                "mouse_down",
-                "mouse_up",
-                "mouse_motion",
-                "mouse_wheel",
-                "key_down",
-                "key_up",
-                "text_input",
-                "gamepad_button_down",
-                "gamepad_axis",
-                "resize",
-            ],
-            Some(concat!(
-                "Starts the event loop\n",
-                "  context_class: the script-land Context class to wrap opaque contexts\n",
-                "    in before passing it to the callbacks\n",
-                "  name: I'm not sure how it's used; it's just passed to ggez\n",
-                "  author: just passed to ggez as is\n",
-                "  sleep_per_frame: how many seconds (in float) to sleep between\n",
-                "    each frame. May pass nil to use ggez::timer::yield_now instead.\n",
-                "  Remaining parameters are all callbacks\n",
-                "  All callbacks should be wrapped in Cells to allow\n",
-                "  future customization. The Cells may contain nil, in which case\n",
-                "  the callback will do nothing\n",
-            )),
-            |globals, args, _kwargs| {
-                let mut args = args.into_iter();
-                let context_class = Eval::expect_class(globals, &args.next().unwrap())?.clone();
-                let name = Eval::expect_string(globals, &args.next().unwrap())?.clone();
-                let author = Eval::expect_string(globals, &args.next().unwrap())?.clone();
-                let sleep_per_frame = {
-                    let sleep_per_frame_val = args.next().unwrap();
-                    if let Value::Nil = sleep_per_frame_val {
-                        None
-                    } else {
-                        Some(std::time::Duration::from_secs_f64(Eval::expect_floatlike(
-                            globals,
-                            &sleep_per_frame_val,
-                        )?))
-                    }
-                };
-                let update = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let draw = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let mouse_down = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let mouse_up = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let mouse_motion = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let mouse_wheel = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let key_down = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let key_up = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let text_input = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let gamepad_button_down =
-                    Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let gamepad_axis = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-                let resize = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
-
-                let shared: Rc<RefCell<Shared>> = globals.get_from_stash();
-
-                // In this case, using the trampoline isn't strictly necessary, since
-                // ggez is nice enough to allow non-static EventHandler to be passed
-                // to event::run. however, not all game libraries are this polite.
-                globals.escape_to_trampoline(move |mut globals| {
-                    let (mut ctx, mut event_loop) = try_(
-                        &mut globals,
-                        ContextBuilder::new(name.str(), author.str()).build(),
-                    )?;
-                    let symbol_left = globals.intern_str("left");
-                    let symbol_right = globals.intern_str("right");
-                    let symbol_middle = globals.intern_str("middle");
-                    let keycode_symbols = list_keycode_symbols(&mut globals);
-                    let symbol_shift = globals.intern_str("shift");
-                    let symbol_ctrl = globals.intern_str("ctrl");
-                    let symbol_alt = globals.intern_str("alt");
-                    let symbol_logo = globals.intern_str("logo");
-                    let symbol_repeat = globals.intern_str("repeat");
-                    let gamepad_button_map = list_gamepad_buttons(&mut globals);
-                    let gamepad_axis_map = list_gamepad_axes(&mut globals);
-                    let mut state = State {
-                        shared,
-                        globals,
-                        context_class,
-                        sleep_per_frame,
-                        update,
-                        draw,
-                        mouse_down,
-                        mouse_up,
-                        mouse_motion,
-                        mouse_wheel,
-                        key_down,
-                        key_up,
-                        text_input,
-                        gamepad_button_down,
-                        gamepad_axis,
-                        resize,
-                        symbol_left,
-                        symbol_right,
-                        symbol_middle,
-                        keycode_symbols,
-                        symbol_shift,
-                        symbol_ctrl,
-                        symbol_alt,
-                        symbol_logo,
-                        symbol_repeat,
-                        gamepad_button_map,
-                        gamepad_axis_map,
-                    };
-                    match event::run(&mut ctx, &mut event_loop, &mut state) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            state.globals.print_if_error();
-                            panic!("{}", e)
+        vec![
+            NativeFunction::sdnew0(sr, "quit", &["ctx"], None, |globals, args, _kargs| {
+                let mut ctx = to_wctx_mut(globals, &args[0])?;
+                ctx.quit();
+                Ok(Value::Nil)
+            }),
+            NativeFunction::sdnew0(
+                sr,
+                "start",
+                &[
+                    "context_class",
+                    "name",
+                    "author",
+                    "sleep_per_frame",
+                    "update",
+                    "draw",
+                    "mouse_down",
+                    "mouse_up",
+                    "mouse_motion",
+                    "mouse_wheel",
+                    "key_down",
+                    "key_up",
+                    "text_input",
+                    "gamepad_button_down",
+                    "gamepad_axis",
+                    "resize",
+                ],
+                Some(concat!(
+                    "Starts the event loop\n",
+                    "  context_class: the script-land Context class to wrap opaque contexts\n",
+                    "    in before passing it to the callbacks\n",
+                    "  name: I'm not sure how it's used; it's just passed to ggez\n",
+                    "  author: just passed to ggez as is\n",
+                    "  sleep_per_frame: how many seconds (in float) to sleep between\n",
+                    "    each frame. May pass nil to use ggez::timer::yield_now instead.\n",
+                    "  Remaining parameters are all callbacks\n",
+                    "  All callbacks should be wrapped in Cells to allow\n",
+                    "  future customization. The Cells may contain nil, in which case\n",
+                    "  the callback will do nothing\n",
+                )),
+                |globals, args, _kwargs| {
+                    let mut args = args.into_iter();
+                    let context_class = Eval::expect_class(globals, &args.next().unwrap())?.clone();
+                    let name = Eval::expect_string(globals, &args.next().unwrap())?.clone();
+                    let author = Eval::expect_string(globals, &args.next().unwrap())?.clone();
+                    let sleep_per_frame = {
+                        let sleep_per_frame_val = args.next().unwrap();
+                        if let Value::Nil = sleep_per_frame_val {
+                            None
+                        } else {
+                            Some(std::time::Duration::from_secs_f64(Eval::expect_floatlike(
+                                globals,
+                                &sleep_per_frame_val,
+                            )?))
                         }
-                    }
-                    Ok(())
-                })
-            },
-        )]
+                    };
+                    let update = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let draw = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let mouse_down = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let mouse_up = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let mouse_motion = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let mouse_wheel = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let key_down = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let key_up = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let text_input = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let gamepad_button_down =
+                        Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let gamepad_axis = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+                    let resize = Eval::expect_cell(globals, &args.next().unwrap())?.clone();
+
+                    let shared: Rc<RefCell<Shared>> = globals.get_from_stash();
+
+                    // In this case, using the trampoline isn't strictly necessary, since
+                    // ggez is nice enough to allow non-static EventHandler to be passed
+                    // to event::run. however, not all game libraries are this polite.
+                    globals.escape_to_trampoline(move |mut globals| {
+                        let (mut ctx, mut event_loop) = try_(
+                            &mut globals,
+                            ContextBuilder::new(name.str(), author.str()).build(),
+                        )?;
+                        let symbol_left = globals.intern_str("left");
+                        let symbol_right = globals.intern_str("right");
+                        let symbol_middle = globals.intern_str("middle");
+                        let keycode_symbols = list_keycode_symbols(&mut globals);
+                        let symbol_shift = globals.intern_str("shift");
+                        let symbol_ctrl = globals.intern_str("ctrl");
+                        let symbol_alt = globals.intern_str("alt");
+                        let symbol_logo = globals.intern_str("logo");
+                        let symbol_repeat = globals.intern_str("repeat");
+                        let gamepad_button_map = list_gamepad_buttons(&mut globals);
+                        let gamepad_axis_map = list_gamepad_axes(&mut globals);
+                        let mut state = State {
+                            shared,
+                            globals,
+                            context_class,
+                            sleep_per_frame,
+                            update,
+                            draw,
+                            mouse_down,
+                            mouse_up,
+                            mouse_motion,
+                            mouse_wheel,
+                            key_down,
+                            key_up,
+                            text_input,
+                            gamepad_button_down,
+                            gamepad_axis,
+                            resize,
+                            symbol_left,
+                            symbol_right,
+                            symbol_middle,
+                            keycode_symbols,
+                            symbol_shift,
+                            symbol_ctrl,
+                            symbol_alt,
+                            symbol_logo,
+                            symbol_repeat,
+                            gamepad_button_map,
+                            gamepad_axis_map,
+                        };
+                        match event::run(&mut ctx, &mut event_loop, &mut state) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                state.globals.print_if_error();
+                                panic!("{}", e)
+                            }
+                        }
+                        Ok(())
+                    })
+                },
+            ),
+        ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),
     );
@@ -414,7 +422,14 @@ impl EventHandler for State {
 fn list_keycode_symbols(globals: &mut Globals) -> Vec<Symbol> {
     let mut ret = Vec::new();
     for keycode in list_keycodes() {
-        ret.push(globals.intern_str(&format!("{:?}", keycode)));
+        ret.push(match keycode {
+            KeyCode::Back => {
+                // The docs themselves say Back will maybe be
+                // renamed to Backspace in the future
+                globals.intern_str("Backspace")
+            }
+            _ => globals.intern_str(&format!("{:?}", keycode)),
+        });
     }
     ret.into()
 }

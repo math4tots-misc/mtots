@@ -12,6 +12,7 @@ use gamepad::GamepadRegistry;
 use ggez::GameError;
 use ggez::GameResult;
 use wctx::to_wctx;
+use wctx::to_wctx_mut;
 use wctx::with_wctx;
 
 pub(super) fn add_gg_modules(globals: &mut Globals) {

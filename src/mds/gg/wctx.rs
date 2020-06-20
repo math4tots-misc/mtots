@@ -3,6 +3,7 @@
 //! but the ggez Context is only ever available as a &mut.
 //! I couldn't figure out a way to do it without any unsafe code, but at least
 //! I think I can limit the unsafe to just this module.
+use crate::ggez;
 use crate::ggez::Context;
 use crate::Eval;
 use crate::EvalResult;
@@ -10,6 +11,7 @@ use crate::Globals;
 use crate::Opaque;
 use crate::Value;
 use std::cell::Ref;
+use std::cell::RefMut;
 use std::rc::Rc;
 
 /// Struct that wraps around a raw &'static mut Context.
@@ -31,6 +33,9 @@ impl WrappedContext {
     pub fn get(&self) -> &Context {
         self.ctx
     }
+    pub fn quit(&mut self) {
+        ggez::event::quit(self.ctx);
+    }
 }
 
 pub(super) fn to_wctx<'a>(
@@ -38,6 +43,13 @@ pub(super) fn to_wctx<'a>(
     v: &'a Value,
 ) -> EvalResult<Ref<'a, WrappedContext>> {
     Eval::expect_opaque(globals, v)
+}
+
+pub(super) fn to_wctx_mut<'a>(
+    globals: &mut Globals,
+    v: &'a Value,
+) -> EvalResult<RefMut<'a, WrappedContext>> {
+    Eval::expect_opaque_mut(globals, v)
 }
 
 pub(super) fn with_wctx<F, R>(globals: &mut Globals, ctx: &mut Context, f: F) -> EvalResult<R>
