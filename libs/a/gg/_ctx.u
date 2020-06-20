@@ -26,7 +26,15 @@ class Graphics {
     [opaque]
 
     def size(self) = {
-        # Returns
+        # Returns [width, height] of window in pixels
         _ngr::size(self.opaque)
+    }
+
+    def set_fullscreen(self, mode) = {
+        # mode:
+        #   0 -> windowed mode
+        #   1 -> true full screen
+        #   2 -> windowed full screen
+        _ngr::set_fullscreen(self.opaque, mode)
     }
 }

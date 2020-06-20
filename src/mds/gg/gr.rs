@@ -1,12 +1,16 @@
 //! Functions for dealing with graphics
 use super::to_wctx;
+use super::to_wctx_mut;
+use super::try_;
 use crate::EvalResult;
+use crate::Eval;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Value;
 use ggez::graphics;
+use ggez::conf::FullscreenType;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -27,19 +31,32 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let (width, height) = graphics::drawable_size(ctx.get());
                 Ok(vec![Value::Float(width as f64), Value::Float(height as f64)].into())
             }),
-            NativeFunction::sdnew0(sr, "set_fullscreen", &["ctx", "type"], Some(concat!(
+            NativeFunction::sdnew0(sr, "set_fullscreen", &["ctx", "mode"], Some(concat!(
                 "Sets the window to fullscreen or back\n",
-                "type = 0 implies windowed mode\n",
-                "type = 1 implies true fullscreen\n",
+                "mode = 0 implies windowed mode\n",
+                "mode = 1 implies true fullscreen\n",
                 "  used to be preferred 'cause it can have small performance\n",
                 "  benefits over windowed fullscreen\n",
-                "type = 2 implies windowed fullscreen\n",
+                "mode = 2 implies windowed fullscreen\n",
                 "  generally preferred over real fullscreen these days\n",
                 "  'cause it plays nicer with multiple monitors\n",
             )),|globals, args, _kwargs| {
-                let ctx = to_wctx(globals, &args[0])?;
-                let (width, height) = graphics::drawable_size(ctx.get());
-                Ok(vec![Value::Float(width as f64), Value::Float(height as f64)].into())
+                let mut ctx = to_wctx_mut(globals, &args[0])?;
+                let ft = Eval::expect_int(globals, &args[1])?;
+                let ft = match ft {
+                    0 => FullscreenType::Windowed,
+                    1 => FullscreenType::True,
+                    2 => FullscreenType::Desktop,
+                    _ => return globals.set_exc_str(&format!(
+                        concat!(
+                            "fullscreen must be one of 0 (windowed), 1 (true) or ",
+                            "2 (windowed fullscreen), but got {}",
+                        ),
+                        ft,
+                    )),
+                };
+                try_(globals, ctx.set_fullscreen(ft))?;
+                Ok(Value::Nil)
             }),
         ]
         .into_iter()

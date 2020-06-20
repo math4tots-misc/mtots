@@ -5,6 +5,7 @@
 //! I think I can limit the unsafe to just this module.
 use crate::ggez;
 use crate::ggez::Context;
+use crate::ggez::GameResult;
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
@@ -35,6 +36,9 @@ impl WrappedContext {
     }
     pub fn quit(&mut self) {
         ggez::event::quit(self.ctx);
+    }
+    pub fn set_fullscreen(&mut self, ft: ggez::conf::FullscreenType) -> GameResult<()> {
+        ggez::graphics::set_fullscreen(self.ctx, ft)
     }
 }
 
