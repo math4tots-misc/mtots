@@ -2,15 +2,15 @@
 use super::to_wctx;
 use super::to_wctx_mut;
 use super::try_;
-use crate::EvalResult;
 use crate::Eval;
+use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Value;
-use ggez::graphics;
 use ggez::conf::FullscreenType;
+use ggez::graphics;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;

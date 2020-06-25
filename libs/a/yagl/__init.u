@@ -1,0 +1,105 @@
+import a._yagl
+
+
+_callbacks = [
+    :init,
+    :update,
+    :render,
+    :resize,
+    :char,
+    :key_pressed,
+    :key_released,
+]
+
+class AppContext {
+    # AppContext
+    # The primary way to request resources and generally interact
+    # with the framework
+    #
+    # NOTE: a new instance of AppContext is created for every
+    # callback invocation, so values cannot really be cached here.
+    [opaque]
+
+    def exit(self) {
+        _yagl::exit(self.opaque)
+    }
+
+    def scale(self) = {
+        _yagl::scale(self.opaque)
+    }
+
+    def new_sheet_from_color(self, color) = {
+        __malloc(Sheet, [_yagl::new_sheet_from_color(self.opaque, color)])
+    }
+
+    def new_batch(self, sheet) = {
+        __malloc(Batch, [_yagl::new_batch(self.opaque, sheet.opaque)])
+    }
+
+    def new_text_grid(self, char_width, dimensions) = {
+        [nrows, ncols] = dimensions
+        __malloc(TextGrid, [
+            _yagl::new_text_grid(self.opaque, char_width, nrows, ncols),
+        ])
+    }
+}
+
+class App {
+    [callbacks]
+    new() = new(callbacks=_callbacks.map(def(key) = [key, Cell(nil)]).to(Table))
+    def update(self, **kwargs) {
+        for key in _callbacks {
+            self.callbacks.get(key).set(if key is :render {
+                nil.map(kwargs.get(key, nil), def(render) = {
+                    def(ctx) = render(ctx).map(def(batch) = batch.opaque)
+                })
+            } else {
+                kwargs.get(key, nil)
+            })
+        }
+        callback_set = Set(_callbacks)
+        assert_eq(callback_set, callback_set + Set(self.callbacks.keys()))
+    }
+    def run(self) {
+        _yagl::run(AppContext, **self.callbacks)
+    }
+}
+
+class Sheet {
+    # a sprite sheet
+    # created with calls to AppContext().new_sheet_* methods
+    [opaque]
+}
+
+class Batch {
+    # a sprite batch
+    # created with calls to AppContext().new_batch(..)
+    [opaque]
+
+    def len(self) = _yagl::batch_len(self.opaque)
+
+    def add(self, src=nil, dest=nil, rotate=nil, color_factor=nil) {
+        _yagl::batch_add(self.opaque, src, dest, rotate, color_factor)
+    }
+
+    def set(self, i, src=nil, dest=nil, rotate=nil, color_factor=nil) {
+        _yagl::batch_set(self.opaque, i, src, dest, rotate, color_factor)
+    }
+}
+
+class TextGrid {
+    # a convenience class that wraps SpriteBatch for drawing blocks of text in
+    # monospace courier.
+    # created with calls to AppContext().new_text_grid(..)
+    [opaque]
+
+    def write(self, coord, string) {
+        [row, col] = coord
+        _yagl::text_grid_write(self.opaque, row, col, string)
+    }
+
+    def rect_for(self, coord) = {
+        [row, col] = coord
+        _yagl::rect_for_coord(self.opaque, row, col)
+    }
+}

@@ -1,0 +1,56 @@
+import a.yagl
+
+def main() {
+    app = yagl::App()
+
+    W = H = nil
+    batch = nil
+    tg = nil
+    rotate = 0
+
+    app.update(
+        init=def(ctx) = {
+            nonlocal batch, W, H, tg
+            print('init')
+            [W, H] = ctx.scale()
+            sheet = ctx.new_sheet_from_color([1, 1, 1])
+            batch = ctx.new_batch(sheet)
+            batch.add(
+                src=[0, 0, 1, 1],
+                dest=[0, 0, W * 0.75, H * 0.75],
+                color_factor=[0.5, 0, 0.5],
+            )
+            batch.add(
+                src=[0, 0, 1, 1],
+                dest=[W * 0.25, H * 0.25, W * 1.0, H * 1.0],
+                color_factor=[0.5, 0.2, 0.1, 0.5],
+            )
+            tg = ctx.new_text_grid(W / 40, [80, 80])
+            tg.write([0, 0], 'hello world!')
+        },
+        resize=def(actx, width, height) = {
+            print('dim = [%r, %r]' % [width, height])
+        },
+        render=def(ctx) = {
+            [batch, tg]
+        },
+        key_pressed=def(ctx, dev, key) = {
+            nonlocal rotate
+            print('dev, key = %r, %r' % [dev, key])
+            if key is :Escape {
+                ctx.exit()
+            } elif key is :J {
+                rotate += 0.1
+                batch.set(0, rotate=rotate)
+            } elif key is :L {
+                rotate -= 0.1
+                batch.set(0, rotate=rotate)
+            }
+        }
+    )
+    app.run()
+}
+
+if __name == __main() {
+    main()
+}
