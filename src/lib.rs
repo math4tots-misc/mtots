@@ -42,6 +42,7 @@ pub use mtots_core::ParameterKind;
 pub use mtots_core::ParseError;
 pub use mtots_core::RcPath;
 pub use mtots_core::RcStr;
+pub use mtots_core::ReplDelegate;
 pub use mtots_core::Stashable;
 pub use mtots_core::Symbol;
 pub use mtots_core::SymbolRegistryHandle;
