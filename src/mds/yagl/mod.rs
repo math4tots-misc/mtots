@@ -2,14 +2,14 @@
 use crate::anyhow::Result;
 use crate::yagl::AppContext;
 use crate::yagl::Color;
-use crate::yagl::Rect;
 use crate::yagl::DeviceId;
+use crate::yagl::Instance;
 use crate::yagl::Key;
+use crate::yagl::Rect;
 use crate::yagl::RenderContext;
 use crate::yagl::SpriteBatch;
 use crate::yagl::SpriteSheet;
 use crate::yagl::TextGrid;
-use crate::yagl::Instance;
 use crate::Class;
 use crate::Eval;
 use crate::EvalResult;
@@ -151,7 +151,9 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                         if is_text_grid(val) {
                                             refs.push({
                                                 let r = to_text_grid(&mut self.globals, val);
-                                                Ref::map(unwr(&mut self.globals, r), |tg| tg.batch())
+                                                Ref::map(unwr(&mut self.globals, r), |tg| {
+                                                    tg.batch()
+                                                })
                                             });
                                         } else {
                                             refs.push({
@@ -196,7 +198,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 Ok(())
                             }
 
-                            fn key_pressed(&mut self, actx: &mut AppContext, dev: DeviceId, key: Key) -> Result<()> {
+                            fn key_pressed(
+                                &mut self,
+                                actx: &mut AppContext,
+                                dev: DeviceId,
+                                key: Key,
+                            ) -> Result<()> {
                                 let handler = self.key_pressed.borrow().clone();
                                 if !handler.is_nil() {
                                     let dev = self.translate_device(dev).unwrap();
@@ -206,12 +213,22 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 Ok(())
                             }
 
-                            fn key_released(&mut self, actx: &mut AppContext, dev: DeviceId, key: Key) -> Result<()> {
+                            fn key_released(
+                                &mut self,
+                                actx: &mut AppContext,
+                                dev: DeviceId,
+                                key: Key,
+                            ) -> Result<()> {
                                 let handler = self.key_released.borrow().clone();
                                 if !handler.is_nil() {
                                     let dev = self.translate_device(dev).unwrap();
                                     let key = self.translate_key(key).unwrap();
-                                    self.call_handler(actx, "key_released", handler, vec![dev, key]);
+                                    self.call_handler(
+                                        actx,
+                                        "key_released",
+                                        handler,
+                                        vec![dev, key],
+                                    );
                                 }
                                 Ok(())
                             }
@@ -231,30 +248,18 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     })
                 },
             ),
-            NativeFunction::sdnew0(
-                sr,
-                "exit",
-                &["ctx"],
-                None,
-                |globals, args, _kwargs| {
-                    let mut ctx = to_actx_mut(globals, &args[0])?;
-                    ctx.exit();
-                    Ok(Value::Nil)
-                },
-            ),
-            NativeFunction::sdnew0(
-                sr,
-                "scale",
-                &["ctx"],
-                None,
-                |globals, args, _kwargs| {
-                    let ctx = to_actx(globals, &args[0])?;
-                    let [width, height] = ctx.scale();
-                    let width = Value::Float(width as f64);
-                    let height = Value::Float(height as f64);
-                    Ok(vec![width, height].into())
-                },
-            ),
+            NativeFunction::sdnew0(sr, "exit", &["ctx"], None, |globals, args, _kwargs| {
+                let mut ctx = to_actx_mut(globals, &args[0])?;
+                ctx.exit();
+                Ok(Value::Nil)
+            }),
+            NativeFunction::sdnew0(sr, "scale", &["ctx"], None, |globals, args, _kwargs| {
+                let ctx = to_actx(globals, &args[0])?;
+                let [width, height] = ctx.scale();
+                let width = Value::Float(width as f64);
+                let height = Value::Float(height as f64);
+                Ok(vec![width, height].into())
+            }),
             NativeFunction::sdnew0(
                 sr,
                 "new_batch",
@@ -420,7 +425,8 @@ fn from_rect(rect: Rect) -> Value {
         Value::Float(ul_y as f64),
         Value::Float(lr_x as f64),
         Value::Float(lr_y as f64),
-    ].into()
+    ]
+    .into()
 }
 
 fn to_rect(globals: &mut Globals, value: &Value) -> EvalResult<Rect> {
@@ -487,7 +493,10 @@ fn to_batch<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, S
     Eval::expect_opaque(globals, value)
 }
 
-fn to_batch_mut<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<RefMut<'a, SpriteBatch>> {
+fn to_batch_mut<'a>(
+    globals: &mut Globals,
+    value: &'a Value,
+) -> EvalResult<RefMut<'a, SpriteBatch>> {
     Eval::expect_opaque_mut(globals, value)
 }
 
@@ -514,7 +523,10 @@ fn to_text_grid<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'
     Eval::expect_opaque(globals, value)
 }
 
-fn to_text_grid_mut<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<RefMut<'a, TextGrid>> {
+fn to_text_grid_mut<'a>(
+    globals: &mut Globals,
+    value: &'a Value,
+) -> EvalResult<RefMut<'a, TextGrid>> {
     Eval::expect_opaque_mut(globals, value)
 }
 
