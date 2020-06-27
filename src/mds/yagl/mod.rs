@@ -189,7 +189,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 Ok(())
                             }
 
-                            fn ch(&mut self, actx: &mut AppContext, ch: char) -> Result<()> {
+                            fn char(&mut self, actx: &mut AppContext, ch: char) -> Result<()> {
                                 let handler = self.char.borrow().clone();
                                 if !handler.is_nil() {
                                     let ch = self.globals.char_to_val(ch);
@@ -201,14 +201,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             fn key_pressed(
                                 &mut self,
                                 actx: &mut AppContext,
-                                dev: DeviceId,
                                 key: Key,
                             ) -> Result<()> {
                                 let handler = self.key_pressed.borrow().clone();
                                 if !handler.is_nil() {
-                                    let dev = self.translate_device(dev).unwrap();
                                     let key = self.translate_key(key).unwrap();
-                                    self.call_handler(actx, "key_pressed", handler, vec![dev, key]);
+                                    self.call_handler(actx, "key_pressed", handler, vec![key]);
                                 }
                                 Ok(())
                             }
@@ -216,18 +214,16 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                             fn key_released(
                                 &mut self,
                                 actx: &mut AppContext,
-                                dev: DeviceId,
                                 key: Key,
                             ) -> Result<()> {
                                 let handler = self.key_released.borrow().clone();
                                 if !handler.is_nil() {
-                                    let dev = self.translate_device(dev).unwrap();
                                     let key = self.translate_key(key).unwrap();
                                     self.call_handler(
                                         actx,
                                         "key_released",
                                         handler,
-                                        vec![dev, key],
+                                        vec![key],
                                     );
                                 }
                                 Ok(())
