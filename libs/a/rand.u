@@ -21,6 +21,10 @@ class Rng {
         if low is nil and high is nil {
             _rand::rng_gen_int(self.opaque)
         } else {
+            if high is nil {
+                high = low
+                low = 0
+            }
             _rand::rng_gen_int_range(self.opaque, low, high)
         }
     }
@@ -34,6 +38,12 @@ class Rng {
         } else {
             _rand::rng_gen_float_range(self.opaque, low, high)
         }
+    }
+
+    def select(self, elements) = {
+        elements = List(elements)
+        i = self.int(elements.len())
+        elements[i]
     }
 }
 

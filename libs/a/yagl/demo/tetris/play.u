@@ -1,0 +1,104 @@
+
+
+
+
+def update(app, model) {
+
+    nrows = model.nrows()
+    ncols = model.ncols()
+    bg_batch = grid_batch = nil
+    W = H = scale = CELL_SIZE = offset_x = nil
+
+    BACKGROUND_COLOR = [0, 0.5, 1]
+    EMPTY_COLOR = [0.1, 0.2, 0.2]
+    FILLED_COLOR = [1, 1, 1]
+    LIVE_COLOR = [0.5, 0.2, 0.1]
+
+    def rect_for(rc) = {
+        # figures out the location and size of the rectangle
+        # located at the given row and column
+        [r, c] = rc
+        y = CELL_SIZE * r
+        x = CELL_SIZE * c + offset_x
+        [x, y, x + CELL_SIZE, y + CELL_SIZE]
+    }
+
+    def init_scale(actx) {
+        # Needs to be recalled whenever the window is resized
+        nonlocal scale, CELL_SIZE, W, H, offset_x
+        [W, H] = scale = actx.scale()
+        CELL_SIZE = H / nrows
+        offset_x = (W - CELL_SIZE * ncols) / 2
+
+        bg_batch.set(0, [0, 0, 1, 1], [0, 0, W, H], color_factor=BACKGROUND_COLOR)
+
+        for row in range(nrows) {
+            for col in range(ncols) {
+                grid_batch.set(
+                    row * ncols + col,
+                    src=[0, 0, 1, 1],
+                    dest=rect_for([row, col]),
+                    color_factor=EMPTY_COLOR,
+                )
+            }
+        }
+    }
+
+    app.update(
+        init=def(actx) {
+            nonlocal bg_batch, grid_batch
+
+            # Initialize the batches
+            pixel_sheet = actx.new_sheet_from_color([1, 1, 1])
+            bg_batch = actx.new_batch(pixel_sheet)
+            grid_batch = actx.new_batch(pixel_sheet)
+            bg_batch.add([0, 0, 1, 1], [0, 0, 1, 1], color_factor=BACKGROUND_COLOR)
+            for row in range(nrows) {
+                for col in range(ncols) {
+                    grid_batch.add(
+                        src=[0, 0, 1, 1],
+                        dest=[0, 0, 1, 1],
+                        color_factor=EMPTY_COLOR,
+                    )
+                }
+            }
+            init_scale(actx)
+        },
+        resize=def(actx, width, height) {
+            init_scale(actx)
+        },
+        update=def(actx) {
+            model.tick()
+        },
+        key_pressed=def(actx, key) {
+            if key is :Escape {
+                actx.exit()
+            } elif key is :W or key is :Up {
+                model.rotate(1)
+            } elif key is :A or key is :Left {
+                model.move([0, -1])
+            } elif key is :D or key is :Right {
+                model.move([0, 1])
+            } elif key is :S or key is :Down {
+                model.move([1, 0])
+            } elif key is :Space {
+                model.hard_drop()
+            } else {
+                print('Unrecognized key: %r' % [key])
+            }
+        },
+        render=def(actx) = {
+            for [i, val] in model.to_cells().iter().enumerate() {
+                if val is 0 {
+                    grid_batch.set(i, color_factor=EMPTY_COLOR)
+                } elif val is 1 {
+                    grid_batch.set(i, color_factor=FILLED_COLOR)
+                } else {
+                    assert_eq(val, 2)
+                    grid_batch.set(i, color_factor=LIVE_COLOR)
+                }
+            }
+            [bg_batch, grid_batch]
+        }
+    )
+}

@@ -207,6 +207,8 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 if !handler.is_nil() {
                                     let key = self.translate_key(key).unwrap();
                                     self.call_handler(actx, "key_pressed", handler, vec![key]);
+                                } else if let Key::Escape = key {
+                                    actx.exit();
                                 }
                                 Ok(())
                             }

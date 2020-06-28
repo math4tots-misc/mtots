@@ -1,0 +1,347 @@
+import a.rand
+import a.math::emod
+import a.time
+
+_DEFAULT_TICK_SEC = 1.0
+
+_DEFAULT_NROWS = 24
+_DEFAULT_NCOLS = 10
+
+@class Model {
+    [_last_tick, _tick_sec, _state, _rng, _nrows, _ncols, _rows, _live_piece, _next_shape]
+    new(nrows=nil, ncols=nil, rng=nil) = {
+        nrows = nrows or _DEFAULT_NROWS
+        ncols = ncols or _DEFAULT_NCOLS
+        rng = rng or rand::default()
+        rows = _new_board(nrows, ncols)
+        new(
+            _last_tick=nil,
+            _tick_sec=_DEFAULT_TICK_SEC,
+            _state=:ok,
+            _rng=rng,
+            _nrows=nrows,
+            _ncols=ncols,
+            _rows=rows,
+            _live_piece=nil,
+            _next_shape=_next_shape(rng),
+        )
+    }
+    def nrows(self) = self._nrows
+    def ncols(self) = self._ncols
+    def to_cells(self) = {
+        # Returns triple:
+        # nrows, ncols, cells
+        # where cells is a flat array of 0, 1, or 2
+        # where 0 indicates an empty cell, 1 indicates
+        # a filled cell, and 2 a cell occupied by
+        # the live piece
+        nrows = self._nrows
+        ncols = self._ncols
+        cells = @[0] * (nrows * ncols)
+        for row in range(nrows) {
+            for col in range(ncols) {
+                cells[row * ncols + col] = self._rows[row][col]
+            }
+        }
+        if self._live_piece {
+            for [row, col] in self._live_piece.coords() {
+                cells[row * ncols + col] = 2
+            }
+        }
+        cells.move()
+    }
+    def _is_open_cell(self, r, c) = {
+        nrows = self._nrows
+        ncols = self._ncols
+        r >= 0 and r < nrows and c >= 0 and c < ncols and !self._rows[r][c]
+    }
+    def tick(self) = {
+        now = time::now()
+        last_tick = self._last_tick
+        if last_tick is not nil and self._tick_sec > now - self._last_tick {
+            return false
+        }
+        self._last_tick = now
+
+        state = self._state
+        if state is :ok {
+            self._tick()
+        } elif state is :lose {
+            # nothing to do
+        }
+        true
+    }
+    def _tick(self) {
+        piece = self._live_piece
+        if piece is nil {
+            shape = self._get_next_shape()
+            shape_width = shape[0].len()
+            col = (self._ncols - shape_width) // 2
+            piece = _Piece(shape, 0, col, 0)
+
+            if self._intersects(piece) {
+                self._state = :lose
+            }
+            self._live_piece = piece
+        } else {
+            moved = piece.move([1, 0])
+            if self._intersects(moved) {
+                self._solidify()
+            } else {
+                self._live_piece = moved
+            }
+        }
+    }
+    def move(self, dir) = {
+        piece = self._live_piece
+        if piece is not nil {
+            moved = piece.move(dir)
+            if !self._intersects(moved) {
+                self._live_piece = moved
+            }
+        }
+    }
+    def rotate(self, n) = {
+        piece = self._live_piece
+        if piece is not nil {
+            moved = piece.rotate(n)
+            if !self._intersects(moved) {
+                self._live_piece = moved
+            } else {
+                # allow permissive rotations --
+                # if wiggling the piece a little would
+                # make the rotation possible, do it
+                for dc in [-1, 1, -2, 2, -3, 3] {
+                    new_moved = moved.move([0, dc])
+                    if !self._intersects(new_moved) {
+                        self._live_piece = new_moved
+                        return
+                    }
+                }
+            }
+        }
+    }
+    def hard_drop(self) = {
+        while self._live_piece is not nil {
+            self._tick()
+        }
+        self._tick()
+    }
+    def _solidify(self) = {
+        # solidifies the current live piece
+        rows = self._rows
+        for [r, c] in self._live_piece.coords() {
+            rows[r][c] = 1
+        }
+        self._live_piece = nil
+
+        nrows = self._nrows
+        ncols = self._ncols
+        finished_rows = (
+            rows.clone().move()
+                .iter()
+                .enumerate()
+                .filter(def(ir) = ir[1].all())
+                .map(def(ir) = ir[0])
+                .list()
+        )
+        if finished_rows {
+            for row in finished_rows.reversed() {
+                rows.remove(row)
+            }
+            rows.splice(0, 0, finished_rows.map(def(_) = @[0] * ncols))
+        }
+    }
+    def _get_next_shape(self) = {
+        shape = self._next_shape
+        self._next_shape = _next_shape(self._rng)
+        shape
+    }
+    def _intersects(self, piece) = {
+        for [r, c] in piece.coords() {
+            if !self._is_open_cell(r, c) {
+                return true
+            }
+        }
+        false
+    }
+}
+
+def _new_board(nrows, ncols) = (
+    range(nrows)
+        .map(def(_) = ([0] * ncols).to(MutableList))
+        .to(MutableList)
+)
+
+def _next_shape(rng) = {
+    shape_index = rng.select(_shapes)
+}
+
+case class _Piece {
+    # shape = an entry in _shapes
+    # r, c = row and column of upper-left corner of this piece
+    # rot = int indicating # of 90-degree clockwise rotations
+    [shape, r, c, rot]
+    def* coords(self) {
+        shape = self.shape
+        R = shape.len()
+        dr = self.r
+        dc = self.c
+        rot = emod(self.rot, 4)
+        for [r, row] in shape.iter().enumerate() {
+            C = row.len()
+            for [c, val] in row.iter().enumerate() {
+                if val {
+                    [ar, ac] = if rot is 0 {
+                        [r, c]
+                    } elif rot is 1 {
+                        [c, R - 1 - r]
+                    } elif rot is 2 {
+                        [R - 1 - r, C - 1 - c]
+                    } elif rot is 3 {
+                        [C - 1 - c, r]
+                    }
+                    yield [dr + ar, dc + ac]
+                }
+            }
+        }
+    }
+
+    def move(self, dir) = {
+        # Returns self moved in the given direction
+        [r, c] = dir
+        _Piece(
+            self.shape,
+            self.r + r,
+            self.c + c,
+            self.rot,
+        )
+    }
+
+    def __repr(self) = {
+        'Piece(%r, %r, %s)' % [self.r, self.c, self.str()]
+    }
+
+    def rotate(self, n) = {
+        # Returns self rotated n times 90-degrees clockwise
+        # The column is also adjusted when the width and height
+        # of the piece are not equal to make it look a bit more
+        # like the rotation happened around the 'center'
+        [R, C] = self.dim()
+        r = self.r
+        c = self.c
+        if n % 2 and R != C {
+            # the width will change before and after the rotation
+            # if the width shrinks, we want to move to the right
+            # a little bit, and if the width incrases, we want
+            # to move to the left a little bit
+            c += (C - R) // 2
+        }
+        _Piece(
+            self.shape,
+            r,
+            c,
+            emod(self.rot + n, 4),
+        )
+    }
+
+    def dim(self) = {
+        # Returns the [nrows, ncols] dimensions of this _Piece
+        # shape is not square, rot may affect this value
+        rot = emod(self.rot, 4)
+        [R, C] = [self.shape.len(), self.shape[0].len()]
+        if rot is 0 or rot is 2 {
+            [R, C]
+        } else {
+            [C, R]
+        }
+    }
+
+    def str(self) = {
+        # For debugging purposes
+        [R, C] = self.dim()
+        buffer = range(R).map(def(_) = @[0] * C).to(MutableList)
+        [dr, dc] = [self.r, self.c]
+        for [r, c] in self.coords() {
+            r -= dr
+            c -= dc
+            buffer[r][c] = 1
+        }
+        string = @""
+        buffer = buffer.move().map(def(row) = row.move())
+        for [r, row] in buffer.iter().enumerate() {
+            for [c, val] in row.iter().enumerate() {
+                string.extend(if val { '1' } else { '0' })
+            }
+            string.extend('\n')
+        }
+        string.move()
+    }
+}
+
+_shapes = [
+    [
+        '11',
+        '11',
+    ],
+    [
+        '110',
+        '011',
+    ],
+    [
+        '011',
+        '110',
+    ],
+    [
+        '010',
+        '111',
+    ],
+    [
+        '1111',
+    ],
+    [
+        '111',
+        '001',
+    ],
+    [
+        '111',
+        '100',
+    ],
+].map(def(shape) = shape.map(def(row) = row.chars().map(Int)))
+
+# print(_Piece(_shapes[1], 0, 0, 1).str())
+
+def __test_piece() {
+    assert_eq(
+        _Piece(_shapes[0], 0, 0, 0).str(),
+        # 11
+        # 11
+    )
+
+    assert_eq(
+        _Piece(_shapes[3], 0, 0, 0).str(),
+        # 010
+        # 111
+    )
+    assert_eq(
+        _Piece(_shapes[3], 0, 0, 1).str(),
+        # 10
+        # 11
+        # 10
+    )
+    assert_eq(
+        _Piece(_shapes[3], 0, 0, 2).str(),
+        # 111
+        # 010
+    )
+    assert_eq(
+        _Piece(_shapes[3], 0, 0, 3).str(),
+        # 01
+        # 11
+        # 01
+    )
+    assert_eq(
+        _Piece(_shapes[3], 0, 0, 3).str(),
+        _Piece(_shapes[3], 0, 0, -1).str(),
+    )
+}

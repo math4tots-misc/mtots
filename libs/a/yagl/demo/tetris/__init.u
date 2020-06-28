@@ -1,0 +1,15 @@
+import a.yagl::App
+import .model::Model
+import .play
+
+
+def main() {
+    app = App()
+    model = Model()
+    play::update(app, model)
+    app.run()
+}
+
+if __name == __main() {
+    main()
+}
