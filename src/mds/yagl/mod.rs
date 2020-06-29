@@ -1,4 +1,3 @@
-//! JSON bindings
 use crate::anyhow::Result;
 use crate::yagl::AppContext;
 use crate::yagl::Color;

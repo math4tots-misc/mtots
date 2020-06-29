@@ -1,4 +1,3 @@
-//! JSON bindings
 use crate::ErrorIndicator;
 use crate::Eval;
 use crate::EvalResult;
