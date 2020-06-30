@@ -4,12 +4,17 @@
 
 def update(app, model) {
 
+    board_margin_ratio = 0.05
+
     nrows = model.nrows()
     ncols = model.ncols()
-    bg_batch = grid_batch = nil
-    W = H = scale = CELL_SIZE = offset_x = nil
+    bg_batch = grid_batch = game_over_text_grid = nil
+    score_text_grid = nil
+    W = H = scale = CELL_SIZE = offset_x = offset_y = nil
 
-    BACKGROUND_COLOR = [0, 0.5, 1]
+    GAME_OVER_COLOR = [1.0, 0.0, 0.0]
+    LEFT_BACKGROUND_COLOR = [0, 0.5, 1]
+    RIGHT_BACKGROUND_COLOR = [0.5, 0, 1]
     EMPTY_COLOR = [0.1, 0.2, 0.2]
     FILLED_COLOR = [1, 1, 1]
     LIVE_COLOR = [0.5, 0.2, 0.1]
@@ -18,19 +23,32 @@ def update(app, model) {
         # figures out the location and size of the rectangle
         # located at the given row and column
         [r, c] = rc
-        y = CELL_SIZE * r
+        y = CELL_SIZE * r + offset_y
         x = CELL_SIZE * c + offset_x
         [x, y, x + CELL_SIZE, y + CELL_SIZE]
     }
 
     def init_scale(actx) {
         # Needs to be recalled whenever the window is resized
-        nonlocal scale, CELL_SIZE, W, H, offset_x
+        nonlocal scale, CELL_SIZE, W, H
+        nonlocal offset_x, offset_y, game_over_text_grid
+        nonlocal score_text_grid
         [W, H] = scale = actx.scale()
-        CELL_SIZE = H / nrows
-        offset_x = (W - CELL_SIZE * ncols) / 2
 
-        bg_batch.set(0, [0, 0, 1, 1], [0, 0, W, H], color_factor=BACKGROUND_COLOR)
+        # We want the board to take up the left hand side of the window
+        # with at least a `board_margin_ratio` margin on all sides
+        max_board_height = H * (1 - 2 * board_margin_ratio)
+        max_board_width = W / 2 * (1 - 2 * board_margin_ratio)
+        CELL_SIZE = min(max_board_height / nrows, max_board_width / ncols)
+        board_width = CELL_SIZE * ncols
+        board_height = CELL_SIZE * nrows
+
+        CELL_SIZE = H / nrows
+        offset_x = (W / 2 - CELL_SIZE * ncols) / 2
+        offset_y = (H - CELL_SIZE * nrows) / 2
+
+        bg_batch.set(0, [0, 0, 1, 1], [0, 0, W/2, H], color_factor=LEFT_BACKGROUND_COLOR)
+        bg_batch.set(1, [0, 0, 1, 1], [W/2, 0, W, H], color_factor=RIGHT_BACKGROUND_COLOR)
 
         for row in range(nrows) {
             for col in range(ncols) {
@@ -42,6 +60,20 @@ def update(app, model) {
                 )
             }
         }
+        game_over_text = "Game over"
+        game_over_text_width = W / 20.0
+        game_over_text_grid = actx.new_text_grid(game_over_text_width, [1, 20])
+        game_over_text_height = game_over_text_grid.char_height()
+        game_over_text_grid.write([0, 0], game_over_text)
+        game_over_text_grid.set_translation([
+            (W - game_over_text_width * game_over_text.len()) / 2,
+            (H - game_over_text_height) / 2,
+        ])
+        game_over_text_grid.set_color(GAME_OVER_COLOR)
+
+        score_text_width = W / 40
+        score_text_grid = actx.new_text_grid(score_text_width, [3, 20])
+        score_text_grid.set_translation([W * 0.55, H * 0.25])
     }
 
     app.update(
@@ -52,7 +84,8 @@ def update(app, model) {
             pixel_sheet = actx.new_sheet_from_color([1, 1, 1])
             bg_batch = actx.new_batch(pixel_sheet)
             grid_batch = actx.new_batch(pixel_sheet)
-            bg_batch.add([0, 0, 1, 1], [0, 0, 1, 1], color_factor=BACKGROUND_COLOR)
+            bg_batch.add([0, 0, 1, 1], [0, 0, 1, 1], color_factor=LEFT_BACKGROUND_COLOR)
+            bg_batch.add([0, 0, 1, 1], [0, 0, 1, 1], color_factor=RIGHT_BACKGROUND_COLOR)
             for row in range(nrows) {
                 for col in range(ncols) {
                     grid_batch.add(
@@ -98,7 +131,20 @@ def update(app, model) {
                     grid_batch.set(i, color_factor=LIVE_COLOR)
                 }
             }
-            [bg_batch, grid_batch]
-        }
+
+            score_text_grid.write([0, 0], '%s lines cleared' % [model.cleared_line_count()])
+            score_text_grid.write([1, 0], 'score: %s' % [model.score()])
+
+            batches = @[
+                bg_batch,
+                grid_batch,
+                score_text_grid,
+            ]
+            if model.state() is :lose {
+                batches.push(game_over_text_grid)
+            }
+
+            batches.move()
+        },
     )
 }

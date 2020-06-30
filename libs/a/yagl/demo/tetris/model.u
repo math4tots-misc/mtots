@@ -8,7 +8,19 @@ _DEFAULT_NROWS = 24
 _DEFAULT_NCOLS = 10
 
 @class Model {
-    [_last_tick, _tick_sec, _state, _rng, _nrows, _ncols, _rows, _live_piece, _next_shape]
+    [
+        _last_tick,
+        _tick_sec,
+        _state,
+        _rng,
+        _nrows,
+        _ncols,
+        _rows,
+        _live_piece,
+        _next_shape,
+        _cleared_line_count,
+        _score,
+    ]
     new(nrows=nil, ncols=nil, rng=nil) = {
         nrows = nrows or _DEFAULT_NROWS
         ncols = ncols or _DEFAULT_NCOLS
@@ -24,8 +36,13 @@ _DEFAULT_NCOLS = 10
             _rows=rows,
             _live_piece=nil,
             _next_shape=_next_shape(rng),
+            _cleared_line_count=0,
+            _score=0,
         )
     }
+    def state(self) = self._state
+    def cleared_line_count(self) = self._cleared_line_count
+    def score(self) = self._score
     def nrows(self) = self._nrows
     def ncols(self) = self._ncols
     def to_cells(self) = {
@@ -146,6 +163,9 @@ _DEFAULT_NCOLS = 10
                 .list()
         )
         if finished_rows {
+            line_count = finished_rows.len()
+            self._cleared_line_count += line_count
+            self._score += line_count ** 2
             for row in finished_rows.reversed() {
                 rows.remove(row)
             }
@@ -308,8 +328,6 @@ _shapes = [
         '100',
     ],
 ].map(def(shape) = shape.map(def(row) = row.chars().map(Int)))
-
-# print(_Piece(_shapes[1], 0, 0, 1).str())
 
 def __test_piece() {
     assert_eq(

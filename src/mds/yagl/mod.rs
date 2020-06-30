@@ -359,15 +359,69 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::sdnew0(
                 sr,
                 "text_grid_write",
-                &["text_grid", "row", "col", "text"],
+                &["text_grid", "row", "col", "text", "color"],
                 None,
                 |globals, args, _kwargs| {
                     let mut text_grid = to_text_grid_mut(globals, &args[0])?;
                     let row = to_u32(globals, &args[1])?;
                     let col = to_u32(globals, &args[2])?;
                     let text = Eval::expect_string(globals, &args[3])?;
-                    text_grid.write_str([row, col], text);
+                    let color = if let Value::Nil = &args[4] {
+                        [1.0, 1.0, 1.0, 1.0].into()
+                    } else {
+                        to_color(globals, &args[4])?
+                    };
+                    text_grid.write_color_str([row, col], text, color);
                     Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::sdnew0(
+                sr,
+                "text_grid_set_translation",
+                &["text_grid", "x", "y"],
+                Some("Translates the text grid by given amount"),
+                |globals, args, _kwargs| {
+                    let mut text_grid = to_text_grid_mut(globals, &args[0])?;
+                    let x = to_f32(globals, &args[1])?;
+                    let y = to_f32(globals, &args[2])?;
+                    text_grid.set_translation([x, y]);
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::sdnew0(
+                sr,
+                "text_grid_set_color",
+                &["text_grid", "row", "col", "color"],
+                None,
+                |globals, args, _kwargs| {
+                    let mut text_grid = to_text_grid_mut(globals, &args[0])?;
+                    let row = to_u32(globals, &args[1])?;
+                    let col = to_u32(globals, &args[2])?;
+                    let color = to_color(globals, &args[3])?;
+                    text_grid.set_color([row, col], color);
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::sdnew0(
+                sr,
+                "text_grid_ncols",
+                &["text_grid"],
+                None,
+                |globals, args, _kwargs| {
+                    let text_grid = to_text_grid(globals, &args[0])?;
+                    let ncols = text_grid.ncols();
+                    Ok((ncols as i64).into())
+                },
+            ),
+            NativeFunction::sdnew0(
+                sr,
+                "text_grid_nrows",
+                &["text_grid"],
+                None,
+                |globals, args, _kwargs| {
+                    let text_grid = to_text_grid(globals, &args[0])?;
+                    let nrows = text_grid.nrows();
+                    Ok((nrows as i64).into())
                 },
             ),
             NativeFunction::sdnew0(

@@ -93,13 +93,46 @@ class TextGrid {
     # created with calls to AppContext().new_text_grid(..)
     [opaque]
 
-    def write(self, coord, string) {
+    def write(self, coord, string, color=nil) {
         [row, col] = coord
-        _yagl::text_grid_write(self.opaque, row, col, string)
+        _yagl::text_grid_write(self.opaque, row, col, string, color)
     }
 
     def rect_for(self, coord) = {
         [row, col] = coord
-        _yagl::rect_for_coord(self.opaque, row, col)
+        _yagl::text_grid_rect_for_coord(self.opaque, row, col)
+    }
+
+    def set_translation(self, translation) {
+        [x, y] = translation
+        _yagl::text_grid_set_translation(self.opaque, x, y)
+    }
+
+    def ncols(self) = _yagl::text_grid_ncols(self.opaque)
+    def nrows(self) = _yagl::text_grid_nrows(self.opaque)
+
+    def char_height(self) = {
+        [x1, y1, x2, y2] = self.rect_for([0, 0])
+        y2 - y1
+    }
+
+    def char_width(self) = {
+        [x1, y1, x2, y2] = self.rect_for([0, 0])
+        x2 - x1
+    }
+
+    def set_char_color(self, coord, color) {
+        [row, col] = coord
+        _yagl::text_grid_set_color(self.opaque, row, col, color)
+    }
+
+    def set_color(self, color) {
+        nrows = self.nrows()
+        ncols = self.ncols()
+        for row in range(nrows) {
+            for col in range(ncols) {
+                self.set_char_color([row, col], color)
+            }
+        }
     }
 }
