@@ -1,0 +1,24 @@
+import a.regex::Regex
+
+
+def __test_find() {
+    r = Regex(r'\w{2}')
+    assert_eq(repr(r.find('hello')), 'Match("he")')
+    assert_eq(repr(r.find('hello', 1)), 'Match("el")')
+    assert_eq(r.find('hello', 1).start(), 1)
+    assert_eq(r.find('hello', 1).end(), 3)
+
+    # find a match that doesn't start at the beginning of a range
+    # If you want it to match at the beginning, you'll explicitly
+    # have to request it with an anchor like ^, $, \A, or \Z
+    r = Regex(r'\d+')
+    assert_eq(r.find('hello 123').str(), '123')
+    assert_eq(r.find('hello 123').start(), 6)
+    assert_eq(r.find('hello 123').end(), 9)
+    assert_eq('hello 123'.slice(6, 9), '123')
+}
+
+def __test_replace() {
+    r = Regex(r'abc(\w*)def')
+    assert_eq(r.replace('abcxydef', '${0} -> ${1}'), 'abcxydef -> xy')
+}

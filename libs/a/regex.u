@@ -1,0 +1,32 @@
+import a._regex
+
+
+class Regex {
+    [opaque]
+
+    new(pattern) = {
+        if type(pattern) is Regex {
+            pattern
+        } else {
+            new(_regex::new_regex(pattern))
+        }
+    }
+
+    def find(self, text, start=nil, end=nil) = {
+        [start, end] = _regex::regex_find(self.opaque, text, start, end)
+        Match(text, start, end)
+    }
+
+    def replace(self, text, repl, start=nil, end=nil, limit=0) = {
+        _regex::regex_replace(self.opaque, text, repl, start, end, limit)
+    }
+}
+
+class Match {
+    [_original_string, _start, _end]
+    new(string, start, end) = new(string, start, end)
+    def str(self) = self._original_string.slice(self._start, self._end)
+    def __repr(self) = 'Match(%r)' % [self.str()]
+    def start(self) = self._start
+    def end(self) = self._end
+}

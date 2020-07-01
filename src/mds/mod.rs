@@ -10,12 +10,14 @@ use std::rc::Rc;
 mod dbin;
 mod json;
 mod rand;
+mod regex;
 mod yagl;
 
 pub fn add_standard_modules(globals: &mut Globals) {
-    add(globals, json::NAME, json::load);
     add(globals, dbin::NAME, dbin::load);
+    add(globals, json::NAME, json::load);
     add(globals, rand::NAME, rand::load);
+    add(globals, regex::NAME, regex::load);
     add(globals, yagl::NAME, yagl::load);
 }
 
