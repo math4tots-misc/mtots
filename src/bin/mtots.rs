@@ -12,14 +12,14 @@ struct Delegate(rustyline::Editor<()>);
 
 impl mtots::ReplDelegate for Delegate {
     fn getline(&mut self, continuation: bool) -> Option<String> {
-        let readline = self.0.readline(if continuation { ".. " } else { ">> "});
+        let readline = self.0.readline(if continuation { ".. " } else { ">> " });
         match readline {
             Ok(line) => {
                 self.0.add_history_entry(line.as_str());
                 Some(line)
             }
-            Err(rustyline::error::ReadlineError::Eof) |
-            Err(rustyline::error::ReadlineError::Interrupted) => None,
+            Err(rustyline::error::ReadlineError::Eof)
+            | Err(rustyline::error::ReadlineError::Interrupted) => None,
             Err(error) => {
                 eprintln!("Error readling line: {:?}", error);
                 None

@@ -220,12 +220,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                                 let handler = self.key_released.borrow().clone();
                                 if !handler.is_nil() {
                                     let key = self.translate_key(key).unwrap();
-                                    self.call_handler(
-                                        actx,
-                                        "key_released",
-                                        handler,
-                                        vec![key],
-                                    );
+                                    self.call_handler(actx, "key_released", handler, vec![key]);
                                 }
                                 Ok(())
                             }

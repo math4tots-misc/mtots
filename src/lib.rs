@@ -1,10 +1,13 @@
 extern crate mtots_core;
 
+extern crate lazy_static;
+
 extern crate anyhow;
 extern crate dbin;
 extern crate rand;
 extern crate rand_chacha;
 extern crate rand_core;
+extern crate regex;
 extern crate serde_json;
 extern crate yagl;
 
