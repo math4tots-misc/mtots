@@ -2,8 +2,7 @@ import a._sdl2
 import a.time
 
 
-print(_sdl2::init())
-window = _sdl2::new_window('sdl test', 600, 800)
+window = _sdl2::new_window('sdl test', 800, 600)
 canvas = _sdl2::window_to_canvas(window)
 
 running = true

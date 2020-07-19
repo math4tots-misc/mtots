@@ -1,0 +1,7 @@
+import a._sdl2
+
+class Window {
+    [opaque]
+
+    new(title, width, height) = new(_sdl2::new_window(title, width, height))
+}
