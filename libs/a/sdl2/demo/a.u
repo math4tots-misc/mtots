@@ -1,0 +1,38 @@
+import a._sdl2
+import a.time
+
+
+print(_sdl2::init())
+window = _sdl2::new_window('sdl test', 600, 800)
+canvas = _sdl2::window_to_canvas(window)
+
+running = true
+
+while running {
+    events = _sdl2::poll()
+    for event in events {
+        print('BEFORE SWITCH: event[0] = %r' % [event[0]])
+        switch event[0] {
+            :quit => {
+                running = false
+            }
+            :keydown => {
+                [_, wid, keycode, scancode, keymod, repeat] = event
+                print('keydown -> %s, %s' % [wid, keycode])
+                if keycode is :Escape {
+                    running = false
+                }
+            }
+            => {
+                print('other -> %s' % [event[0]])
+            }
+        }
+        print('AFTER SWITCH')
+    }
+    if events {
+        print('events: %r' % [events])
+    }
+    if running {
+        time::sleep(1 / 10)
+    }
+}

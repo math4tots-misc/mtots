@@ -8,6 +8,7 @@ extern crate rand;
 extern crate rand_chacha;
 extern crate rand_core;
 extern crate regex;
+extern crate sdl2;
 extern crate serde_json;
 extern crate yagl;
 

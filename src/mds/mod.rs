@@ -11,6 +11,7 @@ mod dbin;
 mod json;
 mod rand;
 mod regex;
+mod sdl2;
 mod yagl;
 
 pub fn add_standard_modules(globals: &mut Globals) {
@@ -19,6 +20,7 @@ pub fn add_standard_modules(globals: &mut Globals) {
     add(globals, rand::NAME, rand::load);
     add(globals, regex::NAME, regex::load);
     add(globals, yagl::NAME, yagl::load);
+    add(globals, sdl2::NAME, sdl2::load);
 }
 
 fn add<F>(globals: &mut Globals, name: &'static str, body: F)
