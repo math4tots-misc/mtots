@@ -22,6 +22,20 @@ while running {
                 if keycode is :Escape {
                     running = false
                 }
+                switch keycode {
+                    :F => {
+                        print("FFFFF")
+                        _sdl2::canvas_set_draw_color(canvas, [255, 255, 0])
+                        _sdl2::canvas_clear(canvas)
+                        _sdl2::canvas_present(canvas)
+                    }
+                    :G => {
+                        print("GGGGG")
+                        _sdl2::canvas_set_draw_color(canvas, [0, 255, 255])
+                        _sdl2::canvas_clear(canvas)
+                        _sdl2::canvas_present(canvas)
+                    }
+                }
             }
             => {
                 print('other -> %s' % [event[0]])

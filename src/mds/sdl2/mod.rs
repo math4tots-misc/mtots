@@ -88,6 +88,17 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             ),
             NativeFunction::sdnew0(
                 sr,
+                "canvas_present",
+                &["canvas"],
+                None,
+                |globals, args, _kwargs| {
+                    let mut canvas = to_canvas_mut(globals, &args[0])?;
+                    canvas.present();
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::sdnew0(
+                sr,
                 "canvas_fill_rect",
                 &["canvas", "rect"],
                 None,
