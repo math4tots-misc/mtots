@@ -104,6 +104,33 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             ),
             NativeFunction::sdnew0(
                 sr,
+                "canvas_size",
+                &["canvas"],
+                None,
+                |globals, args, _kwargs| {
+                    let canvas = to_canvas(globals, &args[0])?;
+                    let (width, height) = canvas.window().size();
+                    Ok(vec![
+                        Value::Int(width as i64),
+                        Value::Int(height as i64),
+                    ].into())
+                },
+            ),
+            NativeFunction::sdnew0(
+                sr,
+                "canvas_set_size",
+                &["canvas", "width", "height"],
+                None,
+                |globals, args, _kwargs| {
+                    let mut canvas = to_canvas_mut(globals, &args[0])?;
+                    let width = Eval::expect_u32(globals, &args[1])?;
+                    let height = Eval::expect_u32(globals, &args[2])?;
+                    try_(globals, canvas.window_mut().set_size(width, height))?;
+                    Ok(Value::Nil)
+                },
+            ),
+            NativeFunction::sdnew0(
+                sr,
                 "canvas_fill_rect",
                 &["canvas", "rect"],
                 None,

@@ -14,13 +14,20 @@ canvas.present()
 running = true
 
 while running {
-
     for event in sdl2::poll() {
         switch event.type {
             :KeyDown => {
                 switch event.keycode {
                     :Escape => {
                         running = false
+                    }
+                    :F => {
+                        canvas.set_size([300, 300])
+                        canvas.present()
+                    }
+                    :J => {
+                        canvas.set_size([800, 600])
+                        canvas.present()
                     }
                     => print('KeyDown %r' % [event.keycode])
                 }

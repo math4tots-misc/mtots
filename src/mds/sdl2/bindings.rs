@@ -13,7 +13,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 use sdl2::video::Window;
-// use std::cell::Ref;
+use std::cell::Ref;
 use super::keycode_to_key;
 use super::KEY_COUNT;
 use std::cell::RefMut;
@@ -51,12 +51,12 @@ pub(super) fn to_canvas_mut<'a>(
     Eval::expect_opaque_mut(globals, value)
 }
 
-// pub(super) fn to_canvas<'a>(
-//     globals: &mut Globals,
-//     value: &'a Value,
-// ) -> EvalResult<Ref<'a, WindowCanvas>> {
-//     Eval::expect_opaque(globals, value)
-// }
+pub(super) fn to_canvas<'a>(
+    globals: &mut Globals,
+    value: &'a Value,
+) -> EvalResult<Ref<'a, WindowCanvas>> {
+    Eval::expect_opaque(globals, value)
+}
 
 pub(super) fn to_color(globals: &mut Globals, value: &Value) -> EvalResult<Color> {
     if Eval::expect_list(globals, value)?.len() == 4 {

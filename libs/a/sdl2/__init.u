@@ -16,6 +16,13 @@ class Canvas {
     def present(self) = _sdl2::canvas_present(self.opaque)
 
     def fill_rect(self, rect) = _sdl2::canvas_fill_rect(self.opaque, rect)
+
+    def size(self) = _sdl2::canvas_size(self.opaque)
+
+    def set_size(self, size) {
+        [width, height] = size
+        _sdl2::canvas_set_size(self.opaque, width, height)
+    }
 }
 
 def poll() = {
