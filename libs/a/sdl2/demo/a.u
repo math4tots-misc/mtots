@@ -2,7 +2,7 @@ import a.sdl2
 import a.time
 
 
-canvas = sdl2::Canvas('sdl test', 800, 600, fullscreen=true)
+canvas = sdl2::Canvas('sdl test', 800, 600, fullscreen=false)
 canvas.set_draw_color([66, 24, 255])
 canvas.clear()
 canvas.present()
@@ -46,12 +46,21 @@ while running {
                 canvas.fill_rect([event.x - 20, event.y - 20, 40, 40])
                 canvas.present()
             }
+            :MouseMove => {
+                if event.state.has(:Left) {
+                    canvas.set_draw_color([66, 24, 255])
+                    canvas.clear()
+                    canvas.set_draw_color([20, 100, 0])
+                    canvas.fill_rect([event.x - 20, event.y - 20, 40, 40])
+                    canvas.present()
+                }
+            }
             => {
                 # print('event = %r' % [event])
             }
         }
     }
     if running {
-        time::sleep(1 / 10)
+        time::sleep(1 / 20)
     }
 }

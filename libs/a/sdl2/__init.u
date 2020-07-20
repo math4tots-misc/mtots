@@ -71,6 +71,31 @@ def poll() = {
                     y=y,
                 ))
             }
+            :MouseUp => {
+                [type, window, which, button, clicks, x, y] = event
+                events.push(Table(
+                    type=type,
+                    window=window,
+                    which=which,
+                    button=button,
+                    clicks=clicks,
+                    x=x,
+                    y=y,
+                ))
+            }
+            :MouseMove => {
+                [type, window, which, state, x, y, xrel, yrel] = event
+                events.push(Table(
+                    type=type,
+                    window=window,
+                    which=which,
+                    state=state,
+                    x=x,
+                    y=y,
+                    xrel=xrel,
+                    yrel=yrel,
+                ))
+            }
             => __raise(RuntimeError('Unrecognized event: %r' % [event]))
         }
     }

@@ -91,6 +91,9 @@ struct EventSymbols {
     keyup: Option<Symbol>,
     mousedown: Option<Symbol>,
     mouseup: Option<Symbol>,
+    mousemove: Option<Symbol>,
+    left: Option<Symbol>,
+    right: Option<Symbol>,
     keycodes: Vec<Option<Symbol>>,
     mousebtns: Vec<Option<Symbol>>,
 }
@@ -104,6 +107,9 @@ impl Default for EventSymbols {
             keyup: None,
             mousedown: None,
             mouseup: None,
+            mousemove: None,
+            left: None,
+            right: None,
             keycodes: {
                 let mut codes = vec![];
                 codes.resize_with(KEY_COUNT, || None);
@@ -153,9 +159,27 @@ impl EventSymbols {
     }
     pub fn mouseup(&mut self, globals: &mut Globals) -> Symbol {
         if self.mouseup.is_none() {
-            self.mouseup = Some(globals.intern_str("MouseDown"));
+            self.mouseup = Some(globals.intern_str("MouseUp"));
         }
         self.mouseup.unwrap()
+    }
+    pub fn mousemove(&mut self, globals: &mut Globals) -> Symbol {
+        if self.mousemove.is_none() {
+            self.mousemove = Some(globals.intern_str("MouseMove"));
+        }
+        self.mousemove.unwrap()
+    }
+    pub fn left(&mut self, globals: &mut Globals) -> Symbol {
+        if self.left.is_none() {
+            self.left = Some(globals.intern_str("Left"));
+        }
+        self.left.unwrap()
+    }
+    pub fn right(&mut self, globals: &mut Globals) -> Symbol {
+        if self.right.is_none() {
+            self.right = Some(globals.intern_str("Right"));
+        }
+        self.right.unwrap()
     }
     pub fn keycode(&mut self, globals: &mut Globals, keycode: Keycode) -> Symbol {
         let i = keycode_to_key(keycode);
@@ -278,6 +302,36 @@ pub(super) fn from_events(globals: &mut Globals, events: Vec<Event>) -> EvalResu
                 ev.push((clicks as i64).into());
                 ev.push((x as i64).into());
                 ev.push((y as i64).into());
+                vec.push(ev.into());
+            }
+            Event::MouseMotion {
+                timestamp: _,
+                window_id,
+                which,
+                mousestate,
+                x,
+                y,
+                xrel,
+                yrel,
+            } => {
+                let mut ev = Vec::<Value>::new();
+                ev.push(es.borrow_mut().mousemove(globals).into());
+                ev.push((window_id as i64).into());
+                ev.push((which as i64).into());
+                ev.push({
+                    let mut state: Vec<Value> = vec![];
+                    if mousestate.left() {
+                        state.push(es.borrow_mut().left(globals).into());
+                    }
+                    if mousestate.right() {
+                        state.push(es.borrow_mut().right(globals).into());
+                    }
+                    state.into()
+                });
+                ev.push((x as i64).into());
+                ev.push((y as i64).into());
+                ev.push((xrel as i64).into());
+                ev.push((yrel as i64).into());
                 vec.push(ev.into());
             }
             _ => {}
