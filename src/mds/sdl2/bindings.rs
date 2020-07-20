@@ -3,20 +3,20 @@ use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
 use crate::Opaque;
-use crate::Value;
-use crate::Symbol;
 use crate::Stashable;
-use sdl2::video::Window;
-use sdl2::render::WindowCanvas;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
+use crate::Symbol;
+use crate::Value;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseButton;
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
+use sdl2::render::WindowCanvas;
+use sdl2::video::Window;
 // use std::cell::Ref;
-use std::cell::RefMut;
 use super::keycode_to_key;
 use super::KEY_COUNT;
+use std::cell::RefMut;
 
 pub(super) fn from_window(window: Window) -> Value {
     Opaque::new(window).into()
@@ -36,10 +36,7 @@ pub(super) fn from_window(window: Window) -> Value {
 //     Eval::expect_opaque(globals, value)
 // }
 
-pub(super) fn move_window<'a>(
-    globals: &mut Globals,
-    value: &'a Value,
-) -> EvalResult<Window> {
+pub(super) fn move_window<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Window> {
     Eval::move_opaque(globals, value)
 }
 
@@ -61,10 +58,7 @@ pub(super) fn to_canvas_mut<'a>(
 //     Eval::expect_opaque(globals, value)
 // }
 
-pub(super) fn to_color(
-    globals: &mut Globals,
-    value: &Value,
-) -> EvalResult<Color> {
+pub(super) fn to_color(globals: &mut Globals, value: &Value) -> EvalResult<Color> {
     if Eval::expect_list(globals, value)?.len() == 4 {
         let (r, g, b, a) = Eval::unpack4(globals, value)?;
         let r = Eval::expect_u8(globals, &r)?;
@@ -81,10 +75,7 @@ pub(super) fn to_color(
     }
 }
 
-pub(super) fn to_rect(
-    globals: &mut Globals,
-    value: &Value,
-) -> EvalResult<Rect> {
+pub(super) fn to_rect(globals: &mut Globals, value: &Value) -> EvalResult<Rect> {
     let (x, y, width, height) = Eval::unpack4(globals, value)?;
     let x = Eval::expect_i32(globals, &x)?;
     let y = Eval::expect_i32(globals, &y)?;
@@ -122,7 +113,7 @@ impl Default for EventSymbols {
                 let mut codes = vec![];
                 codes.resize_with(MouseButton::X2 as usize + 1, || None);
                 codes
-            }
+            },
         }
     }
 }
@@ -190,14 +181,25 @@ pub(super) fn from_events(globals: &mut Globals, events: Vec<Event>) -> EvalResu
             Event::Quit { timestamp: _ } => {
                 return globals.set_exc_str("quit")?;
             }
-            Event::TextInput { timestamp: _, window_id, text } => {
+            Event::TextInput {
+                timestamp: _,
+                window_id,
+                text,
+            } => {
                 let mut ev = Vec::<Value>::new();
                 ev.push(es.borrow_mut().text(globals).into());
                 ev.push((window_id as i64).into());
                 ev.push(text.into());
                 vec.push(ev.into());
             }
-            Event::KeyDown { timestamp: _, window_id, keycode, scancode, keymod, repeat } => {
+            Event::KeyDown {
+                timestamp: _,
+                window_id,
+                keycode,
+                scancode,
+                keymod,
+                repeat,
+            } => {
                 let mut ev = Vec::<Value>::new();
                 ev.push(es.borrow_mut().keydown(globals).into());
                 ev.push((window_id as i64).into());
@@ -215,7 +217,14 @@ pub(super) fn from_events(globals: &mut Globals, events: Vec<Event>) -> EvalResu
                 ev.push(repeat.into());
                 vec.push(ev.into());
             }
-            Event::KeyUp { timestamp: _, window_id, keycode, scancode, keymod, repeat } => {
+            Event::KeyUp {
+                timestamp: _,
+                window_id,
+                keycode,
+                scancode,
+                keymod,
+                repeat,
+            } => {
                 let mut ev = Vec::<Value>::new();
                 ev.push(es.borrow_mut().keyup(globals).into());
                 ev.push((window_id as i64).into());
@@ -233,7 +242,15 @@ pub(super) fn from_events(globals: &mut Globals, events: Vec<Event>) -> EvalResu
                 ev.push(repeat.into());
                 vec.push(ev.into());
             }
-            Event::MouseButtonDown { timestamp: _, window_id, which, mouse_btn, clicks, x, y } => {
+            Event::MouseButtonDown {
+                timestamp: _,
+                window_id,
+                which,
+                mouse_btn,
+                clicks,
+                x,
+                y,
+            } => {
                 let mut ev = Vec::<Value>::new();
                 ev.push(es.borrow_mut().mousedown(globals).into());
                 ev.push((window_id as i64).into());
@@ -244,7 +261,15 @@ pub(super) fn from_events(globals: &mut Globals, events: Vec<Event>) -> EvalResu
                 ev.push((y as i64).into());
                 vec.push(ev.into());
             }
-            Event::MouseButtonUp { timestamp: _, window_id, which, mouse_btn, clicks, x, y } => {
+            Event::MouseButtonUp {
+                timestamp: _,
+                window_id,
+                which,
+                mouse_btn,
+                clicks,
+                x,
+                y,
+            } => {
                 let mut ev = Vec::<Value>::new();
                 ev.push(es.borrow_mut().mouseup(globals).into());
                 ev.push((window_id as i64).into());
@@ -260,4 +285,3 @@ pub(super) fn from_events(globals: &mut Globals, events: Vec<Event>) -> EvalResu
     }
     Ok(vec)
 }
-

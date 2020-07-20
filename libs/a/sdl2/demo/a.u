@@ -2,7 +2,7 @@ import a.sdl2
 import a.time
 
 
-canvas = sdl2::Canvas('sdl test', 800, 600)
+canvas = sdl2::Canvas('sdl test', 800, 600, fullscreen=true)
 canvas.set_draw_color([66, 24, 255])
 canvas.clear()
 canvas.present()
@@ -22,6 +22,7 @@ while running {
                     :Escape => {
                         running = false
                     }
+                    => print('KeyDown %r' % [event.keycode])
                 }
             }
             :MouseDown => {
@@ -39,7 +40,7 @@ while running {
                 canvas.present()
             }
             => {
-                print('event = %r' % [event])
+                # print('event = %r' % [event])
             }
         }
     }

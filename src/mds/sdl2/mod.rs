@@ -11,14 +11,14 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 mod bindings;
-mod state;
 mod keys;
+mod state;
 
 use bindings::*;
-use state::SdlError;
-use state::State;
 use keys::keycode_to_key;
 use keys::KEY_COUNT;
+use state::SdlError;
+use state::State;
 
 pub const NAME: &str = "a._sdl2";
 
@@ -40,15 +40,20 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
             NativeFunction::sdnew0(
                 sr,
                 "new_window",
-                &["title", "width", "height"],
+                &["title", "width", "height", "fullscreen"],
                 None,
                 |globals, args, _kwargs| {
                     let title = Eval::expect_string(globals, &args[0])?;
                     let width = Eval::expect_u32(globals, &args[1])?;
                     let height = Eval::expect_u32(globals, &args[2])?;
+                    let fullscreen = Eval::truthy(globals, &args[3])?;
                     let state = get(globals);
-                    let window =
-                        try_(globals, state.borrow_mut().new_window(title, width, height))?;
+                    let window = try_(
+                        globals,
+                        state
+                            .borrow_mut()
+                            .new_window(title, width, height, fullscreen),
+                    )?;
                     Ok(from_window(window))
                 },
             ),
@@ -109,20 +114,14 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(Value::Nil)
                 },
             ),
-            NativeFunction::sdnew0(
-                sr,
-                "poll",
-                &[],
-                None,
-                |globals, _args, _kwargs| {
-                    let state = get(globals);
-                    let mut state = state.borrow_mut();
-                    let event_pump = try_(globals, state.event_pump())?;
-                    let events: Vec<_> = event_pump.poll_iter().collect();
-                    let events = from_events(globals, events)?;
-                    Ok(events.into())
-                },
-            ),
+            NativeFunction::sdnew0(sr, "poll", &[], None, |globals, _args, _kwargs| {
+                let state = get(globals);
+                let mut state = state.borrow_mut();
+                let event_pump = try_(globals, state.event_pump())?;
+                let events: Vec<_> = event_pump.poll_iter().collect();
+                let events = from_events(globals, events)?;
+                Ok(events.into())
+            }),
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),

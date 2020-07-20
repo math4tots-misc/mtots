@@ -44,8 +44,18 @@ impl State {
         }
         Ok(self.video.as_mut().unwrap())
     }
-    pub fn new_window(&mut self, title: &str, width: u32, height: u32) -> Result<Window> {
-        Ok(self.video()?.window(title, width, height).build()?)
+    pub fn new_window(
+        &mut self,
+        title: &str,
+        width: u32,
+        height: u32,
+        fullscreen: bool,
+    ) -> Result<Window> {
+        let mut builder = self.video()?.window(title, width, height);
+        if fullscreen {
+            builder.fullscreen();
+        }
+        Ok(builder.build()?)
     }
 }
 

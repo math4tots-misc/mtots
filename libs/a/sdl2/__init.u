@@ -3,8 +3,8 @@ import a._sdl2
 class Canvas {
     [opaque]
 
-    new(title, width, height) = new(
-        _sdl2::window_to_canvas(_sdl2::new_window(title, width, height))
+    new(title, width=800, height=600, fullscreen=false) = new(
+        _sdl2::window_to_canvas(_sdl2::new_window(title, width, height, fullscreen))
     )
 
     def set_draw_color(self, color) = {
