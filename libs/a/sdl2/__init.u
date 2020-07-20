@@ -1,7 +1,71 @@
 import a._sdl2
 
-class Window {
+class Canvas {
     [opaque]
 
-    new(title, width, height) = new(_sdl2::new_window(title, width, height))
+    new(title, width, height) = new(
+        _sdl2::window_to_canvas(_sdl2::new_window(title, width, height))
+    )
+
+    def set_draw_color(self, color) = {
+        _sdl2::canvas_set_draw_color(self.opaque, color)
+    }
+
+    def clear(self) = _sdl2::canvas_clear(self.opaque)
+
+    def present(self) = _sdl2::canvas_present(self.opaque)
+
+    def fill_rect(self, rect) = _sdl2::canvas_fill_rect(self.opaque, rect)
+}
+
+def poll() = {
+    events = @[]
+    for event in _sdl2::poll() {
+        switch event[0] {
+            :Text => {
+                [type, window, text] = event
+                events.push(Table(
+                    type=type,
+                    window=window,
+                    text=text,
+                ))
+            }
+            :KeyDown => {
+                [type, window, keycode, scancode, keymod, repeat] = event
+                events.push(Table(
+                    type=type,
+                    window=window,
+                    keycode=keycode,
+                    scancode=scancode,
+                    keymod=keymod,
+                    repeat=repeat,
+                ))
+            }
+            :KeyUp => {
+                [type, window, keycode, scancode, keymod, repeat] = event
+                events.push(Table(
+                    type=type,
+                    window=window,
+                    keycode=keycode,
+                    scancode=scancode,
+                    keymod=keymod,
+                    repeat=repeat,
+                ))
+            }
+            :MouseDown => {
+                [type, window, which, button, clicks, x, y] = event
+                events.push(Table(
+                    type=type,
+                    window=window,
+                    which=which,
+                    button=button,
+                    clicks=clicks,
+                    x=x,
+                    y=y,
+                ))
+            }
+            => __raise(RuntimeError('Unrecognized event: %r' % [event]))
+        }
+    }
+    events.move()
 }

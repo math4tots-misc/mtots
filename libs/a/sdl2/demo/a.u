@@ -1,49 +1,47 @@
-import a._sdl2
+import a.sdl2
 import a.time
 
 
-window = _sdl2::new_window('sdl test', 800, 600)
-canvas = _sdl2::window_to_canvas(window)
+canvas = sdl2::Canvas('sdl test', 800, 600)
+canvas.set_draw_color([66, 24, 255])
+canvas.clear()
+canvas.present()
+
+canvas.set_draw_color([25, 100, 25])
+canvas.fill_rect([0, 0, 400, 300])
+canvas.present()
 
 running = true
 
 while running {
-    events = _sdl2::poll()
-    for event in events {
-        print('BEFORE SWITCH: event[0] = %r' % [event[0]])
-        switch event[0] {
-            :quit => {
-                running = false
+
+    for event in sdl2::poll() {
+        switch event.type {
+            :KeyDown => {
+                switch event.keycode {
+                    :Escape => {
+                        running = false
+                    }
+                }
             }
-            :keydown => {
-                [_, wid, keycode, scancode, keymod, repeat] = event
-                print('keydown -> %s, %s' % [wid, keycode])
-                if keycode is :Escape {
-                    running = false
-                }
-                switch keycode {
-                    :F => {
-                        print("FFFFF")
-                        _sdl2::canvas_set_draw_color(canvas, [255, 255, 0])
-                        _sdl2::canvas_clear(canvas)
-                        _sdl2::canvas_present(canvas)
-                    }
-                    :G => {
-                        print("GGGGG")
-                        _sdl2::canvas_set_draw_color(canvas, [0, 255, 255])
-                        _sdl2::canvas_clear(canvas)
-                        _sdl2::canvas_present(canvas)
-                    }
-                }
+            :MouseDown => {
+                canvas.set_draw_color([66, 24, 255])
+                canvas.clear()
+                canvas.set_draw_color([20, 100, 0])
+                canvas.fill_rect([event.x - 20, event.y - 20, 40, 40])
+                canvas.present()
+            }
+            :MouseUp => {
+                canvas.set_draw_color([66, 24, 255])
+                canvas.clear()
+                canvas.set_draw_color([20, 100, 0])
+                canvas.fill_rect([event.x - 20, event.y - 20, 40, 40])
+                canvas.present()
             }
             => {
-                print('other -> %s' % [event[0]])
+                print('event = %r' % [event])
             }
         }
-        print('AFTER SWITCH')
-    }
-    if events {
-        print('events: %r' % [events])
     }
     if running {
         time::sleep(1 / 10)
