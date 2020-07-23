@@ -110,10 +110,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 |globals, args, _kwargs| {
                     let canvas = to_canvas(globals, &args[0])?;
                     let (width, height) = canvas.window().size();
-                    Ok(vec![
-                        Value::Int(width as i64),
-                        Value::Int(height as i64),
-                    ].into())
+                    Ok(vec![Value::Int(width as i64), Value::Int(height as i64)].into())
                 },
             ),
             NativeFunction::sdnew0(

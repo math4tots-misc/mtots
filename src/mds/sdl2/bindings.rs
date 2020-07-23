@@ -1,3 +1,5 @@
+use super::keycode_to_key;
+use super::KEY_COUNT;
 use crate::sdl2;
 use crate::Eval;
 use crate::EvalResult;
@@ -14,8 +16,6 @@ use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
 use sdl2::video::Window;
 use std::cell::Ref;
-use super::keycode_to_key;
-use super::KEY_COUNT;
 use std::cell::RefMut;
 
 pub(super) fn from_window(window: Window) -> Value {
