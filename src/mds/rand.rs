@@ -1,9 +1,9 @@
 //! dbin bindings -- for declaratively parsing binary files
 //! Stil WIP...
-use crate::rand::rngs::ThreadRng;
-use crate::rand::Rng;
-use crate::rand::SeedableRng;
-use crate::rand_chacha::ChaCha20Rng;
+use rand::rngs::ThreadRng;
+use rand::Rng;
+use rand::SeedableRng;
+use rand_chacha::ChaCha20Rng;
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
