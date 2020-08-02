@@ -2,7 +2,7 @@ import a._rand
 
 class Rng {
     # Random number generator
-    # May be seede with an Int or a 32-byte sequence
+    # May be seeded with an Int or a 32-byte sequence
     [opaque]
 
     static def __call(seed=nil) = {
