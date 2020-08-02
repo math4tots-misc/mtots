@@ -3,9 +3,9 @@ use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
-use crate::Opaque;
 use crate::RcStr;
 use crate::Value;
+use crate::Handle;
 use regex::Match;
 use regex::Regex;
 use std::cell::Ref;
@@ -113,10 +113,9 @@ fn from_match(string_start: usize, m: &Match) -> Value {
 }
 
 fn from_regex(r: Regex) -> Value {
-    let opaque = Opaque::new(r);
-    opaque.into()
+    Handle::new(r).into()
 }
 
 fn expect_regex<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Regex>> {
-    Eval::expect_opaque(globals, value)
+    Eval::handle_borrow(globals, value)
 }

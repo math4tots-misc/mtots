@@ -9,7 +9,7 @@ use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
-use crate::Opaque;
+use crate::Handle;
 use crate::RcStr;
 use crate::Value;
 use std::cell::RefCell;
@@ -121,16 +121,16 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
 fn from_thread_rng(tr: ThreadRng) -> Value {
     let rngw = RngW::ThreadRng(tr);
-    Opaque::new(rngw).into()
+    Handle::new(rngw).into()
 }
 
 fn from_chacha_rng(tr: ChaCha20Rng) -> Value {
     let rngw = RngW::ChaCha20Rng(tr);
-    Opaque::new(rngw).into()
+    Handle::new(rngw).into()
 }
 
 fn to_rngw_mut<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<RefMut<'a, RngW>> {
-    Eval::expect_opaque_mut(globals, value)
+    Eval::handle_borrow_mut(globals, value)
 }
 
 enum RngW {
