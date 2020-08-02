@@ -16,13 +16,12 @@ use std::rc::Rc;
 pub const NAME: &str = "a._regex";
 
 // TODO: captures API, and find_all and its variants
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let sr = globals.symbol_registry();
+pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
     map.extend(
         vec![
-            NativeFunction::simple0(sr, "new_regex", &["pattern"], |globals, args, _| {
+            NativeFunction::simple0("new_regex", &["pattern"], |globals, args, _| {
                 let string = Eval::expect_string(globals, &args[0])?;
                 let pattern = match Regex::new(string) {
                     Ok(r) => r,
@@ -31,7 +30,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 Ok(from_regex(pattern))
             }),
             NativeFunction::sdnew0(
-                sr,
                 "regex_find",
                 &["pattern", "text", "start", "end"],
                 Some(concat!(
@@ -62,7 +60,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 },
             ),
             NativeFunction::sdnew0(
-                sr,
                 "regex_replace",
                 &["pattern", "text", "repl", "start", "end", "limit"],
                 Some(concat!(

@@ -19,21 +19,18 @@ use std::rc::Rc;
 
 pub const NAME: &str = "a._rand";
 
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let sr = globals.symbol_registry();
+pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
     map.extend(
         vec![
             NativeFunction::sdnew(
-                sr,
                 "new_rng",
                 (&[], &[], None, None),
                 Some(concat!("Returns the default RNG")),
                 |_globals, _args, _| Ok(from_thread_rng(rand::thread_rng())),
             ),
             NativeFunction::sdnew(
-                sr,
                 "new_rng_seeded",
                 (&["seed"], &[], None, None),
                 Some(concat!(
@@ -58,7 +55,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 },
             ),
             NativeFunction::sdnew(
-                sr,
                 "rng_gen_int",
                 (&["rng"], &[], None, None),
                 Some(concat!("Generates an Int from the given RNG")),
@@ -68,7 +64,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 },
             ),
             NativeFunction::sdnew(
-                sr,
                 "rng_gen_float",
                 (&["rng"], &[], None, None),
                 Some(concat!("Generates a Float from the given RNG")),
@@ -78,7 +73,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 },
             ),
             NativeFunction::sdnew(
-                sr,
                 "rng_gen_int_range",
                 (&["rng", "start", "end"], &[], None, None),
                 Some(concat!(
@@ -92,7 +86,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 },
             ),
             NativeFunction::sdnew(
-                sr,
                 "rng_gen_float_range",
                 (&["rng", "start", "end"], &[], None, None),
                 Some(concat!(

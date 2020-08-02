@@ -1,5 +1,6 @@
 //! JSON bindings
 use crate::Eval;
+use crate::Symbol;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
@@ -13,13 +14,12 @@ use std::rc::Rc;
 
 pub const NAME: &str = "a.json";
 
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let sr = globals.symbol_registry();
+pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
     map.extend(
         vec![
-            NativeFunction::simple0(sr, "loads", &["string"], |globals, args, _| {
+            NativeFunction::simple0("loads", &["string"], |globals, args, _| {
                 let string = Eval::expect_string(globals, &args[0])?;
                 let serde_value: serde_json::Value = match serde_json::from_str(string) {
                     Ok(value) => value,
@@ -30,7 +30,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 let value = serde_to_mtots(globals, serde_value)?;
                 Ok(value)
             }),
-            NativeFunction::simple0(sr, "dumps", &["blob"], |globals, args, _| {
+            NativeFunction::simple0("dumps", &["blob"], |globals, args, _| {
                 let serde_value = mtots_to_serde(globals, &args[0])?;
                 let string = serde_value.to_string();
                 Ok(string.into())
@@ -50,7 +50,6 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 }
 
 fn serde_to_mtots(globals: &mut Globals, sv: serde_json::Value) -> EvalResult<Value> {
-    let sr = globals.symbol_registry().clone();
     Ok(match sv {
         serde_json::Value::Null => Value::Nil,
         serde_json::Value::Bool(x) => Value::Bool(x),
@@ -77,7 +76,7 @@ fn serde_to_mtots(globals: &mut Globals, sv: serde_json::Value) -> EvalResult<Va
             // We use a Map instead of a Table, because Maps preserve order
             let mut map = VMap::new();
             for (key, val) in obj {
-                let key = sr.intern_str(&key);
+                let key = Symbol::from(&key);
                 let val = serde_to_mtots(globals, val)?;
                 map.s_insert(globals, key.into(), val)?;
             }
