@@ -1,0 +1,4 @@
+import a._ggez
+
+clear = _ggez::clear
+

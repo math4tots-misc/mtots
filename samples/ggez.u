@@ -1,0 +1,12 @@
+import a.ggez
+import a.ggez.graphics as gg
+
+
+ggez::run(
+    init = nil,
+    update = nil,
+    draw = def = {
+        gg::clear([1, 1/2, 1])
+        true
+    },
+)
