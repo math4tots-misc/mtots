@@ -3,3 +3,5 @@ import a._ggez
 clear = _ggez::clear
 
 def print(text, x = 0, y = 0) = _ggez::print(text, x, y)
+
+new_text = _ggez::new_text

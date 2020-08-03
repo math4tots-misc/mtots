@@ -2,6 +2,8 @@ import a.ggez
 import a.ggez.graphics as gg
 
 
+print(gg::new_text('some text'))
+
 text = @''
 
 ggez::run(
@@ -9,7 +11,10 @@ ggez::run(
     update = nil,
     draw = def {
         gg::clear([1/2, 1/2, 1])
-        gg::print('%s@' % [text])
+        gg::print([
+            'text': '%s@' % [text],
+            'scale': 32,
+        ])
     },
     text_input = def(ch) {
         nonlocal text

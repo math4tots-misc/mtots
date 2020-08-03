@@ -181,8 +181,11 @@ struct Stash {
 
 impl Stashable for Stash {}
 
-pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
+pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
+
+    let textcls = globals.new_class0("a._ggez::Text", vec![], vec![])?;
+    globals.set_handle_class::<Text>(textcls)?;
 
     map.extend(
         vec![
@@ -287,7 +290,16 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                     conve(globals, r)?;
                     Ok(Value::Nil)
                 },
-            )
+            ),
+            NativeFunction::snew(
+                "new_text",
+                (&["text"], &[], None, None),
+                |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let text = as_text(globals, args.next().unwrap())?;
+                    Ok(Eval::into_handle(globals, text)?.into())
+                },
+            ),
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),
