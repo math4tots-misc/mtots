@@ -1,6 +1,6 @@
 import a._ggez
 
 
-def run(name = 'game', author = 'author', init = nil, update = nil, draw = nil) {
-    _ggez::run(name, author, init, update, draw)
+def run(name = 'game', author = 'author', init = nil, update = nil, draw = nil, key_down = nil, key_up = nil) {
+    _ggez::run(name, author, init, update, draw, key_down, key_up)
 }

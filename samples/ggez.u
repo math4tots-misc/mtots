@@ -5,8 +5,10 @@ import a.ggez.graphics as gg
 ggez::run(
     init = nil,
     update = nil,
-    draw = def = {
+    draw = def {
         gg::clear([1, 1/2, 1])
-        true
+    },
+    key_down = def(key, _repeat) {
+        print('key-down %r' % [key])
     },
 )

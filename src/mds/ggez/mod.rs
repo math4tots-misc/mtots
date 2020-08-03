@@ -5,6 +5,7 @@ use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Stashable;
+use crate::Symbol;
 use crate::Value;
 use ggez::graphics::Color;
 use std::cell::RefCell;
@@ -21,24 +22,68 @@ struct EventHandler {
     globals: Globals,
     update: Option<Value>,
     draw: Option<Value>,
+    key_down: Option<Value>,
+    key_up: Option<Value>,
+
+    keycode_map: HashMap<ggez::event::KeyCode, Symbol>,
+}
+
+impl EventHandler {
+    fn translate_keycode(&mut self, keycode: ggez::event::KeyCode) -> Symbol {
+        match self.keycode_map.entry(keycode) {
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                *entry.insert(Symbol::from(format!("{:?}", keycode)))
+            }
+            std::collections::hash_map::Entry::Occupied(entry) => *entry.get(),
+        }
+    }
 }
 
 impl ggez::event::EventHandler for EventHandler {
     fn update(&mut self, _ctx: &mut ggez::Context) -> ggez::GameResult<()> {
-        if let Some(update) = self.update.clone() {
-            let r = Eval::call(&mut self.globals, &update, vec![]);
+        if let Some(update) = &self.update {
+            let r = Eval::call(&mut self.globals, update, vec![]);
             ordie(&mut self.globals, r);
         }
         Ok(())
     }
     fn draw(&mut self, ctx: &mut ggez::Context) -> ggez::GameResult<()> {
-        if let Some(draw) = self.draw.clone() {
-            let r = Eval::call(&mut self.globals, &draw, vec![]);
+        if let Some(draw) = &self.draw {
+            let r = Eval::call(&mut self.globals, draw, vec![]);
             ordie(&mut self.globals, r);
             ggez::graphics::present(ctx)?;
         }
         std::thread::yield_now();
         Ok(())
+    }
+    fn key_down_event(
+        &mut self,
+        ctx: &mut ggez::Context,
+        keycode: ggez::event::KeyCode,
+        _keymods: ggez::event::KeyMods,
+        repeat: bool,
+    ) {
+        if keycode == ggez::event::KeyCode::Escape {
+            ggez::event::quit(ctx);
+            return
+        }
+        let key = self.translate_keycode(keycode);
+        if let Some(key_down) = &self.key_down {
+            let r = Eval::call(&mut self.globals, key_down, vec![key.into(), repeat.into()]);
+            ordie(&mut self.globals, r);
+        }
+    }
+    fn key_up_event(
+        &mut self,
+        _ctx: &mut ggez::Context,
+        keycode: ggez::event::KeyCode,
+        _keymods: ggez::event::KeyMods,
+    ) {
+        let key = self.translate_keycode(keycode);
+        if let Some(key_up) = self.key_up.clone() {
+            let r = Eval::call(&mut self.globals, &key_up, vec![key.into()]);
+            ordie(&mut self.globals, r);
+        }
     }
 }
 
@@ -56,7 +101,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
             NativeFunction::snew(
                 "run",
                 (
-                    &["name", "author", "init", "update", "draw"],
+                    &["name", "author", "init", "update", "draw", "key_down", "key_up"],
                     &[],
                     None,
                     None,
@@ -68,6 +113,8 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                     let init = getornil(args.next().unwrap());
                     let update = getornil(args.next().unwrap());
                     let draw = getornil(args.next().unwrap());
+                    let key_down = getornil(args.next().unwrap());
+                    let key_up = getornil(args.next().unwrap());
                     globals.escape_to_trampoline(move |mut globals| {
                         let (mut ctx, mut event_loop) =
                             ggez::ContextBuilder::new(name.str(), author.str())
@@ -89,6 +136,9 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                             globals,
                             update,
                             draw,
+                            key_down,
+                            key_up,
+                            keycode_map: HashMap::new(),
                         };
 
                         match ggez::event::run(&mut ctx, &mut event_loop, &mut event_handler) {
