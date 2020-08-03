@@ -19,8 +19,11 @@ use std::rc::Rc;
 
 pub const NAME: &str = "a._rand";
 
-pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
+pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
+
+    let rngcls = globals.new_class0("a._rand::Rng", vec![])?;
+    globals.set_handle_class::<RngW>(rngcls)?;
 
     map.extend(
         vec![
@@ -28,7 +31,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                 "new_rng",
                 (&[], &[], None, None),
                 Some(concat!("Returns the default RNG")),
-                |_globals, _args, _| Ok(from_thread_rng(rand::thread_rng())),
+                |globals, _args, _| from_thread_rng(globals, rand::thread_rng()).map(From::from),
             ),
             NativeFunction::sdnew(
                 "new_rng_seeded",
@@ -51,7 +54,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                         seed.copy_from_slice(&bytes);
                         ChaCha20Rng::from_seed(seed)
                     };
-                    Ok(from_chacha_rng(r))
+                    from_chacha_rng(globals, r).map(From::from)
                 },
             ),
             NativeFunction::sdnew(
@@ -112,14 +115,14 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
     })
 }
 
-fn from_thread_rng(tr: ThreadRng) -> Value {
+fn from_thread_rng(globals: &mut Globals, tr: ThreadRng) -> EvalResult<Handle<RngW>> {
     let rngw = RngW::ThreadRng(tr);
-    Handle::new(rngw).into()
+    globals.new_handle(rngw)
 }
 
-fn from_chacha_rng(tr: ChaCha20Rng) -> Value {
+fn from_chacha_rng(globals: &mut Globals, tr: ChaCha20Rng) -> EvalResult<Handle<RngW>> {
     let rngw = RngW::ChaCha20Rng(tr);
-    Handle::new(rngw).into()
+    globals.new_handle(rngw)
 }
 
 fn to_rngw_mut<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<RefMut<'a, RngW>> {
