@@ -22,11 +22,16 @@ struct EventHandler {
     globals: Globals,
     update: Option<Value>,
     draw: Option<Value>,
+    mouse_down: Option<Value>,
+    mouse_up: Option<Value>,
+    mouse_move: Option<Value>,
+    mouse_wheel: Option<Value>,
     key_down: Option<Value>,
     key_up: Option<Value>,
     text_input: Option<Value>,
 
     keycode_map: HashMap<ggez::event::KeyCode, Symbol>,
+    mouse_button_map: HashMap<ggez::event::MouseButton, Symbol>,
 }
 
 impl EventHandler {
@@ -36,6 +41,18 @@ impl EventHandler {
                 *entry.insert(Symbol::from(format!("{:?}", keycode)))
             }
             std::collections::hash_map::Entry::Occupied(entry) => *entry.get(),
+        }
+    }
+    fn translate_button(&mut self, btn: ggez::event::MouseButton) -> Value {
+        if let ggez::event::MouseButton::Other(x) = btn {
+            Value::Int(x as i64)
+        } else {
+            match self.mouse_button_map.entry(btn) {
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    (*entry.insert(Symbol::from(format!("{:?}", btn)))).into()
+                }
+                std::collections::hash_map::Entry::Occupied(entry) => (*entry.get()).into(),
+            }
         }
     }
 }
@@ -56,6 +73,54 @@ impl ggez::event::EventHandler for EventHandler {
         }
         std::thread::yield_now();
         Ok(())
+    }
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut ggez::Context,
+        btn: ggez::event::MouseButton,
+        x: f32,
+        y: f32,
+    ) {
+        let btn = self.translate_button(btn);
+        let x = (x as f64).into();
+        let y = (y as f64).into();
+        if let Some(mouse_down) = &self.mouse_down {
+            let r = Eval::call(&mut self.globals, mouse_down, vec![x, y, btn]);
+            ordie(&mut self.globals, r);
+        }
+    }
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut ggez::Context,
+        btn: ggez::event::MouseButton,
+        x: f32,
+        y: f32,
+    ) {
+        let btn = self.translate_button(btn);
+        let x = (x as f64).into();
+        let y = (y as f64).into();
+        if let Some(mouse_up) = &self.mouse_up {
+            let r = Eval::call(&mut self.globals, mouse_up, vec![x, y, btn]);
+            ordie(&mut self.globals, r);
+        }
+    }
+    fn mouse_motion_event(&mut self, _ctx: &mut ggez::Context, x: f32, y: f32, dx: f32, dy: f32) {
+        let x = (x as f64).into();
+        let y = (y as f64).into();
+        let dx = (dx as f64).into();
+        let dy = (dy as f64).into();
+        if let Some(mouse_move) = &self.mouse_move {
+            let r = Eval::call(&mut self.globals, mouse_move, vec![x, y, dx, dy]);
+            ordie(&mut self.globals, r);
+        }
+    }
+    fn mouse_wheel_event(&mut self, _ctx: &mut ggez::Context, x: f32, y: f32) {
+        let x = (x as f64).into();
+        let y = (y as f64).into();
+        if let Some(mouse_wheel) = &self.mouse_wheel {
+            let r = Eval::call(&mut self.globals, mouse_wheel, vec![x, y]);
+            ordie(&mut self.globals, r);
+        }
     }
     fn key_down_event(
         &mut self,
@@ -115,6 +180,10 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                         "init",
                         "update",
                         "draw",
+                        "mouse_down",
+                        "mouse_up",
+                        "mouse_move",
+                        "mouse_wheel",
                         "key_down",
                         "key_up",
                         "text_input",
@@ -130,6 +199,10 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                     let init = getornil(args.next().unwrap());
                     let update = getornil(args.next().unwrap());
                     let draw = getornil(args.next().unwrap());
+                    let mouse_down = getornil(args.next().unwrap());
+                    let mouse_up = getornil(args.next().unwrap());
+                    let mouse_move = getornil(args.next().unwrap());
+                    let mouse_wheel = getornil(args.next().unwrap());
                     let key_down = getornil(args.next().unwrap());
                     let key_up = getornil(args.next().unwrap());
                     let text_input = getornil(args.next().unwrap());
@@ -154,10 +227,15 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                             globals,
                             update,
                             draw,
+                            mouse_down,
+                            mouse_up,
+                            mouse_move,
+                            mouse_wheel,
                             key_down,
                             key_up,
                             text_input,
                             keycode_map: HashMap::new(),
+                            mouse_button_map: HashMap::new(),
                         };
 
                         match ggez::event::run(&mut ctx, &mut event_loop, &mut event_handler) {

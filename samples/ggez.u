@@ -10,5 +10,11 @@ ggez::run(
     },
     text_input = def(ch) {
         print('text-input %r' % [ch])
+    },
+    mouse_down = def(x, y, btn) {
+        print('mouse-down %r' % [[x, y, btn]])
+    },
+    mouse_wheel = def(x, y) {
+        print('mouse-wheel %r' % [[x, y]])
     }
 )
