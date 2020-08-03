@@ -14,6 +14,7 @@ def run(
     key_down = nil,
     key_up = nil,
     text_input = nil,
+    resize = nil,
 ) {
     _ggez::run(
         name,
@@ -28,5 +29,6 @@ def run(
         key_down,
         key_up,
         text_input,
+        resize,
     )
 }

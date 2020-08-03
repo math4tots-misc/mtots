@@ -16,5 +16,8 @@ ggez::run(
     },
     mouse_wheel = def(x, y) {
         print('mouse-wheel %r' % [[x, y]])
-    }
+    },
+    resize = def(width, height) {
+        print('resize %r' % [[width, height]])
+    },
 )

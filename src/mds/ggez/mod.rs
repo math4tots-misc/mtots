@@ -29,6 +29,7 @@ struct EventHandler {
     key_down: Option<Value>,
     key_up: Option<Value>,
     text_input: Option<Value>,
+    resize: Option<Value>,
 
     keycode_map: HashMap<ggez::event::KeyCode, Symbol>,
     mouse_button_map: HashMap<ggez::event::MouseButton, Symbol>,
@@ -158,6 +159,14 @@ impl ggez::event::EventHandler for EventHandler {
             ordie(&mut self.globals, r);
         }
     }
+    fn resize_event(&mut self, _ctx: &mut ggez::Context, width: f32, height: f32) {
+        let width = (width as f64).into();
+        let height = (height as f64).into();
+        if let Some(resize) = self.resize.clone() {
+            let r = Eval::call(&mut self.globals, &resize, vec![width, height]);
+            ordie(&mut self.globals, r);
+        }
+    }
 }
 
 struct Stash {
@@ -187,6 +196,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                         "key_down",
                         "key_up",
                         "text_input",
+                        "resize",
                     ],
                     &[],
                     None,
@@ -206,6 +216,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                     let key_down = getornil(args.next().unwrap());
                     let key_up = getornil(args.next().unwrap());
                     let text_input = getornil(args.next().unwrap());
+                    let resize = getornil(args.next().unwrap());
                     globals.escape_to_trampoline(move |mut globals| {
                         let (mut ctx, mut event_loop) =
                             ggez::ContextBuilder::new(name.str(), author.str())
@@ -234,6 +245,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                             key_down,
                             key_up,
                             text_input,
+                            resize,
                             keycode_map: HashMap::new(),
                             mouse_button_map: HashMap::new(),
                         };
