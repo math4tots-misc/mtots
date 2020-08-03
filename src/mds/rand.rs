@@ -1,17 +1,17 @@
 //! dbin bindings -- for declaratively parsing binary files
 //! Stil WIP...
-use rand::rngs::ThreadRng;
-use rand::Rng;
-use rand::SeedableRng;
-use rand_chacha::ChaCha20Rng;
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
-use crate::NativeFunction;
 use crate::Handle;
+use crate::NativeFunction;
 use crate::RcStr;
 use crate::Value;
+use rand::rngs::ThreadRng;
+use rand::Rng;
+use rand::SeedableRng;
+use rand_chacha::ChaCha20Rng;
 use std::cell::RefCell;
 use std::cell::RefMut;
 use std::collections::HashMap;
@@ -22,7 +22,7 @@ pub const NAME: &str = "a._rand";
 pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
-    let rngcls = globals.new_class0("a._rand::Rng", vec![])?;
+    let rngcls = globals.new_class0("a._rand::Rng", vec![], vec![])?;
     globals.set_handle_class::<RngW>(rngcls)?;
 
     map.extend(

@@ -5,10 +5,8 @@ use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Value;
-use crate::Handle;
 use regex::Match;
 use regex::Regex;
-use std::cell::Ref;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -19,7 +17,7 @@ pub const NAME: &str = "a._regex";
 pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
     let mut map = HashMap::<RcStr, Value>::new();
 
-    let regexcls = globals.new_class0("a._regex::Regex", vec![])?;
+    let regexcls = globals.new_class0("a._regex::Regex", vec![], vec![])?;
     globals.set_handle_class::<Regex>(regexcls)?;
 
     map.extend(
@@ -30,7 +28,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(r) => r,
                     Err(error) => return globals.set_exc_str(&format!("{:?}", error)),
                 };
-                from_regex(globals, pattern).map(From::from)
+                globals.new_handle::<Regex>(pattern).map(From::from)
             }),
             NativeFunction::sdnew0(
                 "regex_find",
@@ -43,7 +41,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     "location if it is.\n",
                 )),
                 |globals, args, _| {
-                    let pattern = expect_regex(globals, &args[0])?;
+                    let pattern = Eval::handle_borrow::<Regex>(globals, &args[0])?;
                     let text = Eval::expect_string(globals, &args[1])?;
                     let start = if let Value::Nil = &args[2] {
                         0
@@ -73,7 +71,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     "If the limit is not provided or zero, it will replace all found matches.",
                 )),
                 |globals, args, _| {
-                    let pattern = expect_regex(globals, &args[0])?;
+                    let pattern = Eval::handle_borrow::<Regex>(globals, &args[0])?;
                     let text = Eval::expect_string(globals, &args[1])?;
                     let repl = Eval::expect_string(globals, &args[2])?;
                     let start = if let Value::Nil = &args[3] {
@@ -110,12 +108,4 @@ fn from_match(string_start: usize, m: &Match) -> Value {
     let start = Value::Int((string_start + m.start()) as i64);
     let end = Value::Int((string_start + m.end()) as i64);
     vec![start, end].into()
-}
-
-fn from_regex(globals: &mut Globals, r: Regex) -> EvalResult<Handle<Regex>> {
-    globals.new_handle(r)
-}
-
-fn expect_regex<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<Ref<'a, Regex>> {
-    Eval::handle_borrow(globals, value)
 }

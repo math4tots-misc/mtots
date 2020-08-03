@@ -1,11 +1,11 @@
 //! JSON bindings
 use crate::Eval;
-use crate::Symbol;
 use crate::EvalResult;
 use crate::Globals;
 use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
+use crate::Symbol;
 use crate::VMap;
 use crate::Value;
 use std::cell::RefCell;
