@@ -2,14 +2,26 @@ import a.ggez
 import a.ggez.graphics as gg
 
 
+text = @''
+
 ggez::run(
     init = nil,
     update = nil,
     draw = def {
-        gg::clear([1, 1/2, 1])
+        gg::clear([1/2, 1/2, 1])
+        gg::print('%s@' % [text])
     },
     text_input = def(ch) {
+        nonlocal text
         print('text-input %r' % [ch])
+
+        if ch == '\u{7F}' {
+            if text {
+                text.pop()
+            }
+        } else {
+            text.extend(ch)
+        }
     },
     mouse_down = def(x, y, btn) {
         print('mouse-down %r' % [[x, y, btn]])

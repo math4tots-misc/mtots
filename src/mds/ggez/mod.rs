@@ -7,7 +7,13 @@ use crate::RcStr;
 use crate::Stashable;
 use crate::Symbol;
 use crate::Value;
+use crate::HCow;
+use ggez::graphics;
 use ggez::graphics::Color;
+use ggez::graphics::Font;
+use ggez::graphics::TextFragment;
+use ggez::graphics::Text;
+use ggez::graphics::DrawParam;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -268,6 +274,20 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                     Ok(Value::Nil)
                 },
             ),
+            NativeFunction::snew(
+                "print",
+                (&["text", "x", "y"], &[], None, None),
+                |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let text = as_text(globals, args.next().unwrap())?;
+                    let x = Eval::expect_floatlike(globals, &args.next().unwrap())? as f32;
+                    let y = Eval::expect_floatlike(globals, &args.next().unwrap())? as f32;
+                    let ctx = getctx(globals)?;
+                    let r = text.with(|text| ggez::graphics::draw(ctx, text, DrawParam::default().dest([x, y])));
+                    conve(globals, r)?;
+                    Ok(Value::Nil)
+                },
+            )
         ]
         .into_iter()
         .map(|f| (f.name().clone(), f.into())),
@@ -309,4 +329,11 @@ fn getctx(globals: &mut Globals) -> EvalResult<&'static mut ggez::Context> {
     Ok(unsafe {
         std::mem::transmute::<&mut ggez::Context, _>(&mut getstash(globals)?.borrow_mut().ctx)
     })
+}
+
+fn conve<E: std::error::Error, R>(globals: &mut Globals, e: Result<R, E>) -> EvalResult<R> {
+    match e {
+        Ok(r) => Ok(r),
+        Err(e) => globals.set_exc_str(&format!("{:?}", e)),
+    }
 }
