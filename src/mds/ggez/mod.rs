@@ -24,6 +24,7 @@ struct EventHandler {
     draw: Option<Value>,
     key_down: Option<Value>,
     key_up: Option<Value>,
+    text_input: Option<Value>,
 
     keycode_map: HashMap<ggez::event::KeyCode, Symbol>,
 }
@@ -65,7 +66,7 @@ impl ggez::event::EventHandler for EventHandler {
     ) {
         if keycode == ggez::event::KeyCode::Escape {
             ggez::event::quit(ctx);
-            return
+            return;
         }
         let key = self.translate_keycode(keycode);
         if let Some(key_down) = &self.key_down {
@@ -85,6 +86,13 @@ impl ggez::event::EventHandler for EventHandler {
             ordie(&mut self.globals, r);
         }
     }
+    fn text_input_event(&mut self, _ctx: &mut ggez::Context, ch: char) {
+        if let Some(text_input) = self.text_input.clone() {
+            let ch = self.globals.char_to_val(ch);
+            let r = Eval::call(&mut self.globals, &text_input, vec![ch]);
+            ordie(&mut self.globals, r);
+        }
+    }
 }
 
 struct Stash {
@@ -101,7 +109,16 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
             NativeFunction::snew(
                 "run",
                 (
-                    &["name", "author", "init", "update", "draw", "key_down", "key_up"],
+                    &[
+                        "name",
+                        "author",
+                        "init",
+                        "update",
+                        "draw",
+                        "key_down",
+                        "key_up",
+                        "text_input",
+                    ],
                     &[],
                     None,
                     None,
@@ -115,6 +132,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                     let draw = getornil(args.next().unwrap());
                     let key_down = getornil(args.next().unwrap());
                     let key_up = getornil(args.next().unwrap());
+                    let text_input = getornil(args.next().unwrap());
                     globals.escape_to_trampoline(move |mut globals| {
                         let (mut ctx, mut event_loop) =
                             ggez::ContextBuilder::new(name.str(), author.str())
@@ -138,6 +156,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                             draw,
                             key_down,
                             key_up,
+                            text_input,
                             keycode_map: HashMap::new(),
                         };
 
