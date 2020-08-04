@@ -18,7 +18,11 @@ fn to_text(globals: &mut Globals, value: Value) -> EvalResult<Text> {
     Ok(text)
 }
 
-fn to_textfragments(globals: &mut Globals, value: Value, out: &mut Vec<TextFragment>) -> EvalResult<()> {
+fn to_textfragments(
+    globals: &mut Globals,
+    value: Value,
+    out: &mut Vec<TextFragment>,
+) -> EvalResult<()> {
     match value {
         Value::List(list) => match Rc::try_unwrap(list) {
             Ok(list) => {

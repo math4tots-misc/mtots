@@ -1,19 +1,19 @@
 use crate::Eval;
 use crate::EvalResult;
 use crate::Globals;
+use crate::HCow;
 use crate::HMap;
 use crate::NativeFunction;
 use crate::RcStr;
 use crate::Stashable;
 use crate::Symbol;
 use crate::Value;
-use crate::HCow;
 use ggez::graphics;
 use ggez::graphics::Color;
-use ggez::graphics::Font;
-use ggez::graphics::TextFragment;
-use ggez::graphics::Text;
 use ggez::graphics::DrawParam;
+use ggez::graphics::Font;
+use ggez::graphics::Text;
+use ggez::graphics::TextFragment;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -286,7 +286,9 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     let x = Eval::expect_floatlike(globals, &args.next().unwrap())? as f32;
                     let y = Eval::expect_floatlike(globals, &args.next().unwrap())? as f32;
                     let ctx = getctx(globals)?;
-                    let r = text.with(|text| ggez::graphics::draw(ctx, text, DrawParam::default().dest([x, y])));
+                    let r = text.with(|text| {
+                        ggez::graphics::draw(ctx, text, DrawParam::default().dest([x, y]))
+                    });
                     conve(globals, r)?;
                     Ok(Value::Nil)
                 },
