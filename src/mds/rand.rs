@@ -27,20 +27,20 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-            NativeFunction::sdnew(
+            NativeFunction::new(
                 "new_rng",
-                (&[], &[], None, None),
-                Some(concat!("Returns the default RNG")),
+                (),
+                concat!("Returns the default RNG"),
                 |globals, _args, _| from_thread_rng(globals, rand::thread_rng()).map(From::from),
             ),
-            NativeFunction::sdnew(
+            NativeFunction::new(
                 "new_rng_seeded",
-                (&["seed"], &[], None, None),
-                Some(concat!(
+                ["seed"],
+                concat!(
                     "Returns a reproducible seeded RNG\n",
-                    "The seed may either be a single integer or\n",
+                    "The seed may either be a number or\n",
                     "a Bytes pattern that resolves to exactly 32 bytes\n",
-                )),
+                ),
                 |globals, args, _| {
                     let r = if let Value::Int(i) = &args[0] {
                         ChaCha20Rng::seed_from_u64(*i as u64)
@@ -57,30 +57,30 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     from_chacha_rng(globals, r).map(From::from)
                 },
             ),
-            NativeFunction::sdnew(
+            NativeFunction::new(
                 "rng_gen_int",
-                (&["rng"], &[], None, None),
-                Some(concat!("Generates an Int from the given RNG")),
+                ["rng"],
+                concat!("Generates an Int from the given RNG"),
                 |globals, args, _| {
                     let mut r = to_rngw_mut(globals, &args[0])?;
                     Ok(r.gen_int().into())
                 },
             ),
-            NativeFunction::sdnew(
+            NativeFunction::new(
                 "rng_gen_float",
-                (&["rng"], &[], None, None),
-                Some(concat!("Generates a Float from the given RNG")),
+                ["rng"],
+                concat!("Generates a Float from the given RNG"),
                 |globals, args, _| {
                     let mut r = to_rngw_mut(globals, &args[0])?;
                     Ok(r.gen_float().into())
                 },
             ),
-            NativeFunction::sdnew(
+            NativeFunction::new(
                 "rng_gen_int_range",
-                (&["rng", "start", "end"], &[], None, None),
-                Some(concat!(
+                ["rng", "start", "end"],
+                concat!(
                     "Generates an integer in the [start, end) interval from the given RNG"
-                )),
+                ),
                 |globals, args, _| {
                     let mut r = to_rngw_mut(globals, &args[0])?;
                     let start = Eval::expect_int(globals, &args[1])?;
@@ -88,12 +88,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(r.gen_int_range(start, end).into())
                 },
             ),
-            NativeFunction::sdnew(
+            NativeFunction::new(
                 "rng_gen_float_range",
-                (&["rng", "start", "end"], &[], None, None),
-                Some(concat!(
+                ["rng", "start", "end"],
+                concat!(
                     "Generates a float in the [start, end) interval from the given RNG"
-                )),
+                ),
                 |globals, args, _| {
                     let mut r = to_rngw_mut(globals, &args[0])?;
                     let start = Eval::expect_floatlike(globals, &args[1])?;

@@ -52,7 +52,7 @@ impl EventHandler {
     }
     fn translate_button(&mut self, btn: ggez::event::MouseButton) -> Value {
         if let ggez::event::MouseButton::Other(x) = btn {
-            Value::Int(x as i64)
+            Value::from(x)
         } else {
             match self.mouse_button_map.entry(btn) {
                 std::collections::hash_map::Entry::Vacant(entry) => {
@@ -189,28 +189,24 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-            NativeFunction::snew(
+            NativeFunction::new(
                 "run",
-                (
-                    &[
-                        "name",
-                        "author",
-                        "init",
-                        "update",
-                        "draw",
-                        "mouse_down",
-                        "mouse_up",
-                        "mouse_move",
-                        "mouse_wheel",
-                        "key_down",
-                        "key_up",
-                        "text_input",
-                        "resize",
-                    ],
-                    &[],
-                    None,
-                    None,
-                ),
+                &[
+                    "name",
+                    "author",
+                    "init",
+                    "update",
+                    "draw",
+                    "mouse_down",
+                    "mouse_up",
+                    "mouse_move",
+                    "mouse_wheel",
+                    "key_down",
+                    "key_up",
+                    "text_input",
+                    "resize",
+                ],
+                None,
                 |globals: &mut Globals, args, _| {
                     let mut args = args.into_iter();
                     let name = Eval::expect_string(globals, &args.next().unwrap())?.clone();
@@ -267,9 +263,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     })
                 },
             ),
-            NativeFunction::snew(
+            NativeFunction::new(
                 "clear",
-                (&["color"], &[], None, None),
+                ["color"],
+                None,
                 |globals, args, _| {
                     let ctx = getctx(globals)?;
                     let color = to_color(globals, &args[0])?;
@@ -277,9 +274,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(Value::Nil)
                 },
             ),
-            NativeFunction::snew(
+            NativeFunction::new(
                 "print",
-                (&["text", "x", "y"], &[], None, None),
+                ["text", "x", "y"],
+                None,
                 |globals, args, _| {
                     let mut args = args.into_iter();
                     let text = as_text(globals, args.next().unwrap())?;
@@ -293,9 +291,10 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(Value::Nil)
                 },
             ),
-            NativeFunction::snew(
+            NativeFunction::new(
                 "new_text",
-                (&["text"], &[], None, None),
+                ["text"],
+                None,
                 |globals, args, _| {
                     let mut args = args.into_iter();
                     let text = as_text(globals, args.next().unwrap())?;

@@ -46,7 +46,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-            NativeFunction::simple0(
+            NativeFunction::new(
                 "pattern_parse",
                 &["pattern", "bytes"],
                 |globals, args, _| {
@@ -59,12 +59,12 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     Ok(translate_data(&data))
                 },
             ),
-            NativeFunction::simple0("new_pattern_exact", &["bytes"], |globals, args, _| {
+            NativeFunction::new("new_pattern_exact", &["bytes"], |globals, args, _| {
                 let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
                 let pat = Pattern::Exact(bytes.into());
                 Ok(from_pattern_raw(pat))
             }),
-            NativeFunction::simple0(
+            NativeFunction::new(
                 "new_pattern_array",
                 &["pat", "f"],
                 |globals, args, _| {

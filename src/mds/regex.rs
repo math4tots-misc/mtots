@@ -22,7 +22,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 
     map.extend(
         vec![
-            NativeFunction::simple0("new_regex", &["pattern"], |globals, args, _| {
+            NativeFunction::new("new_regex", &["pattern"], None, |globals, args, _| {
                 let string = Eval::expect_string(globals, &args[0])?;
                 let pattern = match Regex::new(string) {
                     Ok(r) => r,
@@ -30,16 +30,16 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                 };
                 globals.new_handle::<Regex>(pattern).map(From::from)
             }),
-            NativeFunction::sdnew0(
+            NativeFunction::new(
                 "regex_find",
                 &["pattern", "text", "start", "end"],
-                Some(concat!(
+                concat!(
                     "Searches for the regex in the given text.\n",
                     "Start and end arguments can optionally be provided to search in ",
                     "a subset of the text.\n",
                     "Returns nil if no match is found, or [start, end] pair denoting the ",
                     "location if it is.\n",
-                )),
+                ),
                 |globals, args, _| {
                     let pattern = Eval::handle_borrow::<Regex>(globals, &args[0])?;
                     let text = Eval::expect_string(globals, &args[1])?;
@@ -60,16 +60,16 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
                     })
                 },
             ),
-            NativeFunction::sdnew0(
+            NativeFunction::new(
                 "regex_replace",
                 &["pattern", "text", "repl", "start", "end", "limit"],
-                Some(concat!(
+                concat!(
                     "Returns a new string where all the matching text in the given ",
                     "text is replaced with the given replacement pattern.\n",
                     "The limit (if provided and non-zero) will fix the number of matches ",
                     "that will be replaced.\n",
                     "If the limit is not provided or zero, it will replace all found matches.",
-                )),
+                ),
                 |globals, args, _| {
                     let pattern = Eval::handle_borrow::<Regex>(globals, &args[0])?;
                     let text = Eval::expect_string(globals, &args[1])?;
@@ -105,7 +105,7 @@ pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<V
 }
 
 fn from_match(string_start: usize, m: &Match) -> Value {
-    let start = Value::Int((string_start + m.start()) as i64);
-    let end = Value::Int((string_start + m.end()) as i64);
+    let start = Value::from(string_start + m.start());
+    let end = Value::from(string_start + m.end());
     vec![start, end].into()
 }

@@ -19,7 +19,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
 
     map.extend(
         vec![
-            NativeFunction::simple0("loads", &["string"], |globals, args, _| {
+            NativeFunction::new("loads", &["string"], None, |globals, args, _| {
                 let string = Eval::expect_string(globals, &args[0])?;
                 let serde_value: serde_json::Value = match serde_json::from_str(string) {
                     Ok(value) => value,
@@ -30,7 +30,7 @@ pub(super) fn load(_globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<
                 let value = serde_to_mtots(globals, serde_value)?;
                 Ok(value)
             }),
-            NativeFunction::simple0("dumps", &["blob"], |globals, args, _| {
+            NativeFunction::new("dumps", &["blob"], None, |globals, args, _| {
                 let serde_value = mtots_to_serde(globals, &args[0])?;
                 let string = serde_value.to_string();
                 Ok(string.into())
