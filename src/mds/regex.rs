@@ -20,21 +20,21 @@ pub(super) fn new() -> NativeModule {
             cls.ifunc(
                 "find",
                 ArgSpec::builder()
-                    .req("string")
+                    .req("text")
                     .def("start", ())
                     .def("end", ()),
                 "",
                 |owner, globals, args, _| {
                     let mut args = args.into_iter();
-                    let string = args.next().unwrap().into_string()?;
-                    let len = string.len();
+                    let text = args.next().unwrap().into_string()?;
+                    let len = text.len();
                     let start = args.next().unwrap().to_start_index(len)?;
                     let end = args.next().unwrap().to_end_index(len)?;
-                    let match_ = owner.borrow().find(&string[start..end]);
+                    let match_ = owner.borrow().find(&text[start..end]);
                     Ok(match match_ {
                         Some(match_) => globals
                             .new_handle(OwnedMatch {
-                                string: string.clone(),
+                                text: text.clone(),
                                 start: start + match_.start(),
                                 end: start + match_.end(),
                             })?
@@ -42,6 +42,17 @@ pub(super) fn new() -> NativeModule {
                         None => Value::Nil,
                     })
                 },
+            );
+            cls.ifunc(
+                "replace",
+                ["text", "replacement"],
+                "",
+                |owner, _globals, args, _| {
+                    let mut args = args.into_iter();
+                    let text = args.next().unwrap().into_string()?;
+                    let replacement = args.next().unwrap().into_string()?;
+                    Ok(owner.borrow().replace(&text, replacement.str()).into_owned().into())
+                }
             );
         });
         m.class::<OwnedMatch, _>("Match", |cls| {
@@ -61,13 +72,13 @@ pub(super) fn new() -> NativeModule {
 }
 
 pub struct OwnedMatch {
-    string: RcStr,
+    text: RcStr,
     start: usize,
     end: usize,
 }
 
 impl OwnedMatch {
     pub fn str(&self) -> &str {
-        &self.string[self.start..self.end]
+        &self.text[self.start..self.end]
     }
 }
