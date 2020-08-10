@@ -1,111 +1,18 @@
-use crate::Eval;
-use crate::EvalResult;
-use crate::Globals;
-use crate::HMap;
-use crate::NativeFunction;
-use crate::RcStr;
-use crate::Value;
-use regex::Match;
+use crate::mtry;
+use crate::NativeModule;
 use regex::Regex;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 
-pub const NAME: &str = "a._regex";
+pub const NAME: &str = "a.regex";
 
-// TODO: captures API, and find_all and its variants
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let mut map = HashMap::<RcStr, Value>::new();
-
-    let regexcls = globals.new_class0("a._regex::Regex", vec![], vec![])?;
-    globals.set_handle_class::<Regex>(regexcls)?;
-
-    map.extend(
-        vec![
-            NativeFunction::new("new_regex", &["pattern"], None, |globals, args, _| {
-                let string = Eval::expect_string(globals, &args[0])?;
-                let pattern = match Regex::new(string) {
-                    Ok(r) => r,
-                    Err(error) => return globals.set_exc_str(&format!("{:?}", error)),
-                };
-                globals.new_handle::<Regex>(pattern).map(From::from)
-            }),
-            NativeFunction::new(
-                "regex_find",
-                &["pattern", "text", "start", "end"],
-                concat!(
-                    "Searches for the regex in the given text.\n",
-                    "Start and end arguments can optionally be provided to search in ",
-                    "a subset of the text.\n",
-                    "Returns nil if no match is found, or [start, end] pair denoting the ",
-                    "location if it is.\n",
-                ),
-                |globals, args, _| {
-                    let pattern = Eval::handle_borrow::<Regex>(globals, &args[0])?;
-                    let text = Eval::expect_string(globals, &args[1])?;
-                    let start = if let Value::Nil = &args[2] {
-                        0
-                    } else {
-                        Eval::expect_usize(globals, &args[2])?
-                    };
-                    let end = if let Value::Nil = &args[3] {
-                        text.len()
-                    } else {
-                        Eval::expect_usize(globals, &args[3])?
-                    };
-                    let text = &text[start..end];
-                    Ok(match pattern.find(text) {
-                        Some(m) => from_match(start, &m),
-                        None => Value::Nil,
-                    })
-                },
-            ),
-            NativeFunction::new(
-                "regex_replace",
-                &["pattern", "text", "repl", "start", "end", "limit"],
-                concat!(
-                    "Returns a new string where all the matching text in the given ",
-                    "text is replaced with the given replacement pattern.\n",
-                    "The limit (if provided and non-zero) will fix the number of matches ",
-                    "that will be replaced.\n",
-                    "If the limit is not provided or zero, it will replace all found matches.",
-                ),
-                |globals, args, _| {
-                    let pattern = Eval::handle_borrow::<Regex>(globals, &args[0])?;
-                    let text = Eval::expect_string(globals, &args[1])?;
-                    let repl = Eval::expect_string(globals, &args[2])?;
-                    let start = if let Value::Nil = &args[3] {
-                        0
-                    } else {
-                        Eval::expect_usize(globals, &args[3])?
-                    };
-                    let end = if let Value::Nil = &args[4] {
-                        text.len()
-                    } else {
-                        Eval::expect_usize(globals, &args[4])?
-                    };
-                    let limit = Eval::expect_usize(globals, &args[5])?;
-                    let text = &text[start..end];
-                    let replaced_string = pattern.replacen(text, limit, repl.str()).into_owned();
-                    Ok(replaced_string.into())
-                },
-            ),
-        ]
-        .into_iter()
-        .map(|f| (f.name().clone(), f.into())),
-    );
-
-    Ok({
-        let mut ret = HMap::new();
-        for (key, value) in map {
-            ret.insert(key, Rc::new(RefCell::new(value)));
-        }
-        ret
+pub(super) fn new() -> NativeModule {
+    NativeModule::new(NAME, |m| {
+        m.class::<Regex, _>("Regex", |cls| {
+            cls.sfunc("__call", ["pattern"], "", |globals, args, _| {
+                let mut args = args.into_iter();
+                let pattern = args.next().unwrap().into_string()?;
+                let re = mtry!(Regex::new(&pattern));
+                globals.new_handle::<Regex>(re).map(From::from)
+            });
+        });
     })
-}
-
-fn from_match(string_start: usize, m: &Match) -> Value {
-    let start = Value::from(string_start + m.start());
-    let end = Value::from(string_start + m.end());
-    vec![start, end].into()
 }
