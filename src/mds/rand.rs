@@ -1,132 +1,109 @@
-//! dbin bindings -- for declaratively parsing binary files
-//! Stil WIP...
-use crate::Eval;
-use crate::EvalResult;
-use crate::Globals;
-use crate::HMap;
-use crate::Handle;
-use crate::NativeFunction;
-use crate::RcStr;
+//! Random number generator bindings
+use crate::ArgSpec;
+use crate::NativeModule;
 use crate::Value;
+use rand::distributions::uniform::SampleBorrow;
+use rand::distributions::uniform::SampleUniform;
+use rand::distributions::Distribution;
+use rand::distributions::Standard;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
-use std::cell::RefCell;
-use std::cell::RefMut;
-use std::collections::HashMap;
-use std::rc::Rc;
 
-pub const NAME: &str = "a._rand";
+pub const NAME: &str = "a.rand";
 
-pub(super) fn load(globals: &mut Globals) -> EvalResult<HMap<RcStr, Rc<RefCell<Value>>>> {
-    let mut map = HashMap::<RcStr, Value>::new();
-
-    let rngcls = globals.new_class0("a._rand::Rng", vec![], vec![])?;
-    globals.set_handle_class::<RngW>(rngcls)?;
-
-    map.extend(
-        vec![
-            NativeFunction::new(
-                "new_rng",
-                (),
-                concat!("Returns the default RNG"),
-                |globals, _args, _| from_thread_rng(globals, rand::thread_rng()).map(From::from),
-            ),
-            NativeFunction::new(
-                "new_rng_seeded",
-                ["seed"],
-                concat!(
-                    "Returns a reproducible seeded RNG\n",
-                    "The seed may either be a number or\n",
-                    "a Bytes pattern that resolves to exactly 32 bytes\n",
-                ),
+pub(super) fn new() -> NativeModule {
+    NativeModule::new(NAME, |m| {
+        m.class::<RngW, _>("Rng", |cls| {
+            cls.sfunc(
+                "__call",
+                ArgSpec::builder().def("seed", ()),
+                "",
                 |globals, args, _| {
-                    let r = if let Value::Int(i) = &args[0] {
-                        ChaCha20Rng::seed_from_u64(*i as u64)
-                    } else {
-                        let bytes = Eval::expect_bytes_from_pattern(globals, &args[0])?;
-                        if bytes.len() != 32 {
-                            return globals
-                                .set_exc_str(&format!("Seed must provide exactly 32 bytes",));
+                    let mut args = args.into_iter();
+                    let rng = match args.next().unwrap() {
+                        Value::Nil => RngW::ThreadRng(rand::thread_rng()),
+                        value => {
+                            let seed = value.number()?.to_bits();
+                            RngW::ChaCha20Rng(ChaCha20Rng::seed_from_u64(seed))
                         }
-                        let mut seed = [0u8; 32];
-                        seed.copy_from_slice(&bytes);
-                        ChaCha20Rng::from_seed(seed)
                     };
-                    from_chacha_rng(globals, r).map(From::from)
+                    globals.new_handle(rng).map(From::from)
                 },
-            ),
-            NativeFunction::new(
-                "rng_gen_int",
-                ["rng"],
-                concat!("Generates an Int from the given RNG"),
-                |globals, args, _| {
-                    let mut r = to_rngw_mut(globals, &args[0])?;
-                    Ok(r.gen_int().into())
+            );
+            cls.ifunc(
+                "float",
+                ArgSpec::builder().def("low", ()).def("high", ()),
+                "",
+                |owner, _globals, args, _| {
+                    if args[0].is_nil() {
+                        let x: f64 = owner.borrow_mut().gen();
+                        Ok(Value::from(x))
+                    } else {
+                        let mut args = args.into_iter();
+                        let low = args.next().unwrap().number()?;
+                        let high = args.next().unwrap().number()?;
+                        let x: f64 = owner.borrow_mut().gen_range(low, high);
+                        Ok(Value::from(x))
+                    }
                 },
-            ),
-            NativeFunction::new(
-                "rng_gen_float",
-                ["rng"],
-                concat!("Generates a Float from the given RNG"),
-                |globals, args, _| {
-                    let mut r = to_rngw_mut(globals, &args[0])?;
-                    Ok(r.gen_float().into())
+            );
+            cls.ifunc(
+                "int",
+                ArgSpec::builder().def("low", ()).def("high", ()),
+                "",
+                |owner, _globals, args, _| {
+                    if args[0].is_nil() {
+                        let x: i64 = owner.borrow_mut().gen();
+                        Ok(Value::from(x))
+                    } else {
+                        let mut args = args.into_iter();
+                        let low = args.next().unwrap().i64()?;
+                        let high = args.next().unwrap().i64()?;
+                        let x: i64 = owner.borrow_mut().gen_range(low, high);
+                        Ok(Value::from(x))
+                    }
                 },
-            ),
-            NativeFunction::new(
-                "rng_gen_int_range",
-                ["rng", "start", "end"],
-                concat!(
-                    "Generates an integer in the [start, end) interval from the given RNG"
-                ),
-                |globals, args, _| {
-                    let mut r = to_rngw_mut(globals, &args[0])?;
-                    let start = Eval::expect_int(globals, &args[1])?;
-                    let end = Eval::expect_int(globals, &args[2])?;
-                    Ok(r.gen_int_range(start, end).into())
-                },
-            ),
-            NativeFunction::new(
-                "rng_gen_float_range",
-                ["rng", "start", "end"],
-                concat!(
-                    "Generates a float in the [start, end) interval from the given RNG"
-                ),
-                |globals, args, _| {
-                    let mut r = to_rngw_mut(globals, &args[0])?;
-                    let start = Eval::expect_floatlike(globals, &args[1])?;
-                    let end = Eval::expect_floatlike(globals, &args[2])?;
-                    Ok(r.gen_float_range(start, end).into())
-                },
-            ),
-        ]
-        .into_iter()
-        .map(|f| (f.name().clone(), f.into())),
-    );
-
-    Ok({
-        let mut ret = HMap::new();
-        for (key, value) in map {
-            ret.insert(key, Rc::new(RefCell::new(value)));
-        }
-        ret
+            );
+        });
+        m.func(
+            "float",
+            ArgSpec::builder().def("low", ()).def("high", ()),
+            "",
+            |_globals, args, _| {
+                let mut owner = rand::thread_rng();
+                if args[0].is_nil() {
+                    let x: f64 = owner.gen();
+                    Ok(Value::from(x))
+                } else {
+                    let mut args = args.into_iter();
+                    let low = args.next().unwrap().number()?;
+                    let high = args.next().unwrap().number()?;
+                    let x: f64 = owner.gen_range(low, high);
+                    Ok(Value::from(x))
+                }
+            },
+        );
+        m.func(
+            "int",
+            ArgSpec::builder().def("low", ()).def("high", ()),
+            "",
+            |_globals, args, _| {
+                let mut owner = rand::thread_rng();
+                if args[0].is_nil() {
+                    let x: i64 = owner.gen();
+                    Ok(Value::from(x))
+                } else {
+                    let mut args = args.into_iter();
+                    let low = args.next().unwrap().i64()?;
+                    let high = args.next().unwrap().i64()?;
+                    let x: i64 = owner.gen_range(low, high);
+                    Ok(Value::from(x))
+                }
+            },
+        );
     })
-}
-
-fn from_thread_rng(globals: &mut Globals, tr: ThreadRng) -> EvalResult<Handle<RngW>> {
-    let rngw = RngW::ThreadRng(tr);
-    globals.new_handle(rngw)
-}
-
-fn from_chacha_rng(globals: &mut Globals, tr: ChaCha20Rng) -> EvalResult<Handle<RngW>> {
-    let rngw = RngW::ChaCha20Rng(tr);
-    globals.new_handle(rngw)
-}
-
-fn to_rngw_mut<'a>(globals: &mut Globals, value: &'a Value) -> EvalResult<RefMut<'a, RngW>> {
-    Eval::handle_borrow_mut(globals, value)
 }
 
 enum RngW {
@@ -138,25 +115,20 @@ enum RngW {
 }
 
 impl RngW {
-    fn gen_int(&mut self) -> i64 {
+    fn gen<T>(&mut self) -> T
+    where
+        Standard: Distribution<T>,
+    {
         match self {
             RngW::ThreadRng(r) => r.gen(),
             RngW::ChaCha20Rng(r) => r.gen(),
         }
     }
-    fn gen_float(&mut self) -> f64 {
-        match self {
-            RngW::ThreadRng(r) => r.gen(),
-            RngW::ChaCha20Rng(r) => r.gen(),
-        }
-    }
-    fn gen_int_range(&mut self, low: i64, high: i64) -> i64 {
-        match self {
-            RngW::ThreadRng(r) => r.gen_range(low, high),
-            RngW::ChaCha20Rng(r) => r.gen_range(low, high),
-        }
-    }
-    fn gen_float_range(&mut self, low: f64, high: f64) -> f64 {
+    fn gen_range<T: SampleUniform, B1, B2>(&mut self, low: B1, high: B2) -> T
+    where
+        B1: SampleBorrow<T> + Sized,
+        B2: SampleBorrow<T> + Sized,
+    {
         match self {
             RngW::ThreadRng(r) => r.gen_range(low, high),
             RngW::ChaCha20Rng(r) => r.gen_range(low, high),

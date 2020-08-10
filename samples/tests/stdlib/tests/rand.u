@@ -2,12 +2,15 @@ import a.rand
 
 
 def __test_rand() {
-    assert_eq(type(rand::int()), Int)
-    assert_eq(type(rand::float()), Float)
+    i = rand.int()
+    assert_eq(type(i), Number)
+    assert_eq(i.fract(), 0)
+    f = rand.float()
+    assert_eq(type(f), Number)
 
     # the default RNG is unpredictable, but
     # the seeded one should be reproducible
-    rng = rand::Rng(0)
+    rng = rand.Rng(0)
     assert_eq(rng.int(0, 100), 2)
     assert_eq(rng.int(0, 100), 98)
     assert_eq(rng.int(0, 100), 86)
