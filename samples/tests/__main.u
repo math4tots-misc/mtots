@@ -1,6 +1,7 @@
 # cls && time cargo run samples/tests
 import a.test
+import a.fs
 
 if __name == __main() {
-    test::run(__file.parent(), 'stdlib')
+    test.run(fs.dirname(__file), 'stdlib')
 }

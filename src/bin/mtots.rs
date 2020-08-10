@@ -1,5 +1,9 @@
 extern crate mtots;
+use mtots::add_standard_modules;
+use mtots::Globals;
 
 fn main() {
-    mtots::climain();
+    let mut globals = Globals::new();
+    add_standard_modules(&mut globals);
+    mtots::climain(globals);
 }
