@@ -1,4 +1,4 @@
-import a.regex::Regex
+from a.regex import Regex
 
 
 def __test_find() {
