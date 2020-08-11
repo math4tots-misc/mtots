@@ -13,11 +13,7 @@ use ggez::graphics::DrawParam;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 
-// mod conv;
 pub mod graphics;
-
-// use conv::*;
-// use graphics::*;
 
 pub(super) fn add(globals: &mut Globals) {
     globals.add(new()).unwrap();
