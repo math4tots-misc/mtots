@@ -51,8 +51,12 @@ pub(super) fn new() -> NativeModule {
                     let mut args = args.into_iter();
                     let text = args.next().unwrap().into_string()?;
                     let replacement = args.next().unwrap().into_string()?;
-                    Ok(owner.borrow().replace(&text, replacement.str()).into_owned().into())
-                }
+                    Ok(owner
+                        .borrow()
+                        .replace(&text, replacement.str())
+                        .into_owned()
+                        .into())
+                },
             );
         });
         m.class::<OwnedMatch, _>("Match", |cls| {

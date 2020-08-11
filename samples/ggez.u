@@ -2,16 +2,16 @@ import a.ggez
 import a.ggez.graphics as gg
 
 
-print(gg::new_text('some text'))
+# print(gg.new_text('some text'))
 
-text = @''
+text = ''
 
-ggez::run(
+ggez.run(
     init = nil,
     update = nil,
     draw = def {
-        gg::clear([1/2, 1/2, 1])
-        gg::print([
+        gg.clear([1/2, 1/2, 1])
+        gg.print([
             'text': '%s@' % [text],
             'scale': 32,
         ])
@@ -22,10 +22,10 @@ ggez::run(
 
         if ch == '\u{7F}' {
             if text {
-                text.pop()
+                text = text[:-1]
             }
         } else {
-            text.extend(ch)
+            text = text + ch
         }
     },
     mouse_down = def(x, y, btn) {
