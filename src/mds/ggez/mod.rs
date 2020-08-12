@@ -261,6 +261,9 @@ fn getctx(globals: &mut Globals) -> Result<&'static mut ggez::Context> {
     use std::ops::DerefMut;
     // also yucky unsafe here, but kind of follows from the whole situation
     let stash = globals.stash_mut();
+    if !stash.has::<Stash>() {
+        return Err(rterr!("GGEZ context used before being initialized"))
+    }
     let mut stash = stash.get_mut::<Stash>()?;
     let stash = stash.deref_mut();
     Ok(unsafe { std::mem::transmute::<&mut ggez::Context, _>(stash.ctx) })
