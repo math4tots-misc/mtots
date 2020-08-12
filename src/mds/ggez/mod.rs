@@ -9,6 +9,7 @@ use crate::NativeModule;
 use crate::RcStr;
 use crate::Result;
 use crate::Value;
+use ggez::graphics::DrawParam;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 

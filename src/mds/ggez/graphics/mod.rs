@@ -4,11 +4,9 @@ use ggez::graphics::Drawable;
 mod conv;
 mod geo;
 mod mesh;
-mod dparam;
 pub use conv::*;
 pub use geo::*;
 pub use mesh::*;
-pub use dparam::*;
 
 pub const NAME: &str = "a.ggez.graphics";
 
@@ -44,7 +42,6 @@ pub(in super::super) fn new() -> NativeModule {
             "",
             |globals, args, _| {
                 let mut args = args.into_iter();
-                let mut drawparam = DrawParam::default();
                 let drawable = args.next().unwrap();
                 let x = f32::try_from(args.next().unwrap())?;
                 let y = f32::try_from(args.next().unwrap())?;
@@ -53,16 +50,18 @@ pub(in super::super) fn new() -> NativeModule {
                 let yscale = f32::try_from(args.next().unwrap())?;
                 let xoffset = f32::try_from(args.next().unwrap())?;
                 let yoffset = f32::try_from(args.next().unwrap())?;
-                drawparam
+                let colorval = args.next().unwrap();
+
+                let drawparam = DrawParam::default()
                     .dest([x, y])
                     .rotation(rotation)
                     .scale([xscale, yscale])
-                    .offset([xoffset, yoffset]);
-                let color = args.next().unwrap();
-                if !color.is_nil() {
-                    let color = Color::try_from(color)?;
-                    drawparam.color(color);
-                }
+                    .offset([xoffset, yoffset])
+                    .color(if colorval.is_nil() {
+                        ggez::graphics::WHITE
+                    } else {
+                        Color::try_from(colorval)?.into()
+                    });
 
                 let ctx = getctx(globals)?;
                 if drawable.is_handle::<Text>() {
