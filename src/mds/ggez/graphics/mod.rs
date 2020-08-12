@@ -15,6 +15,55 @@ pub(in super::super) fn new() -> NativeModule {
             Ok(Value::Nil)
         });
         m.func(
+            "draw",
+            ArgSpec::builder()
+                .req("drawable")
+                .def("x", 0)
+                .def("y", 0)
+                .def("rotation", 0)
+                .def("xscale", 1)
+                .def("yscale", 1)
+                .def("xoffset", 0)
+                .def("yoffset", 0)
+                .def("color", ()),
+            "",
+            |globals, args, _| {
+                let mut args = args.into_iter();
+                let drawparam = DrawParam::default();
+                let drawable = args.next().unwrap();
+                let x = f32::try_from(args.next().unwrap())?;
+                let y = f32::try_from(args.next().unwrap())?;
+                let rotation = f32::try_from(args.next().unwrap())?;
+                let xscale = f32::try_from(args.next().unwrap())?;
+                let yscale = f32::try_from(args.next().unwrap())?;
+                let xoffset = f32::try_from(args.next().unwrap())?;
+                let yoffset = f32::try_from(args.next().unwrap())?;
+                drawparam
+                    .dest([x, y])
+                    .rotation(rotation)
+                    .scale([xscale, yscale])
+                    .offset([xoffset, yoffset]);
+                let color = args.next().unwrap();
+                if !color.is_nil() {
+                    let color = Color::try_from(args.next().unwrap())?;
+                    drawparam.color(color.into());
+                }
+
+                let ctx = getctx(globals)?;
+                if drawable.is_handle::<Text>() {
+                    mtry!(ggez::graphics::draw(
+                        ctx,
+                        drawable.to_xref::<Text>(globals)?.get(),
+                        drawparam
+                    ));
+                } else {
+                    return Err(rterr!("Expected drawable but got {:?}", drawable));
+                }
+
+                Ok(Value::Nil)
+            },
+        );
+        m.func(
             "print",
             ArgSpec::builder().req("text").def("x", 0).def("y", 0),
             "",
@@ -35,7 +84,11 @@ pub(in super::super) fn new() -> NativeModule {
         );
         m.func(
             "queue_text",
-            ArgSpec::builder().req("text").def("x", 0).def("y", 0).def("color", ()),
+            ArgSpec::builder()
+                .req("text")
+                .def("x", 0)
+                .def("y", 0)
+                .def("color", ()),
             "",
             |globals, args, _| {
                 let mut args = args.into_iter();
@@ -48,12 +101,7 @@ pub(in super::super) fn new() -> NativeModule {
                     value => Some(Color::try_from(value)?.into()),
                 };
                 let ctx = getctx(globals)?;
-                ggez::graphics::queue_text(
-                    ctx,
-                    text.get(),
-                    [x, y],
-                    color,
-                );
+                ggez::graphics::queue_text(ctx, text.get(), [x, y], color);
                 Ok(Value::Nil)
             },
         );
@@ -75,21 +123,13 @@ pub(in super::super) fn new() -> NativeModule {
                 Ok(Value::Nil)
             },
         );
-        m.func(
-            "set_window_title",
-            ["title"],
-            "",
-            |globals, args, _| {
-                let mut args = args.into_iter();
-                let title = args.next().unwrap().into_string()?;
-                let ctx = getctx(globals)?;
-                ggez::graphics::set_window_title(
-                    ctx,
-                    title.str(),
-                );
-                Ok(Value::Nil)
-            },
-        );
+        m.func("set_window_title", ["title"], "", |globals, args, _| {
+            let mut args = args.into_iter();
+            let title = args.next().unwrap().into_string()?;
+            let ctx = getctx(globals)?;
+            ggez::graphics::set_window_title(ctx, title.str());
+            Ok(Value::Nil)
+        });
         m.class::<Text, _>("Text", |cls| {
             cls.sfunc("__call", ["arg"], "", |globals, args, _| {
                 let mut args = args.into_iter();

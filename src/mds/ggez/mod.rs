@@ -262,7 +262,7 @@ fn getctx(globals: &mut Globals) -> Result<&'static mut ggez::Context> {
     // also yucky unsafe here, but kind of follows from the whole situation
     let stash = globals.stash_mut();
     if !stash.has::<Stash>() {
-        return Err(rterr!("GGEZ context used before being initialized"))
+        return Err(rterr!("GGEZ context used before being initialized"));
     }
     let mut stash = stash.get_mut::<Stash>()?;
     let stash = stash.deref_mut();
