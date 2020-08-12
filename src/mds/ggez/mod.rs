@@ -12,6 +12,7 @@ use crate::Value;
 use ggez::graphics::DrawParam;
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::path::PathBuf;
 
 pub mod graphics;
 
@@ -196,7 +197,8 @@ pub(super) fn new() -> NativeModule {
                 .def("key_down", ())
                 .def("key_up", ())
                 .def("text_input", ())
-                .def("resize", ()),
+                .def("resize", ())
+                .def("resource_paths", []),
             "",
             |globals, args, _| {
                 let mut args = args.into_iter();
@@ -213,11 +215,13 @@ pub(super) fn new() -> NativeModule {
                 let key_up = getornil(args.next().unwrap());
                 let text_input = getornil(args.next().unwrap());
                 let resize = getornil(args.next().unwrap());
+                let resource_paths = Vec::<RcStr>::try_from(args.next().unwrap())?;
                 globals.request_trampoline(move |mut globals| {
-                    let (mut ctx, mut event_loop) =
-                        ggez::ContextBuilder::new(name.str(), author.str())
-                            .build()
-                            .unwrap();
+                    let mut builder = ggez::ContextBuilder::new(name.str(), author.str());
+                    for resource_path in resource_paths {
+                        builder = builder.add_resource_path(PathBuf::from(resource_path.str()));
+                    }
+                    let (mut ctx, mut event_loop) = builder.build().unwrap();
                     let stash = Stash {
                         // kinda yucky to use unsafe here, but it would be quite a bit of work to avoid this
                         ctx: unsafe { std::mem::transmute::<&mut ggez::Context, _>(&mut ctx) },
