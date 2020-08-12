@@ -285,10 +285,11 @@ pub(in super::super) fn new() -> NativeModule {
                         Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
                         value => Color::try_from(value)?,
                     };
-                    mtry!(owner
-                        .borrow_mut()
-                        .get_mut()?
-                        .polygon(mode.into(), &points, color.into()));
+                    mtry!(owner.borrow_mut().get_mut()?.polygon(
+                        mode.into(),
+                        &points,
+                        color.into()
+                    ));
                     Ok(owner.into())
                 },
             );
@@ -307,10 +308,35 @@ pub(in super::super) fn new() -> NativeModule {
                         Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
                         value => Color::try_from(value)?,
                     };
-                    owner
+                    owner.borrow_mut().get_mut()?.rectangle(
+                        mode.into(),
+                        bounds.into(),
+                        color.into(),
+                    );
+                    Ok(owner.into())
+                },
+            );
+            cls.ifunc(
+                "triangles",
+                ArgSpec::builder().req("points").def("color", ()),
+                "",
+                |owner, _globals, args, _| {
+                    let mut args = args.into_iter();
+                    let points = Vec::<[f32; 2]>::try_from(args.next().unwrap())?;
+                    if points.len() % 3 != 0 {
+                        return Err(rterr!(concat!(
+                            "The triangles method requires the number of ",
+                            "input points to be a multiple of 3",
+                        )));
+                    }
+                    let color = match args.next().unwrap() {
+                        Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
+                        value => Color::try_from(value)?,
+                    };
+                    mtry!(owner
                         .borrow_mut()
                         .get_mut()?
-                        .rectangle(mode.into(), bounds.into(), color.into());
+                        .triangles(&points, color.into()));
                     Ok(owner.into())
                 },
             );

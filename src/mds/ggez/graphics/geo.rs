@@ -60,7 +60,9 @@ impl ConvertValue for Rect {
                     Ok(Self(ggez::graphics::Rect::new(x, y, w, h)))
                 }
             }
-            _ => Err(rterr!("Expected Rect (either [[x1, y1], [x2, y2]], or [x, y, w, h])")),
+            _ => Err(rterr!(
+                "Expected Rect (either [[x1, y1], [x2, y2]], or [x, y, w, h])"
+            )),
         }
     }
 }

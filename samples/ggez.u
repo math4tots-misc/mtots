@@ -41,6 +41,13 @@ ggez.run(
         ).rectangle(
             [[width * 3 / 4, height * 3 / 4], [width, height]],
             color=[0, 0, 1],
+        ).triangles(
+            [
+                [width, height],
+                [width * 7 / 8, height * 7 / 8],
+                [width, height * 7 / 8],
+            ],
+            color=[0, 0.1, 0.1],
         ).build()
 
         pmesh = gg.MeshBuilder().polygon(
