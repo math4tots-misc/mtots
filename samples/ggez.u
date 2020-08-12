@@ -8,20 +8,46 @@ lines_above = []
 curline = ''
 lines_below = []
 mesh = nil
+pmesh = nil
+pos = nil
 
 SCALE = 32
 
 ggez.run(
     init = def {
-        nonlocal mesh
+        nonlocal mesh, pmesh, pos
         gg.set_window_title('some app')
 
-        mesh = gg.MeshBuilder().circle(
+        width = gg.width()
+        height = gg.height()
+        W34 = width * 3 / 4
+        H34 = height * 3 / 4
+        pos = [W34, H34]
+
+        mesh = gg.MeshBuilder().ellipse(
             mode='fill',
-            point=[gg.width() / 2, gg.height() / 2],
+            point=[width / 4, height * 3 / 4],
+            radius1 = 60,
+            radius2 = 40,
+            color=[0, 1, 0],
+        ).circle(
+            mode='stroke',
+            point=[width / 2, height / 2],
             radius=40,
-            tolerance=2,
             color=[1, 1, 1],
+        ).line(
+            [[0, 0], [width / 2, height / 2], [width, 0]],
+            color=[1, 0, 0],
+        ).build()
+
+        pmesh = gg.MeshBuilder().polygon(
+            [
+                [0, 0],
+                [20, 0],
+                [25, 10],
+                [20, 20],
+                [0, 20],
+            ],
         ).build()
     },
     update = nil,
@@ -29,6 +55,8 @@ ggez.run(
         gg.clear([1/2, 1/2, 1])
 
         gg.draw(mesh)
+        # gg.draw(pmesh, x = gg.width() / 2, y = gg.height() / 2)
+        # gg.draw(pmesh, color = [0.5, 0.5, 1])
 
         y = 0
         for text in lines_above {
@@ -71,7 +99,9 @@ ggez.run(
         }
     },
     mouse_down = def(x, y, btn) {
+        nonlocal pos
         print('mouse-down %r' % [[x, y, btn]])
+        pos = [x, y]
     },
     mouse_wheel = def(x, y) {
         print('mouse-wheel %r' % [[x, y]])

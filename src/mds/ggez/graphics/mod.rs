@@ -58,7 +58,7 @@ pub(in super::super) fn new() -> NativeModule {
                     .offset([xoffset, yoffset]);
                 let color = args.next().unwrap();
                 if !color.is_nil() {
-                    let color = Color::try_from(args.next().unwrap())?;
+                    let color = Color::try_from(color)?;
                     drawparam.color(color.into());
                 }
 
@@ -178,20 +178,116 @@ pub(in super::super) fn new() -> NativeModule {
                 Ok(globals.new_handle(mesh)?.into())
             });
             cls.ifunc(
-                "circle",
-                ["mode", "point", "radius", "tolerance", "color"],
+                "line",
+                ArgSpec::builder()
+                    .req("points")
+                    .def("width", 2)
+                    .def("color", ()),
                 "",
                 |owner, _globals, args, _| {
                     let mut args = args.into_iter();
-                    let mode = DrawMode::try_from(args.next().unwrap())?;
-                    let [x, y] = <[f32; 2]>::try_from(args.next().unwrap())?;
-                    let radius = args.next().unwrap().f32()?;
-                    let tolerance = args.next().unwrap().f32()?;
-                    let color = Color::try_from(args.next().unwrap())?;
-                    owner
+                    let points = Vec::<[f32; 2]>::try_from(args.next().unwrap())?;
+                    let width = args.next().unwrap().f32()?;
+                    let color = match args.next().unwrap() {
+                        Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
+                        value => Color::try_from(value)?,
+                    };
+                    mtry!(owner
                         .borrow_mut()
                         .get_mut()?
-                        .circle(mode.into(), [x, y], radius, tolerance, color.into());
+                        .line(&points, width, color.into()));
+                    Ok(owner.into())
+                },
+            );
+            cls.ifunc(
+                "circle",
+                ArgSpec::builder()
+                    .req("radius")
+                    .def("mode", "fill")
+                    .def("point", ())
+                    .def("tolerance", 1)
+                    .def("color", ()),
+                "",
+                |owner, _globals, args, _| {
+                    let mut args = args.into_iter();
+                    let radius = args.next().unwrap().f32()?;
+                    let mode = DrawMode::try_from(args.next().unwrap())?;
+                    let [x, y] = match args.next().unwrap() {
+                        Value::Nil => [0.0, 0.0],
+                        value => <[f32; 2]>::try_from(value)?,
+                    };
+                    let tolerance = args.next().unwrap().f32()?;
+                    let color = match args.next().unwrap() {
+                        Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
+                        value => Color::try_from(value)?,
+                    };
+                    owner.borrow_mut().get_mut()?.circle(
+                        mode.into(),
+                        [x, y],
+                        radius,
+                        tolerance,
+                        color.into(),
+                    );
+                    Ok(owner.into())
+                },
+            );
+            cls.ifunc(
+                "ellipse",
+                ArgSpec::builder()
+                    .req("radius1")
+                    .req("radius2")
+                    .def("mode", "fill")
+                    .def("point", ())
+                    .def("tolerance", 1)
+                    .def("color", ()),
+                "",
+                |owner, _globals, args, _| {
+                    let mut args = args.into_iter();
+                    let radius1 = args.next().unwrap().f32()?;
+                    let radius2 = args.next().unwrap().f32()?;
+                    let mode = DrawMode::try_from(args.next().unwrap())?;
+                    let [x, y] = match args.next().unwrap() {
+                        Value::Nil => [0.0, 0.0],
+                        value => <[f32; 2]>::try_from(value)?,
+                    };
+                    let tolerance = args.next().unwrap().f32()?;
+                    let color = match args.next().unwrap() {
+                        Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
+                        value => Color::try_from(value)?,
+                    };
+                    owner.borrow_mut().get_mut()?.ellipse(
+                        mode.into(),
+                        [x, y],
+                        radius1,
+                        radius2,
+                        tolerance,
+                        color.into(),
+                    );
+                    Ok(owner.into())
+                },
+            );
+            cls.ifunc(
+                "polygon",
+                ArgSpec::builder()
+                    .req("points")
+                    .def("mode", "fill")
+                    .def("color", ()),
+                concat!(
+                    "The points given must be in clockwise order, ",
+                    "otherwise at best the polygon will not draw",
+                ),
+                |owner, _globals, args, _| {
+                    let mut args = args.into_iter();
+                    let points = Vec::<[f32; 2]>::try_from(args.next().unwrap())?;
+                    let mode = DrawMode::try_from(args.next().unwrap())?;
+                    let color = match args.next().unwrap() {
+                        Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
+                        value => Color::try_from(value)?,
+                    };
+                    mtry!(owner
+                        .borrow_mut()
+                        .get_mut()?
+                        .polygon(mode.into(), &points, color.into()));
                     Ok(owner.into())
                 },
             );
