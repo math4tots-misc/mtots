@@ -38,6 +38,9 @@ ggez.run(
         ).line(
             [[0, 0], [width / 2, height / 2], [width, 0]],
             color=[1, 0, 0],
+        ).rectangle(
+            [[width * 3 / 4, height * 3 / 4], [width, height]],
+            color=[0, 0, 1],
         ).build()
 
         pmesh = gg.MeshBuilder().polygon(

@@ -292,6 +292,28 @@ pub(in super::super) fn new() -> NativeModule {
                     Ok(owner.into())
                 },
             );
+            cls.ifunc(
+                "rectangle",
+                ArgSpec::builder()
+                    .req("bounds")
+                    .def("mode", "fill")
+                    .def("color", ()),
+                "",
+                |owner, globals, args, _| {
+                    let mut args = args.into_iter();
+                    let bounds = args.next().unwrap().convert::<Rect>(globals)?;
+                    let mode = DrawMode::try_from(args.next().unwrap())?;
+                    let color = match args.next().unwrap() {
+                        Value::Nil => ggez::graphics::Color::from((1.0, 1.0, 1.0)).into(),
+                        value => Color::try_from(value)?,
+                    };
+                    owner
+                        .borrow_mut()
+                        .get_mut()?
+                        .rectangle(mode.into(), bounds.into(), color.into());
+                    Ok(owner.into())
+                },
+            );
         });
         m.class::<Mesh, _>("Mesh", |cls| {
             cls.ifunc("width", [], "", |owner, globals, _, _| {
