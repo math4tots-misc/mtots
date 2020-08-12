@@ -55,8 +55,7 @@ ggez.run(
         gg.clear([1/2, 1/2, 1])
 
         gg.draw(mesh)
-        # gg.draw(pmesh, x = gg.width() / 2, y = gg.height() / 2)
-        # gg.draw(pmesh, color = [0.5, 0.5, 1])
+        gg.draw(pmesh, x = pos[0], y = pos[1])
 
         y = 0
         for text in lines_above {

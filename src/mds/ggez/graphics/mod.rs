@@ -4,9 +4,11 @@ use ggez::graphics::Drawable;
 mod conv;
 mod geo;
 mod mesh;
+mod dparam;
 pub use conv::*;
 pub use geo::*;
 pub use mesh::*;
+pub use dparam::*;
 
 pub const NAME: &str = "a.ggez.graphics";
 
@@ -42,7 +44,7 @@ pub(in super::super) fn new() -> NativeModule {
             "",
             |globals, args, _| {
                 let mut args = args.into_iter();
-                let drawparam = DrawParam::default();
+                let mut drawparam = DrawParam::default();
                 let drawable = args.next().unwrap();
                 let x = f32::try_from(args.next().unwrap())?;
                 let y = f32::try_from(args.next().unwrap())?;
@@ -59,7 +61,7 @@ pub(in super::super) fn new() -> NativeModule {
                 let color = args.next().unwrap();
                 if !color.is_nil() {
                     let color = Color::try_from(color)?;
-                    drawparam.color(color.into());
+                    drawparam.color(color);
                 }
 
                 let ctx = getctx(globals)?;
