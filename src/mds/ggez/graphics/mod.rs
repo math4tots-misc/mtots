@@ -1,12 +1,25 @@
 use super::*;
+use ggez::graphics::Drawable;
 
 mod conv;
+mod geo;
+mod mesh;
 pub use conv::*;
+pub use geo::*;
+pub use mesh::*;
 
 pub const NAME: &str = "a.ggez.graphics";
 
 pub(in super::super) fn new() -> NativeModule {
     NativeModule::new(NAME, |m| {
+        m.func("width", [], "", |globals, _, _| {
+            let ctx = getctx(globals)?;
+            Ok(ggez::graphics::drawable_size(ctx).0.into())
+        });
+        m.func("height", [], "", |globals, _, _| {
+            let ctx = getctx(globals)?;
+            Ok(ggez::graphics::drawable_size(ctx).1.into())
+        });
         m.func("clear", ["color"], "", |globals, args, _| {
             let mut args = args.into_iter();
             let color = Color::try_from(args.next().unwrap())?;
@@ -54,7 +67,13 @@ pub(in super::super) fn new() -> NativeModule {
                     mtry!(ggez::graphics::draw(
                         ctx,
                         drawable.to_xref::<Text>(globals)?.get(),
-                        drawparam
+                        drawparam,
+                    ));
+                } else if drawable.is_handle::<Mesh>() {
+                    mtry!(ggez::graphics::draw(
+                        ctx,
+                        drawable.to_xref::<Mesh>(globals)?.get(),
+                        drawparam,
                     ));
                 } else {
                     return Err(rterr!("Expected drawable but got {:?}", drawable));
@@ -147,6 +166,50 @@ pub(in super::super) fn new() -> NativeModule {
             });
             cls.ifunc("contents", [], "", |owner, _globals, _, _| {
                 Ok(owner.borrow().get().contents().into())
+            });
+        });
+        m.class::<MeshBuilder, _>("MeshBuilder", |cls| {
+            cls.sfunc("__call", [], "", |globals, _, _| {
+                Ok(globals.new_handle(MeshBuilder::new())?.into())
+            });
+            cls.ifunc("build", [], "", |owner, globals, _, _| {
+                let ctx = getctx(globals)?;
+                let mesh = owner.borrow_mut().build(ctx)?;
+                Ok(globals.new_handle(mesh)?.into())
+            });
+            cls.ifunc(
+                "circle",
+                ["mode", "point", "radius", "tolerance", "color"],
+                "",
+                |owner, _globals, args, _| {
+                    let mut args = args.into_iter();
+                    let mode = DrawMode::try_from(args.next().unwrap())?;
+                    let [x, y] = <[f32; 2]>::try_from(args.next().unwrap())?;
+                    let radius = args.next().unwrap().f32()?;
+                    let tolerance = args.next().unwrap().f32()?;
+                    let color = Color::try_from(args.next().unwrap())?;
+                    owner
+                        .borrow_mut()
+                        .get_mut()?
+                        .circle(mode.into(), [x, y], radius, tolerance, color.into());
+                    Ok(owner.into())
+                },
+            );
+        });
+        m.class::<Mesh, _>("Mesh", |cls| {
+            cls.ifunc("width", [], "", |owner, globals, _, _| {
+                let ctx = getctx(globals)?;
+                match owner.borrow().get().dimensions(ctx) {
+                    Some(rect) => Ok(rect.w.into()),
+                    None => Ok(Value::Nil),
+                }
+            });
+            cls.ifunc("height", [], "", |owner, globals, _, _| {
+                let ctx = getctx(globals)?;
+                match owner.borrow().get().dimensions(ctx) {
+                    Some(rect) => Ok(rect.h.into()),
+                    None => Ok(Value::Nil),
+                }
             });
         });
     })
