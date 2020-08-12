@@ -75,6 +75,21 @@ pub(in super::super) fn new() -> NativeModule {
                 Ok(Value::Nil)
             },
         );
+        m.func(
+            "set_window_title",
+            ["title"],
+            "",
+            |globals, args, _| {
+                let mut args = args.into_iter();
+                let title = args.next().unwrap().into_string()?;
+                let ctx = getctx(globals)?;
+                ggez::graphics::set_window_title(
+                    ctx,
+                    title.str(),
+                );
+                Ok(Value::Nil)
+            },
+        );
         m.class::<Text, _>("Text", |cls| {
             cls.sfunc("__call", ["arg"], "", |globals, args, _| {
                 let mut args = args.into_iter();

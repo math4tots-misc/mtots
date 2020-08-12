@@ -11,7 +11,9 @@ lines_below = []
 SCALE = 32
 
 ggez.run(
-    init = nil,
+    init = def {
+        gg.set_window_title('some app')
+    },
     update = nil,
     draw = def {
         gg.clear([1/2, 1/2, 1])
