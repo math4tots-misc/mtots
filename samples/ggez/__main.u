@@ -1,3 +1,4 @@
+import a.fs
 import a.ggez
 import a.ggez.graphics as gg
 
@@ -10,12 +11,14 @@ lines_below = []
 mesh = nil
 pmesh = nil
 pos = nil
+impath = fs.join(fs.dirname(__file), 'resources', 'oh.png')
+img = nil
 
 SCALE = 32
 
 ggez.run(
     init = def {
-        nonlocal mesh, pmesh, pos
+        nonlocal mesh, pmesh, pos, img
         gg.set_window_title('some app')
 
         width = gg.width()
@@ -23,6 +26,9 @@ ggez.run(
         W34 = width * 3 / 4
         H34 = height * 3 / 4
         pos = [W34, H34]
+
+        imgbytes = fs.read(impath, encoding=nil)
+        img = gg.Image.from_bytes(imgbytes)
 
         mesh = gg.MeshBuilder().ellipse(
             mode='fill',
@@ -66,6 +72,10 @@ ggez.run(
 
         gg.draw(mesh)
         gg.draw(pmesh, x = pos[0], y = pos[1])
+
+        width = gg.width()
+        height = gg.height()
+        gg.draw(img, x = width * 3 / 4, y = height / 4)
 
         y = 0
         for text in lines_above {

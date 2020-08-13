@@ -3,9 +3,11 @@ use ggez::graphics::Drawable;
 
 mod conv;
 mod geo;
+mod img;
 mod mesh;
 pub use conv::*;
 pub use geo::*;
+pub use img::*;
 pub use mesh::*;
 
 pub const NAME: &str = "a.ggez.graphics";
@@ -74,6 +76,12 @@ pub(in super::super) fn new() -> NativeModule {
                     mtry!(ggez::graphics::draw(
                         ctx,
                         drawable.to_xref::<Mesh>(globals)?.get(),
+                        drawparam,
+                    ));
+                } else if drawable.is_handle::<Image>() {
+                    mtry!(ggez::graphics::draw(
+                        ctx,
+                        drawable.to_xref::<Image>(globals)?.get(),
                         drawparam,
                     ));
                 } else {
@@ -355,6 +363,22 @@ pub(in super::super) fn new() -> NativeModule {
                     Some(rect) => Ok(rect.h.into()),
                     None => Ok(Value::Nil),
                 }
+            });
+        });
+        m.class::<Image, _>("Image", |cls| {
+            cls.sfunc("from_file", ["path"], "", |globals, args, _| {
+                let ctx = getctx(globals)?;
+                let mut args = args.into_iter();
+                let path = args.next().unwrap().into_string()?;
+                let im = Image::from_file(ctx, path.str())?;
+                Ok(globals.new_handle(im)?.into())
+            });
+            cls.sfunc("from_bytes", ["bytes"], "", |globals, args, _| {
+                let ctx = getctx(globals)?;
+                let mut args = args.into_iter();
+                let bytes = args.next().unwrap().convert::<Vec<u8>>(globals)?;
+                let im = Image::from_bytes(ctx, &bytes)?;
+                Ok(globals.new_handle(im)?.into())
             });
         });
     })
