@@ -1,5 +1,6 @@
 import a.fs
 import a.time
+import a.math
 import a.ggez
 import a.ggez.graphics as gg
 import a.ggez.audio as ga
@@ -20,8 +21,18 @@ mp3path = fs.join(fs.dirname(__file), 'resources', 'sample.mp3')
 
 gg.set_window_title('some app')
 
-sound_bytes = fs.read(mp3path, encoding=nil)
-sound_data = ga.SoundData.from_bytes(sound_bytes)
+# sound_bytes = fs.read(mp3path, encoding=nil)
+# sound_data = ga.SoundData.from_bytes(sound_bytes)
+
+samples = []
+amp = 2 ** 14
+for t in range(44100) {
+    t = t / 44100
+    sample = math.sin(t * 440 * math.tau)
+    samples.push(int(amp * sample))
+}
+sound_data = ga.SoundData.from_samples(samples)
+
 sound = ga.Source.from_data(sound_data)
 sound.set_repeat(true)
 print('volume = %r' % [sound.volume()])

@@ -2,6 +2,7 @@ use super::*;
 use ggez::audio::SoundSource;
 
 mod sound;
+mod wav;
 
 pub use sound::*;
 
@@ -15,6 +16,12 @@ pub(in super::super) fn new() -> NativeModule {
                 let mut args = args.into_iter();
                 let bytes = args.next().unwrap().convert::<Vec<u8>>(globals)?;
                 let data = SoundData::from_bytes(&bytes);
+                Ok(globals.new_handle::<SoundData>(data)?.into())
+            });
+            cls.sfunc("from_samples", ["samples"], "", |globals, args, _| {
+                let mut args = args.into_iter();
+                let samples = <Vec<i16>>::try_from(args.next().unwrap())?;
+                let data = SoundData::from_samples(&samples)?;
                 Ok(globals.new_handle::<SoundData>(data)?.into())
             });
         });

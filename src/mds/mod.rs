@@ -1,6 +1,6 @@
 use crate::Globals;
 
-#[cfg(feature = "ggez")]
+#[cfg(feature = "gamekit")]
 mod ggez;
 mod json;
 mod rand;
@@ -11,7 +11,7 @@ pub fn add_standard_modules(globals: &mut Globals) {
     globals.add(rand::new()).unwrap();
     globals.add(regex::new()).unwrap();
 
-    #[cfg(feature = "ggez")]
+    #[cfg(feature = "gamekit")]
     {
         ggez::add(globals);
     }
