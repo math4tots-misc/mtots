@@ -6,95 +6,89 @@ import a.ggez.audio as ga
 
 
 # print(gg.new_text('some text'))
+SCALE = 32
+
+ggez.init()
 
 lines_above = []
 curline = ''
 lines_below = []
-mesh = nil
-pmesh = nil
-pos = nil
+start_time = time.now()
+
 impath = fs.join(fs.dirname(__file), 'resources', 'oh.png')
 mp3path = fs.join(fs.dirname(__file), 'resources', 'sample.mp3')
-img = nil
-sb = nil
-start_time = time.now()
-sound = nil
 
-SCALE = 32
+gg.set_window_title('some app')
+
+sound_bytes = fs.read(mp3path, encoding=nil)
+sound_data = ga.SoundData.from_bytes(sound_bytes)
+sound = ga.Source.from_data(sound_data)
+sound.set_repeat(true)
+print('volume = %r' % [sound.volume()])
+print('repeat = %r' % [sound.repeat()])
+sound.play()
+
+width = gg.width()
+height = gg.height()
+W34 = width * 3 / 4
+H34 = height * 3 / 4
+pos = [W34, H34]
+
+imgbytes = fs.read(impath, encoding=nil)
+img = gg.Image.from_bytes(imgbytes)
+
+imw = img.width()
+imh = img.height()
+sb = gg.SpriteBatch(img)
+for i in range(0.5, 4.5) {
+    for j in range(0.5, 4.5) {
+        sb.add(
+            x = imw * i,
+            y = imh * j,
+            xoffset = 0.5,
+            yoffset = 0.5,
+            rotation = i + j,
+        )
+    }
+}
+
+mesh = gg.MeshBuilder().ellipse(
+    mode='fill',
+    point=[width / 4, height * 3 / 4],
+    radius1 = 60,
+    radius2 = 40,
+    color=[0, 1, 0],
+).circle(
+    mode='stroke',
+    point=[width / 2, height / 2],
+    radius=40,
+    color=[1, 1, 1],
+).line(
+    [[0, 0], [width / 2, height / 2], [width, 0]],
+    color=[1, 0, 0],
+).rectangle(
+    [[width * 3 / 4, height * 3 / 4], [width, height]],
+    color=[0, 0, 1],
+).triangles(
+    [
+        [width, height],
+        [width * 7 / 8, height * 7 / 8],
+        [width, height * 7 / 8],
+    ],
+    color=[0, 0.1, 0.1],
+).build()
+
+pmesh = gg.MeshBuilder().polygon(
+    [
+        [0, 0],
+        [20, 0],
+        [25, 10],
+        [20, 20],
+        [0, 20],
+    ],
+).build()
 
 ggez.run(
-    init = def {
-        nonlocal mesh, pmesh, pos, img, sb, sound
-        gg.set_window_title('some app')
-
-        sound_bytes = fs.read(mp3path, encoding=nil)
-        sound_data = ga.SoundData.from_bytes(sound_bytes)
-        sound = ga.Source.from_data(sound_data)
-        sound.set_repeat(true)
-        print('volume = %r' % [sound.volume()])
-        print('repeat = %r' % [sound.repeat()])
-        sound.play()
-
-        width = gg.width()
-        height = gg.height()
-        W34 = width * 3 / 4
-        H34 = height * 3 / 4
-        pos = [W34, H34]
-
-        imgbytes = fs.read(impath, encoding=nil)
-        img = gg.Image.from_bytes(imgbytes)
-
-        imw = img.width()
-        imh = img.height()
-        sb = gg.SpriteBatch(img)
-        for i in range(0.5, 4.5) {
-            for j in range(0.5, 4.5) {
-                sb.add(
-                    x = imw * i,
-                    y = imh * j,
-                    xoffset = 0.5,
-                    yoffset = 0.5,
-                    rotation = i + j,
-                )
-            }
-        }
-
-        mesh = gg.MeshBuilder().ellipse(
-            mode='fill',
-            point=[width / 4, height * 3 / 4],
-            radius1 = 60,
-            radius2 = 40,
-            color=[0, 1, 0],
-        ).circle(
-            mode='stroke',
-            point=[width / 2, height / 2],
-            radius=40,
-            color=[1, 1, 1],
-        ).line(
-            [[0, 0], [width / 2, height / 2], [width, 0]],
-            color=[1, 0, 0],
-        ).rectangle(
-            [[width * 3 / 4, height * 3 / 4], [width, height]],
-            color=[0, 0, 1],
-        ).triangles(
-            [
-                [width, height],
-                [width * 7 / 8, height * 7 / 8],
-                [width, height * 7 / 8],
-            ],
-            color=[0, 0.1, 0.1],
-        ).build()
-
-        pmesh = gg.MeshBuilder().polygon(
-            [
-                [0, 0],
-                [20, 0],
-                [25, 10],
-                [20, 20],
-                [0, 20],
-            ],
-        ).build()
-    },
     update = nil,
     draw = def {
         dt = time.now() - start_time

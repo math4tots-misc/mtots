@@ -1,6 +1,6 @@
 use crate::mtry;
-use crate::Result;
 use crate::ConvertValue;
+use crate::Result;
 
 #[derive(Clone)]
 pub struct SoundData(ggez::audio::SoundData);
@@ -17,7 +17,10 @@ pub struct Source(ggez::audio::Source);
 
 impl Source {
     pub fn from_data(ctx: &mut ggez::Context, data: SoundData) -> Result<Self> {
-        Ok(Self(mtry!(ggez::audio::Source::from_data(ctx, data.0.clone()))))
+        Ok(Self(mtry!(ggez::audio::Source::from_data(
+            ctx,
+            data.0.clone()
+        ))))
     }
     pub fn get(&self) -> &ggez::audio::Source {
         &self.0

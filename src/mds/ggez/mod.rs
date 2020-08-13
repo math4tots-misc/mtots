@@ -11,10 +11,9 @@ use crate::Result;
 use crate::Value;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::path::PathBuf;
 
-pub mod graphics;
 pub mod audio;
+pub mod graphics;
 
 pub(super) fn add(globals: &mut Globals) {
     globals.add(new()).unwrap();
@@ -179,10 +178,27 @@ impl ggez::event::EventHandler for EventHandler {
 
 struct Stash {
     ctx: &'static mut ggez::Context,
+    event_loop: Option<ggez::event::EventsLoop>,
 }
 
 pub(super) fn new() -> NativeModule {
     NativeModule::new(NAME, |m| {
+        m.func(
+            "init",
+            ArgSpec::builder()
+                .def("name", "")
+                .def("author", "")
+                .def("resource_paths", []),
+            "",
+            |globals, args, _| {
+                let mut args = args.into_iter();
+                let name = args.next().unwrap().into_string()?;
+                let author = args.next().unwrap().into_string()?;
+                let resource_paths = Vec::<RcStr>::try_from(args.next().unwrap())?;
+                initggez(globals, name, author, resource_paths)?;
+                Ok(Value::Nil)
+            },
+        );
         m.func(
             "run",
             ArgSpec::builder()
@@ -198,8 +214,7 @@ pub(super) fn new() -> NativeModule {
                 .def("key_down", ())
                 .def("key_up", ())
                 .def("text_input", ())
-                .def("resize", ())
-                .def("resource_paths", []),
+                .def("resize", ()),
             "",
             |globals, args, _| {
                 let mut args = args.into_iter();
@@ -216,19 +231,37 @@ pub(super) fn new() -> NativeModule {
                 let key_up = getornil(args.next().unwrap());
                 let text_input = getornil(args.next().unwrap());
                 let resize = getornil(args.next().unwrap());
-                let resource_paths = Vec::<RcStr>::try_from(args.next().unwrap())?;
                 globals.request_trampoline(move |mut globals| {
-                    let mut builder = ggez::ContextBuilder::new(name.str(), author.str());
-                    for resource_path in resource_paths {
-                        builder = builder.add_resource_path(PathBuf::from(resource_path.str()));
-                    }
-                    let (mut ctx, mut event_loop) = builder.build().unwrap();
-                    let stash = Stash {
-                        // kinda yucky to use unsafe here, but it would be quite a bit of work to avoid this
-                        ctx: unsafe { std::mem::transmute::<&mut ggez::Context, _>(&mut ctx) },
+                    if globals.stash().has::<Stash>() {
+                        if name.len() > 0 || author.len() > 0 {
+                            let _: () = ordie(
+                                &mut globals,
+                                Err(rterr!(concat!(
+                                    "name and author cannot be specified again if ggez.init ",
+                                    "was already called",
+                                ))),
+                            );
+                        }
+                    } else {
+                        let r = initggez(&mut globals, name, author, vec![]);
+                        ordie(&mut globals, r);
                     };
-                    let r = globals.stash_mut().set(stash);
-                    ordie(&mut globals, r);
+
+                    let (ctx, mut event_loop) = {
+                        let mut stash = globals.stash_mut().get_mut::<Stash>().unwrap();
+                        let event_loop = std::mem::replace(&mut stash.event_loop, None)
+                            .expect("Event loop has already been used");
+                        (
+                            // kinda yucky to use unsafe here,
+                            // but it would be quite a bit of work to avoid this
+                            unsafe {
+                                std::mem::transmute::<&mut ggez::Context, &mut ggez::Context>(
+                                    &mut stash.ctx,
+                                )
+                            },
+                            event_loop,
+                        )
+                    };
 
                     if let Some(init) = init {
                         let r = init.apply(&mut globals, vec![], None);
@@ -251,26 +284,52 @@ pub(super) fn new() -> NativeModule {
                         mouse_button_map: HashMap::new(),
                     };
 
-                    match ggez::event::run(&mut ctx, &mut event_loop, &mut event_handler) {
+                    match ggez::event::run(ctx, &mut event_loop, &mut event_handler) {
                         Ok(_) => {}
                         Err(e) => eprintln!("ggez error: {:?}", e),
                     }
-                    event_handler.globals.stash_mut().remove::<Stash>();
+                    deinitggez(event_handler.globals);
                 })
             },
         );
     })
 }
 
+fn initggez(
+    globals: &mut Globals,
+    name: RcStr,
+    author: RcStr,
+    resource_paths: Vec<RcStr>,
+) -> Result<()> {
+    let mut builder = ggez::ContextBuilder::new(name.str(), author.str());
+    for resource_path in resource_paths {
+        builder = builder.add_resource_path(resource_path.str());
+    }
+    let (ctx, event_loop) = mtry!(builder.build());
+    let ctx = Box::leak(Box::new(ctx));
+
+    globals.stash_mut().set(Stash {
+        ctx,
+        event_loop: Some(event_loop),
+    })?;
+
+    Ok(())
+}
+
+fn deinitggez(mut globals: Globals) {
+    let stash = globals.stash_mut().remove::<Stash>();
+    unsafe { Box::from_raw(stash.ctx) };
+}
+
 fn getctx(globals: &mut Globals) -> Result<&'static mut ggez::Context> {
     use std::ops::DerefMut;
-    // also yucky unsafe here, but kind of follows from the whole situation
     let stash = globals.stash_mut();
     if !stash.has::<Stash>() {
         return Err(rterr!("GGEZ context used before being initialized"));
     }
     let mut stash = stash.get_mut::<Stash>()?;
     let stash = stash.deref_mut();
+    // also yucky unsafe here, but kind of follows from the whole situation
     Ok(unsafe { std::mem::transmute::<&mut ggez::Context, _>(stash.ctx) })
 }
 
