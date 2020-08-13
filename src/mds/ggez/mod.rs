@@ -202,8 +202,6 @@ pub(super) fn new() -> NativeModule {
         m.func(
             "run",
             ArgSpec::builder()
-                .def("name", "")
-                .def("author", "")
                 .def("init", ())
                 .def("update", ())
                 .def("draw", ())
@@ -218,8 +216,6 @@ pub(super) fn new() -> NativeModule {
             "",
             |globals, args, _| {
                 let mut args = args.into_iter();
-                let name = args.next().unwrap().into_string()?;
-                let author = args.next().unwrap().into_string()?;
                 let init = getornil(args.next().unwrap());
                 let update = getornil(args.next().unwrap());
                 let draw = getornil(args.next().unwrap());
@@ -232,18 +228,11 @@ pub(super) fn new() -> NativeModule {
                 let text_input = getornil(args.next().unwrap());
                 let resize = getornil(args.next().unwrap());
                 globals.request_trampoline(move |mut globals| {
-                    if globals.stash().has::<Stash>() {
-                        if name.len() > 0 || author.len() > 0 {
-                            let _: () = ordie(
-                                &mut globals,
-                                Err(rterr!(concat!(
-                                    "name and author cannot be specified again if ggez.init ",
-                                    "was already called",
-                                ))),
-                            );
-                        }
-                    } else {
-                        let r = initggez(&mut globals, name, author, vec![]);
+                    // We initialize with defaults if 'init' was not called
+                    // before run. However, to actually configure these
+                    // values, 'init' will need to be called explicitly
+                    if !globals.stash().has::<Stash>() {
+                        let r = initggez(&mut globals, "".into(), "".into(), vec![]);
                         ordie(&mut globals, r);
                     };
 
