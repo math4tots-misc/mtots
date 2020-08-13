@@ -3,7 +3,20 @@ use crate::ConvertValue;
 use crate::Result;
 use std::path::Path;
 
+#[derive(Clone)]
 pub struct Image(ggez::graphics::Image);
+
+impl From<Image> for ggez::graphics::Image {
+    fn from(image: Image) -> Self {
+        image.0
+    }
+}
+
+impl From<ggez::graphics::Image> for Image {
+    fn from(image: ggez::graphics::Image) -> Self {
+        Self(image)
+    }
+}
 
 impl Image {
     pub fn get(&self) -> &ggez::graphics::Image {

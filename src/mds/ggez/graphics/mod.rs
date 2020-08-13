@@ -5,10 +5,12 @@ mod conv;
 mod geo;
 mod img;
 mod mesh;
+mod sprite;
 pub use conv::*;
 pub use geo::*;
 pub use img::*;
 pub use mesh::*;
+pub use sprite::*;
 
 pub const NAME: &str = "a.ggez.graphics";
 
@@ -82,6 +84,12 @@ pub(in super::super) fn new() -> NativeModule {
                     mtry!(ggez::graphics::draw(
                         ctx,
                         drawable.to_xref::<Image>(globals)?.get(),
+                        drawparam,
+                    ));
+                } else if drawable.is_handle::<SpriteBatch>() {
+                    mtry!(ggez::graphics::draw(
+                        ctx,
+                        drawable.to_xref::<SpriteBatch>(globals)?.get(),
                         drawparam,
                     ));
                 } else {
@@ -380,6 +388,64 @@ pub(in super::super) fn new() -> NativeModule {
                 let im = Image::from_bytes(ctx, &bytes)?;
                 Ok(globals.new_handle(im)?.into())
             });
+            cls.ifunc("width", [], "", |owner, _globals, _, _| {
+                Ok(owner.borrow().get().width().into())
+            });
+            cls.ifunc("height", [], "", |owner, _globals, _, _| {
+                Ok(owner.borrow().get().height().into())
+            });
+        });
+        m.class::<SpriteIdx, _>("SpriteIdx", |_| {});
+        m.class::<SpriteBatch, _>("SpriteBatch", |cls| {
+            cls.sfunc("__call", ["image"], "", |globals, args, _| {
+                let mut args = args.into_iter();
+                let imval = args.next().unwrap().convert::<Image>(globals)?;
+                let sb =
+                    SpriteBatch::new(ggez::graphics::spritebatch::SpriteBatch::new(imval.into()));
+                Ok(globals.new_handle(sb)?.into())
+            });
+            cls.ifunc(
+                "add",
+                ArgSpec::builder()
+                    .req("x")
+                    .req("y")
+                    .def("src", [0, 0, 1, 1])
+                    .def("rotation", 0)
+                    .def("xscale", 1)
+                    .def("yscale", 1)
+                    .def("xoffset", 0)
+                    .def("yoffset", 0)
+                    .def("color", ()),
+                "",
+                |owner, globals, args, _| {
+                    let mut args = args.into_iter();
+                    let x = f32::try_from(args.next().unwrap())?;
+                    let y = f32::try_from(args.next().unwrap())?;
+                    let src = args.next().unwrap().convert::<Rect>(globals)?;
+                    let rotation = f32::try_from(args.next().unwrap())?;
+                    let xscale = f32::try_from(args.next().unwrap())?;
+                    let yscale = f32::try_from(args.next().unwrap())?;
+                    let xoffset = f32::try_from(args.next().unwrap())?;
+                    let yoffset = f32::try_from(args.next().unwrap())?;
+                    let colorval = args.next().unwrap();
+
+                    let drawparam = DrawParam::default()
+                        .src(src.into())
+                        .dest([x, y])
+                        .rotation(rotation)
+                        .scale([xscale, yscale])
+                        .offset([xoffset, yoffset])
+                        .color(if colorval.is_nil() {
+                            ggez::graphics::WHITE
+                        } else {
+                            Color::try_from(colorval)?.into()
+                        });
+
+                    let index = owner.borrow_mut().get_mut().add(drawparam);
+
+                    Ok(globals.new_handle::<SpriteIdx>(index.into())?.into())
+                },
+            );
         });
     })
 }

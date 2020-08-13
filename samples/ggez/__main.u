@@ -13,12 +13,13 @@ pmesh = nil
 pos = nil
 impath = fs.join(fs.dirname(__file), 'resources', 'oh.png')
 img = nil
+sb = nil
 
 SCALE = 32
 
 ggez.run(
     init = def {
-        nonlocal mesh, pmesh, pos, img
+        nonlocal mesh, pmesh, pos, img, sb
         gg.set_window_title('some app')
 
         width = gg.width()
@@ -29,6 +30,15 @@ ggez.run(
 
         imgbytes = fs.read(impath, encoding=nil)
         img = gg.Image.from_bytes(imgbytes)
+
+        imw = img.width()
+        imh = img.height()
+        sb = gg.SpriteBatch(img)
+        for i in range(4) {
+            for j in range(4) {
+                sb.add(x = imw * i, y = imh * j)
+            }
+        }
 
         mesh = gg.MeshBuilder().ellipse(
             mode='fill',
@@ -72,6 +82,7 @@ ggez.run(
 
         gg.draw(mesh)
         gg.draw(pmesh, x = pos[0], y = pos[1])
+        gg.draw(sb)
 
         width = gg.width()
         height = gg.height()

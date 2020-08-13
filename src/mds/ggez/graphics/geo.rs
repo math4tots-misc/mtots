@@ -61,7 +61,8 @@ impl ConvertValue for Rect {
                 }
             }
             _ => Err(rterr!(
-                "Expected Rect (either [[x1, y1], [x2, y2]], or [x, y, w, h])"
+                "Expected Rect (either [[x1, y1], [x2, y2]], or [x, y, w, h]), but got {:?}",
+                value
             )),
         }
     }
