@@ -1,5 +1,6 @@
 use super::*;
 use ggez::graphics::Drawable;
+use ggez::graphics::DrawParam;
 
 mod conv;
 mod geo;

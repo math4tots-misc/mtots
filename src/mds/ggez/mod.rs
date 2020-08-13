@@ -9,16 +9,17 @@ use crate::NativeModule;
 use crate::RcStr;
 use crate::Result;
 use crate::Value;
-use ggez::graphics::DrawParam;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::path::PathBuf;
 
 pub mod graphics;
+pub mod audio;
 
 pub(super) fn add(globals: &mut Globals) {
     globals.add(new()).unwrap();
     globals.add(graphics::new()).unwrap();
+    globals.add(audio::new()).unwrap();
 }
 
 pub const NAME: &str = "a.ggez";
