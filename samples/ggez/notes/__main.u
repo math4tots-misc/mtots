@@ -1,3 +1,4 @@
+import a.fs
 import a.math
 import a.ggez
 import a.ggez.audio
@@ -7,24 +8,35 @@ ggez.init()
 
 amp = 2 ** 14
 
-a440_data = audio.SoundData.from_samples(
-    range(44100 * 2)
-        .map(def(t) = int(math.sin((t / 44100) * 440 * math.tau) * amp))
-        .list()
-)
+# a440_data = audio.SoundData.from_samples(
+#     range(44100 * 2)
+#         .map(def(t) = int(math.sin((t / 44100) * 440 * math.tau) * amp))
+#         .list()
+# )
+a440_data = audio.SoundData.sine(nsamples = 44100 * 10, amp = 2 ** 12)
+
+# sample_path = fs.join(fs.dirname(__file), 'resources', 'sine.wav')
+# sample_bytes = fs.read(sample_path, encoding=nil)
+# a440_data = audio.SoundData.from_bytes(sample_bytes)
 
 sound_sources = []
-for i in range(26) {
+for i in range(-10, 26) {
     source = audio.Source.from_data(a440_data)
     source.set_pitch(2 ** (i / 12))
     source.set_repeat(true)
     sound_sources.push(source)
 }
 
+letters = 'ZXCVBNMASDFGHJKLQWERTYUIOP'
 map = [:]
-for [i, c] in 'ZXCVBNMASDFGHJKLQWERTYUIOP'.chars().enumerate() {
+for [i, c] in letters.chars().enumerate() {
     map[c] = i
 }
+for i in range(1, 10) {
+    n = map.len()
+    map['Key%s' % [i]] = n
+}
+map['Key0'] = map.len()
 
 ggez.run(
     draw = def {

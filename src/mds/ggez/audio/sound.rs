@@ -9,6 +9,9 @@ impl SoundData {
     pub fn from_bytes(data: &[u8]) -> Self {
         Self(ggez::audio::SoundData::from_bytes(data))
     }
+    pub fn get(&self) -> &ggez::audio::SoundData {
+        &self.0
+    }
 }
 
 impl ConvertValue for SoundData {}

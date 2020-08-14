@@ -24,6 +24,28 @@ pub(in super::super) fn new() -> NativeModule {
                 let data = SoundData::from_samples(&samples)?;
                 Ok(globals.new_handle::<SoundData>(data)?.into())
             });
+            cls.sfunc(
+                "sine",
+                ArgSpec::builder()
+                    .def("nsamples", 44100)
+                    .def("hertz", 440)
+                    .def("amp", i16::MAX),
+                "",
+                |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let nsamples = args.next().unwrap().usize()?;
+                    let hertz = args.next().unwrap().u16()?;
+                    let amp = args.next().unwrap().u16()?;
+                    let data = SoundData::sine(nsamples, hertz, amp as f32)?;
+                    Ok(globals.new_handle::<SoundData>(data)?.into())
+                },
+            );
+            cls.ifunc("bytes", [], "", |owner, globals, _args, _| {
+                let owner = owner.borrow();
+                let bytes: &[u8] = owner.get().as_ref();
+                let bytes = bytes.to_vec();
+                Ok(globals.new_handle::<Vec<u8>>(bytes)?.into())
+            });
         });
         m.class::<Source, _>("Source", |cls| {
             cls.sfunc("from_data", ["data"], "", |globals, args, _| {
