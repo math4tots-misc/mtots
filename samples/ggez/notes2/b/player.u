@@ -1,0 +1,84 @@
+import a.ggez.audio
+import a.time
+
+# ~10 seconds of sample at the base frequency (currently always 440hz)
+_NSAMPLES = 44100 * 10
+
+# Amplitude of the sound data (i16::MAX is the max amplitude)
+_AMP = 2 ** 11
+
+class Player {
+    new(amp = nil) = {
+        amp = if amp is nil  { _AMP } else { amp }
+
+        a440_data = audio.SoundData.sine(
+            nsamples = _NSAMPLES,
+            amp = _AMP,
+        )
+
+        letters = [
+            'A',
+            'A#',
+            'B',
+            'C',
+            'C#',
+            'D',
+            'D#',
+            'E',
+            'F',
+            'F#',
+            'G',
+            'G#',
+        ]
+
+        # a440 corresponds to A4.
+        # The lowest note on an 88 key keyboard is A0
+        # 0  -> A0
+        # 1  -> A#0
+        # 2  -> B0
+        # 3  -> C1
+        # ...
+        # 12 -> A1
+        # 24 -> A2
+        # 36 -> A4
+        # 37 -> A#4
+        notes = range(88).map(def(i) = {
+            level = (i + 9) // 12
+            letter = letters[i % 12]
+            name = '%s%s' % [letter, level]
+
+            pitch = 2 ** ((i - 36) / 12)
+            source = audio.Source.from_data(a440_data)
+            source.set_pitch(pitch)
+            source.set_repeat(true)
+
+            [name, source]
+        }).map()
+
+        print(notes.iter().enumerate().map(def(pair) = {
+            [i, [name, _]] = pair
+            [name, i]
+        }).list())
+
+        new(notes=notes)
+    }
+    def play(self, note) {
+        self.notes[note].play()
+    }
+    def pause(self, note) {
+        self.notes[note].pause()
+    }
+    def play_notes(self, notes, note_duration=0.5) {
+        for note in notes {
+            if type(note) is String {
+                dur = note_duration
+            } else {
+                [note, mult] = note
+                dur = note_duration * mult
+            }
+            self.play(note)
+            time.sleep(dur)
+            self.pause(note)
+        }
+    }
+}

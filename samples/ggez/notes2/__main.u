@@ -1,0 +1,33 @@
+import a.ggez
+import a.ggez.graphics
+import a.ggez.audio
+from b.player import Player
+
+
+ggez.init()
+
+player = Player()
+
+player.play_notes([
+    'D4',
+    'D4',
+    'A4',
+    'A4',
+    'B4',
+    'B4',
+    ['A4', 2],
+    'G4',
+    'G4',
+    'F#4',
+    'F#4',
+    'E4',
+    'E4',
+    'D4',
+])
+
+ggez.run(
+    draw = def {
+        graphics.clear([0, 0, 0])
+    }
+)
+
