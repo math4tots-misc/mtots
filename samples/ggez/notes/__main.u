@@ -1,0 +1,50 @@
+import a.math
+import a.ggez
+import a.ggez.audio
+
+
+ggez.init()
+
+amp = 2 ** 14
+
+a440_data = audio.SoundData.from_samples(
+    range(44100 * 2)
+        .map(def(t) = int(math.sin((t / 44100) * 440 * math.tau) * amp))
+        .list()
+)
+
+sound_sources = []
+for i in range(26) {
+    source = audio.Source.from_data(a440_data)
+    source.set_pitch(2 ** (i / 12))
+    source.set_repeat(true)
+    sound_sources.push(source)
+}
+
+map = [:]
+for [i, c] in 'ZXCVBNMASDFGHJKLQWERTYUIOP'.chars().enumerate() {
+    map[c] = i
+}
+
+ggez.run(
+    draw = def {
+    },
+    key_down = def(key, repeat) {
+        if !repeat {
+            if map.has_key(key) {
+                index = map[key]
+                sound_sources[index].play()
+            } else {
+                print('key = %r' % [key])
+            }
+        }
+    },
+    key_up = def(key) {
+        if map.has_key(key) {
+            index = map[key]
+            sound_sources[index].pause()
+        } else {
+            print('key = %r' % [key])
+        }
+    },
+)

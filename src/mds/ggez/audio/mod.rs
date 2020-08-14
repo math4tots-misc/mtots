@@ -33,6 +33,12 @@ pub(in super::super) fn new() -> NativeModule {
                 let source = Source::from_data(ctx, data)?;
                 Ok(globals.new_handle::<Source>(source)?.into())
             });
+            cls.ifunc("set_pitch", ["pitch"], "", |owner, _globals, args, _| {
+                let mut args = args.into_iter();
+                let pitch = args.next().unwrap().f32()?;
+                owner.borrow_mut().get_mut().set_pitch(pitch);
+                Ok(Value::Nil)
+            });
             cls.ifunc("set_repeat", ["repeat"], "", |owner, _globals, args, _| {
                 let mut args = args.into_iter();
                 let repeat = args.next().unwrap().truthy();
