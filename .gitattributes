@@ -3,3 +3,6 @@
 
 # Always use LF
 * text eol=lf
+
+*.png binary
+*.mp3 binary
