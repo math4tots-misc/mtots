@@ -16,9 +16,9 @@ pub mod audio;
 pub mod graphics;
 
 pub(super) fn add(globals: &mut Globals) {
-    globals.add(new()).unwrap();
-    globals.add(graphics::new()).unwrap();
-    globals.add(audio::new()).unwrap();
+    globals.add_native_module(new()).unwrap();
+    globals.add_native_module(graphics::new()).unwrap();
+    globals.add_native_module(audio::new()).unwrap();
 }
 
 pub const NAME: &str = "a.ggez";

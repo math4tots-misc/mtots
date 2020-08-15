@@ -15,9 +15,9 @@ mod regex;
 pub fn add_standard_modules(globals: &mut Globals) {
     #[cfg(feature = "basekit")]
     {
-        globals.add(json::new()).unwrap();
-        globals.add(rand::new()).unwrap();
-        globals.add(regex::new()).unwrap();
+        globals.add_native_module(json::new()).unwrap();
+        globals.add_native_module(rand::new()).unwrap();
+        globals.add_native_module(regex::new()).unwrap();
     }
 
     #[cfg(feature = "gamekit")]
