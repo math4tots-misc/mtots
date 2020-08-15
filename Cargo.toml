@@ -1,6 +1,6 @@
 [package]
 name = "mtots"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Kyumin Kim <math4tots@users.noreply.github.com>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -13,7 +13,7 @@ description = "The mtots scripting language"
 [dependencies]
 anyhow = "1.0"
 lazy_static = "1.4"
-mtots_core = { path = "../mtots_core", version = "0.1.1", features = ["line"] }
+mtots_core = { path = "../mtots_core", version = "0.1.2", features = ["line"] }
 serde_json = { version = "1.0", features = ["preserve_order"], optional = true }
 rand = { version = "0.7", optional = true }
 rand_chacha = { version = "0.2", optional = true }
