@@ -12,16 +12,16 @@ mod rand;
 #[cfg(feature = "basekit")]
 mod regex;
 
-pub fn add_standard_modules(globals: &mut Globals) {
+pub fn add_standard_modules(_globals: &mut Globals) {
     #[cfg(feature = "basekit")]
     {
-        globals.add_native_module(json::new()).unwrap();
-        globals.add_native_module(rand::new()).unwrap();
-        globals.add_native_module(regex::new()).unwrap();
+        _globals.add_native_module(json::new()).unwrap();
+        _globals.add_native_module(rand::new()).unwrap();
+        _globals.add_native_module(regex::new()).unwrap();
     }
 
     #[cfg(feature = "gamekit")]
     {
-        ggez::add(globals);
+        ggez::add(_globals);
     }
 }
