@@ -1,0 +1,81 @@
+import a.webview
+
+html_content = r###"
+<html>
+    <head>
+        <style>
+            html, body, canvas {
+                margin: 0px;
+                padding: 0px;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>
+        <script>
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            canvas.addEventListener('click', function(event) {
+                external.invoke('click/' + event.clientX + '/' + event.clientY)
+            });
+            canvas.addEventListener('mousemove', function(event) {
+                external.invoke('mousemove/' + event.clientX + '/' + event.clientY)
+            });
+            external.invoke('init')
+        </script>
+    </body>
+</html>
+"###
+
+
+def run(
+    title = '',
+    size = nil,
+    init = nil,
+    click = nil,
+    mousemove = nil,
+) {
+    size = size or [800, 600]
+    webview.run(
+        title = title,
+        content = html_content,
+        size = size,
+        handler = def(wv, arg) {
+            parts = arg.split('/').list()
+            canvas = Canvas(wv)
+            switch parts[0] {
+                'init' => if init {
+                    init(canvas)
+                }
+                'click' => if click {
+                    [x, y] = parts[1:]
+                    click(canvas, float(x), float(y))
+                }
+                'mousemove' => if mousemove {
+                    [x, y] = parts[1:]
+                    mousemove(canvas, float(x), float(y))
+                }
+                => {
+                    print('Unrecognized cmd %r' % [parts])
+                }
+            }
+        },
+    )
+}
+
+class Canvas {
+    new(wv) = new(webview=wv)
+
+    def fill_rect(self, x, y, w, h) {
+        self.webview.eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, w, h])
+    }
+}
+
+class Handler {
+    def click(self, cv, x, y) = nil
+}
