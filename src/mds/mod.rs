@@ -12,6 +12,9 @@ mod rand;
 #[cfg(feature = "basekit")]
 mod regex;
 
+#[cfg(feature = "webview")]
+mod webview;
+
 pub fn add_standard_modules(_globals: &mut Globals) {
     #[cfg(feature = "basekit")]
     {
@@ -23,5 +26,10 @@ pub fn add_standard_modules(_globals: &mut Globals) {
     #[cfg(feature = "gamekit")]
     {
         ggez::add(_globals);
+    }
+
+    #[cfg(feature = "webview")]
+    {
+        _globals.add_native_module(webview::new()).unwrap();
     }
 }

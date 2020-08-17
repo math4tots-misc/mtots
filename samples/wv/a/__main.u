@@ -1,0 +1,34 @@
+import a.webview
+
+html_content = r###"
+<html><body>
+    <h1>Hello, World!</h1>
+    <button onclick='external.invoke("button-click")'>
+        Button
+    </button>
+    <button onclick='external.invoke("disable-fullscreen")'>
+        Disable Fullscreen
+    </button>
+    <script>
+        external.invoke('init');
+    </script>
+</body></html>
+"###
+
+print(webview)
+
+webview.run(
+    title = 'title',
+    content = html_content,
+    handler = def(wv, arg) {
+        switch arg {
+            'init' => {
+                # wv.set_fullscreen(true)
+            }
+            'disable-fullscreen' => {
+                wv.set_fullscreen(false)
+            }
+            => print('wv %r, arg %r' % [wv, arg])
+        }
+    },
+)
