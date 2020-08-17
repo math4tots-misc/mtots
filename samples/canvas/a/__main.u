@@ -1,6 +1,6 @@
 import a.canvas
 
-class Handler(canvas.Handler) {
+class Delegate(canvas.Delegate) {
     new(cv) = {
         print('init with %r' % [cv])
         new()
@@ -15,6 +15,9 @@ class Handler(canvas.Handler) {
     def keydown(self, cv, key, mods) {
         print('keydown %r %r' % [key, mods])
     }
+    def keyup(self, cv, key, mods) {
+        print('keyup %r %r' % [key, mods])
+    }
     def mousedown(self, cv, btn, x, y) {
         print('mousedown %r %r %r' % [btn, x, y])
     }
@@ -23,5 +26,5 @@ class Handler(canvas.Handler) {
 print('before run')
 canvas.run(
     title = 'canvas sample',
-    handlercls = Handler,
+    delegatecls = Delegate,
 )

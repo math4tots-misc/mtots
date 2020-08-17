@@ -70,8 +70,8 @@ html_content = r###"
                 downKeys[event.key] = true;
             });
             window.addEventListener('keyup', function(event) {
-                external.invoke(mkke('keyup', event));
                 downKeys[event.key] = false;
+                external.invoke(mkke('keyup', event));
             });
             window.addEventListener('keypress', function(event) {
                 external.invoke(mkke('keypress', event));
@@ -86,54 +86,54 @@ html_content = r###"
 def run(
     title = '',
     size = [800, 600],
-    handlercls = nil,
+    delegatecls = nil,
 ) {
-    handler = nil
+    delegate = nil
     webview.run(
         title = title,
         content = html_content,
         size = size,
         handler = def(wv, arg) {
-            nonlocal handler
+            nonlocal delegate
             parts = arg.split('/').list()
             canvas = Canvas(wv, def(h) {
-                nonlocal handler
-                handler = h
+                nonlocal delegate
+                delegate = h
             })
             switch parts[0] {
                 'init' => {
-                    handler = handlercls(canvas)
+                    delegate = delegatecls(canvas)
                 }
                 'click' => {
                     [btn, x, y] = parts[1:]
-                    handler.click(canvas, int(btn), float(x), float(y))
+                    delegate.click(canvas, int(btn), float(x), float(y))
                 }
                 'mousemove' => {
                     [x, y] = parts[1:]
-                    handler.mousemove(canvas, float(x), float(y))
+                    delegate.mousemove(canvas, float(x), float(y))
                 }
                 'mousedown' => {
                     [btn, x, y] = parts[1:]
-                    handler.mousedown(canvas, int(btn), float(x), float(y))
+                    delegate.mousedown(canvas, int(btn), float(x), float(y))
                 }
                 'mouseup' => {
                     [btn, x, y] = parts[1:]
-                    handler.mouseup(canvas, int(btn), float(x), float(y))
+                    delegate.mouseup(canvas, int(btn), float(x), float(y))
                 }
                 'keydown' => {
                     [key, mods] = parts[1:]
                     mods = mods.split(',').list()
-                    handler.keydown(canvas, key, mods)
+                    delegate.keydown(canvas, key, mods)
                 }
                 'keyup' => {
                     [key, mods] = parts[1:]
                     mods = mods.split(',').list()
-                    handler.keyup(canvas, key, mods)
+                    delegate.keyup(canvas, key, mods)
                 }
                 'keypress' => {
                     [key, mods] = parts[1:]
                     mods = mods.split(',').list()
-                    handler.keypress(canvas, key, mods)
+                    delegate.keypress(canvas, key, mods)
                 }
                 => {
                     print('Unrecognized cmd %r' % [parts])
@@ -146,17 +146,21 @@ def run(
 class Canvas {
     new(wv, swap_handler) = new(webview=wv, swap_handler=swap_handler)
 
-    def set_new_handler(self, handlercls) {
-        handler = handlercls(self)
-        (self.swap_handler)(handler)
+    def change_delegate(self, delegatecls) {
+        delegate = delegatecls(self)
+        (self.swap_handler)(delegate)
     }
 
-    def fill_rect(self, x, y, w, h) {
-        self.webview.eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, w, h])
+    def clear_rect(self, x, y, width, height) {
+        self.webview.eval('ctx.clearRect(%r, %r, %r, %r)' % [x, y, width, height])
+    }
+
+    def fill_rect(self, x, y, width, height) {
+        self.webview.eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, width, height])
     }
 }
 
-class Handler {
+class Delegate {
     def click(self, cv, btn, x, y) = nil
     def mousemove(self, cv, x, y) = nil
     def mousedown(self, cv, btn, x, y) = nil
