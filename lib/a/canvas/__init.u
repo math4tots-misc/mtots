@@ -16,6 +16,11 @@ html_content = r###"
     <body>
         <canvas id="canvas"></canvas>
         <script>
+            // event.repeat is unreliable
+            // (in particular, it doesn't work on windows)
+            // So we keep track keydown/keyup for each key to indicate
+            // whether it's repeating
+            const downKeys = {};
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth;
@@ -33,12 +38,6 @@ html_content = r###"
                     event.preventDefault();
                 };
             }
-            function newKeyEventListener(type) {
-                return function(event) {
-                    external.invoke(mkke(type, event));
-                    event.preventDefault();
-                };
-            }
             function mkke(name, event) {
                 var ret = name + '/' + event.key + '/';
                 var mods = [];
@@ -51,7 +50,8 @@ html_content = r###"
                 if (event.metaKey) {
                     mods.push('meta');
                 }
-                if (event.repeat) {
+                if (downKeys[event.key]) {
+                    // event.repeat doesn't work on Windows
                     mods.push('repeat');
                 }
                 if (event.shiftKey) {
@@ -65,9 +65,17 @@ html_content = r###"
             canvas.addEventListener('mousemove', function(event) {
                 external.invoke('mousemove/' + event.clientX + '/' + event.clientY);
             });
-            window.addEventListener('keydown', newKeyEventListener('keydown'));
-            window.addEventListener('keyup', newKeyEventListener('keyup'));
-            window.addEventListener('keypress', newKeyEventListener('keypress'));
+            window.addEventListener('keydown', function(event) {
+                external.invoke(mkke('keydown', event));
+                downKeys[event.key] = true;
+            });
+            window.addEventListener('keyup', function(event) {
+                external.invoke(mkke('keyup', event));
+                downKeys[event.key] = false;
+            });
+            window.addEventListener('keypress', function(event) {
+                external.invoke(mkke('keypress', event));
+            });
             external.invoke('init')
         </script>
     </body>
