@@ -85,10 +85,9 @@ html_content = r###"
 
 def run(
     title = '',
-    size = nil,
+    size = [800, 600],
     handlercls = nil,
 ) {
-    size = size or [800, 600]
     handler = nil
     webview.run(
         title = title,
