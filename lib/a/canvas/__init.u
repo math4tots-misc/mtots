@@ -20,23 +20,25 @@ html_content = r###"
             const ctx = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
-            canvas.addEventListener('click', function(event) {
-                external.invoke('click/' + event.clientX + '/' + event.clientY);
-            });
-            canvas.addEventListener('mousemove', function(event) {
-                external.invoke('mousemove/' + event.clientX + '/' + event.clientY);
-            });
-            window.addEventListener('keydown', function(event) {
-                external.invoke('debug/repeat=' + event.repeat);
-                external.invoke('debug/' + JSON.stringify(event));
-                external.invoke(mkke('keydown', event));
-            });
-            window.addEventListener('keypress', function(event) {
-                external.invoke(mkke('keypress', event));
-            });
-            window.addEventListener('keyup', function(event) {
-                external.invoke(mkke('keyup', event));
-            });
+            function newMouseButtonEventListener(type) {
+                return function(event) {
+                    external.invoke(
+                        type +
+                        '/' +
+                        event.button +
+                        '/' +
+                        event.clientX +
+                        '/' +
+                        event.clientY);
+                    event.preventDefault();
+                };
+            }
+            function newKeyEventListener(type) {
+                return function(event) {
+                    external.invoke(mkke(type, event));
+                    event.preventDefault();
+                };
+            }
             function mkke(name, event) {
                 var ret = name + '/' + event.key + '/';
                 var mods = [];
@@ -57,6 +59,15 @@ html_content = r###"
                 }
                 return ret + mods.join(',');
             }
+            canvas.addEventListener('click', newMouseButtonEventListener('click'));
+            canvas.addEventListener('mousedown', newMouseButtonEventListener('mousedown'));
+            canvas.addEventListener('mouseup', newMouseButtonEventListener('mouseup'));
+            canvas.addEventListener('mousemove', function(event) {
+                external.invoke('mousemove/' + event.clientX + '/' + event.clientY);
+            });
+            window.addEventListener('keydown', newKeyEventListener('keydown'));
+            window.addEventListener('keyup', newKeyEventListener('keyup'));
+            window.addEventListener('keypress', newKeyEventListener('keypress'));
             external.invoke('init')
         </script>
     </body>
@@ -87,17 +98,35 @@ def run(
                     handler = handlercls(canvas)
                 }
                 'click' => {
-                    [x, y] = parts[1:]
-                    handler.click(canvas, float(x), float(y))
+                    [btn, x, y] = parts[1:]
+                    handler.click(canvas, int(btn), float(x), float(y))
                 }
                 'mousemove' => {
                     [x, y] = parts[1:]
                     handler.mousemove(canvas, float(x), float(y))
                 }
+                'mousedown' => {
+                    [btn, x, y] = parts[1:]
+                    handler.mousedown(canvas, int(btn), float(x), float(y))
+                }
+                'mouseup' => {
+                    [btn, x, y] = parts[1:]
+                    handler.mouseup(canvas, int(btn), float(x), float(y))
+                }
                 'keydown' => {
                     [key, mods] = parts[1:]
                     mods = mods.split(',').list()
                     handler.keydown(canvas, key, mods)
+                }
+                'keyup' => {
+                    [key, mods] = parts[1:]
+                    mods = mods.split(',').list()
+                    handler.keyup(canvas, key, mods)
+                }
+                'keypress' => {
+                    [key, mods] = parts[1:]
+                    mods = mods.split(',').list()
+                    handler.keypress(canvas, key, mods)
                 }
                 => {
                     print('Unrecognized cmd %r' % [parts])
@@ -121,7 +150,11 @@ class Canvas {
 }
 
 class Handler {
-    def click(self, cv, x, y) = nil
+    def click(self, cv, btn, x, y) = nil
     def mousemove(self, cv, x, y) = nil
+    def mousedown(self, cv, btn, x, y) = nil
+    def mouseup(self, cv, btn, x, y) = nil
     def keydown(self, cv, key, mods) = nil
+    def keyup(self, cv, key, mods) = nil
+    def keypress(self, cv, key, mods) = nil
 }
