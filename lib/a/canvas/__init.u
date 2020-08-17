@@ -21,11 +21,42 @@ html_content = r###"
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
             canvas.addEventListener('click', function(event) {
-                external.invoke('click/' + event.clientX + '/' + event.clientY)
+                external.invoke('click/' + event.clientX + '/' + event.clientY);
             });
             canvas.addEventListener('mousemove', function(event) {
-                external.invoke('mousemove/' + event.clientX + '/' + event.clientY)
+                external.invoke('mousemove/' + event.clientX + '/' + event.clientY);
             });
+            window.addEventListener('keydown', function(event) {
+                external.invoke('debug/repeat=' + event.repeat);
+                external.invoke('debug/' + JSON.stringify(event));
+                external.invoke(mkke('keydown', event));
+            });
+            window.addEventListener('keypress', function(event) {
+                external.invoke(mkke('keypress', event));
+            });
+            window.addEventListener('keyup', function(event) {
+                external.invoke(mkke('keyup', event));
+            });
+            function mkke(name, event) {
+                var ret = name + '/' + event.key + '/';
+                var mods = [];
+                if (event.altKey) {
+                    mods.push('alt');
+                }
+                if (event.ctrlKey) {
+                    mods.push('ctrl');
+                }
+                if (event.metaKey) {
+                    mods.push('meta');
+                }
+                if (event.repeat) {
+                    mods.push('repeat');
+                }
+                if (event.shiftKey) {
+                    mods.push('shift');
+                }
+                return ret + mods.join(',');
+            }
             external.invoke('init')
         </script>
     </body>
@@ -36,29 +67,37 @@ html_content = r###"
 def run(
     title = '',
     size = nil,
-    init = nil,
-    click = nil,
-    mousemove = nil,
+    handlercls = nil,
 ) {
     size = size or [800, 600]
+    handler = nil
     webview.run(
         title = title,
         content = html_content,
         size = size,
         handler = def(wv, arg) {
+            nonlocal handler
             parts = arg.split('/').list()
-            canvas = Canvas(wv)
+            canvas = Canvas(wv, def(h) {
+                nonlocal handler
+                handler = h
+            })
             switch parts[0] {
-                'init' => if init {
-                    init(canvas)
+                'init' => {
+                    handler = handlercls(canvas)
                 }
-                'click' => if click {
+                'click' => {
                     [x, y] = parts[1:]
-                    click(canvas, float(x), float(y))
+                    handler.click(canvas, float(x), float(y))
                 }
-                'mousemove' => if mousemove {
+                'mousemove' => {
                     [x, y] = parts[1:]
-                    mousemove(canvas, float(x), float(y))
+                    handler.mousemove(canvas, float(x), float(y))
+                }
+                'keydown' => {
+                    [key, mods] = parts[1:]
+                    mods = mods.split(',').list()
+                    handler.keydown(canvas, key, mods)
                 }
                 => {
                     print('Unrecognized cmd %r' % [parts])
@@ -69,7 +108,12 @@ def run(
 }
 
 class Canvas {
-    new(wv) = new(webview=wv)
+    new(wv, swap_handler) = new(webview=wv, swap_handler=swap_handler)
+
+    def set_new_handler(self, handlercls) {
+        handler = handlercls(self)
+        (self.swap_handler)(handler)
+    }
 
     def fill_rect(self, x, y, w, h) {
         self.webview.eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, w, h])
@@ -78,4 +122,6 @@ class Canvas {
 
 class Handler {
     def click(self, cv, x, y) = nil
+    def mousemove(self, cv, x, y) = nil
+    def keydown(self, cv, key, mods) = nil
 }

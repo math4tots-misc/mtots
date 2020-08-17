@@ -1,20 +1,24 @@
 import a.canvas
 
-class Handler {
-    new(cv) = new()
+class Handler(canvas.Handler) {
+    new(cv) = {
+        print('init with %r' % [cv])
+        new()
+    }
+    def click(self, cv, x, y) = {
+        print('click %r, %r' % [x, y])
+        cv.fill_rect(x, y, 10, 10)
+    }
+    def mousemove(self, cv, x, y) {
+        cv.fill_rect(x, y, 10, 10)
+    }
+    def keydown(self, cv, key, mods) {
+        print('keydown %r %r' % [key, mods])
+    }
 }
 
 print('before run')
 canvas.run(
     title = 'canvas sample',
-    init = def(cv) {
-        print('init with %r' % [cv])
-    },
-    click = def(cv, x, y) {
-        print('click %r, %r' % [x, y])
-        cv.fill_rect(x, y, 10, 10)
-    },
-    mousemove = def(cv, x, y) {
-        cv.fill_rect(x, y, 10, 10)
-    },
+    handlercls = Handler,
 )
