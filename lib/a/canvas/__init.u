@@ -28,6 +28,7 @@ def init(
     size = [800, 600],
     resizable = false,
     debug = false,
+    frameless = false,
     delegatecls = nil,
 ) = {
     delegate = nil
@@ -37,6 +38,7 @@ def init(
         size = size,
         resizable = resizable,
         debug = debug,
+        frameless = frameless,
         handler = def(arg) {
             nonlocal delegate
             parts = arg.split('/').list()
@@ -75,6 +77,10 @@ def init(
                     mods = mods.split(',').list()
                     ordie(delegate.keypress(key, mods))
                 }
+                'resize' => {
+                    [width, height] = parts[1:]
+                    ordie(delegate.resize(width, height))
+                }
                 => {
                     print('Unrecognized cmd %r' % [parts])
                 }
@@ -106,58 +112,65 @@ class Canvas {
         # Ugh, this doesn't seem to work consistently...
         # :/ setting fullscreen twice seems to work better?
         self.webview.set_fullscreen(flag)
-        self.webview.eval('updateCanvasDim()')
+        self._eval('updateCanvasDim()')
         self.webview.set_fullscreen(flag)
-        self.webview.eval('updateCanvasDim()')
+        self._eval('updateCanvasDim()')
     }
+
+    def _aeval(self, js) = self.webview.async_eval(js)
+    def _eval(self, js) = self.webview.eval(js)
+
+    async def __get_width(self) = await self._aeval('canvas.width')
+    async def __get_height(self) = await self._aeval('canvas.height')
 
     # Lots of reference from
     # https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
 
     # Drawing rectangles
     def clearRect(self, x, y, width, height) {
-        self.webview.eval('ctx.clearRect(%r, %r, %r, %r)' % [x, y, width, height])
+        self._eval('ctx.clearRect(%r, %r, %r, %r)' % [x, y, width, height])
     }
     def fillRect(self, x, y, width, height) {
-        self.webview.eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, width, height])
+        self._eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, width, height])
     }
     def strokeRect(self, x, y, width, height) {
-        self.webview.eval('ctx.strokeRect(%r, %r, %r, %r)' % [x, y, width, height])
+        self._eval('ctx.strokeRect(%r, %r, %r, %r)' % [x, y, width, height])
     }
 
     # Drawing Text
     def fillText(self, text, x, y) {
-        self.webview.eval('ctx.fillText(%r, %r, %r)' % [text, x, y])
+        self._eval('ctx.fillText(%r, %r, %r)' % [text, x, y])
     }
     def strokeText(self, text, x, y) {
-        self.webview.eval('ctx.strokeText(%r, %r, %r)' % [text, x, y])
+        self._eval('ctx.strokeText(%r, %r, %r)' % [text, x, y])
     }
     async def measureText(self, text) = {
-        resp = await self.webview.async_eval('JSON.stringify(measureText(%r))' % [text])
+        resp = await self._aeval('JSON.stringify(measureText(%r))' % [text])
         print('resp = %r' % [resp])
         json.loads(resp)
     }
 
     def __set_font(self, font) {
         font = str(font)
-        self.webview.eval('ctx.font = "%s"' % [font])
+        self._eval('ctx.font = "%s"' % [font])
     }
-    async def __get_font(self) = await self.webview.async_eval('ctx.font')
+    async def __get_font(self) = await self._aeval('ctx.font')
 
     def __set_fillStyle(self, fillStyle) {
         fillStyle = str(fillStyle)
-        self.webview.eval('ctx.fillStyle = "%s"' % [fillStyle])
+        self._eval('ctx.fillStyle = "%s"' % [fillStyle])
     }
-    async def __get_fillStyle(self) = await self.webview.async_eval('ctx.fillStyle')
+    async def __get_fillStyle(self) = await self._aeval('ctx.fillStyle')
 
     def __set_strokeStyle(self, strokeStyle) {
         strokeStyle = str(strokeStyle)
-        self.webview.eval('ctx.strokeStyle = "%s"' % [strokeStyle])
+        self._eval('ctx.strokeStyle = "%s"' % [strokeStyle])
     }
-    async def __get_strokeStyle(self) = await self.webview.async_eval('ctx.strokeStyle')
+    async def __get_strokeStyle(self) = await self._aeval('ctx.strokeStyle')
 }
 
 class Delegate {
+    def resize(self, width, height) = nil
     def click(self, btn, x, y) = nil
     def mousemove(self, x, y) = nil
     def mousedown(self, btn, x, y) = nil

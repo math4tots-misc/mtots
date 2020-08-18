@@ -19,6 +19,9 @@ class Delegate(canvas.Delegate) {
 
         new()
     }
+    def resize(self, width, height) = {
+        print('resize %r' % [[width, height]])
+    }
     def click(self, btn, x, y) = {
         print('click %r, %r, %r' % [btn, x, y])
         cv.fillRect(x, y, 10, 10)
@@ -35,6 +38,12 @@ class Delegate(canvas.Delegate) {
             'g' => cv.fillStyle = 'green'
             'b' => cv.fillStyle = 'black'
             'r' => cv.fillStyle = 'red'
+            'd' => {
+                print('dimensions = [%r, %r]' % [
+                    await cv.width,
+                    await cv.height,
+                ])
+            }
         }
     }
     def keyup(self, key, mods) {
@@ -49,6 +58,7 @@ print('before run')
 cv = canvas.init(
     title = 'canvas sample',
     resizable = true,
+    frameless = true,
     delegatecls = Delegate,
 )
 cv.run()

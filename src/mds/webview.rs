@@ -28,6 +28,7 @@ pub(super) fn new() -> NativeModule {
                 .def("size", [800, 600])
                 .def("resizable", false)
                 .def("debug", false)
+                .def("frameless", false)
                 .def("handler", ()),
             "",
             move |globals, args, _| {
@@ -37,6 +38,7 @@ pub(super) fn new() -> NativeModule {
                 let [width, height] = <[i32; 2]>::try_from(args.next().unwrap())?;
                 let resizable = args.next().unwrap().truthy();
                 let debug = args.next().unwrap().truthy();
+                let frameless = args.next().unwrap().truthy();
                 let handler = args.next().unwrap();
 
                 // Yucky unsafe here
@@ -50,6 +52,7 @@ pub(super) fn new() -> NativeModule {
                     .size(width, height)
                     .resizable(resizable)
                     .debug(debug)
+                    .frameless(frameless)
                     .user_data(())
                     .invoke_handler(move |_webview, arg| {
                         if arg.starts_with("eval/") {
