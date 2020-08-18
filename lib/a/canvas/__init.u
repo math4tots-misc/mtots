@@ -144,20 +144,52 @@ def run(
 }
 
 class Canvas {
-    new(wv, swap_handler) = new(webview=wv, swap_handler=swap_handler)
+    new(wv, swap_handler) = new(
+        webview=wv,
+        swap_handler=swap_handler,
 
-    def change_delegate(self, delegatecls) {
+        # Some default values from
+        # https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+        # Unfortunately, these might not actually be the true initial values
+        # for the given environment
+        _font='10px sans-serif',
+        _fillStyle='#000000',
+        _strokeStyle='#000000',
+    )
+
+    def delegate(self, delegatecls) {
         delegate = delegatecls(self)
         (self.swap_handler)(delegate)
     }
 
-    def clear_rect(self, x, y, width, height) {
+    def clearRect(self, x, y, width, height) {
         self.webview.eval('ctx.clearRect(%r, %r, %r, %r)' % [x, y, width, height])
     }
 
-    def fill_rect(self, x, y, width, height) {
+    def fillRect(self, x, y, width, height) {
         self.webview.eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, width, height])
     }
+
+    def __set_font(self, font) {
+        font = str(font)
+        self._font = font
+        self.webview.eval('ctx.font = "%s"' % [font])
+    }
+    def __get_font(self) = self._font
+
+    def __set_fillStyle(self, fillStyle) {
+        fillStyle = str(fillStyle)
+        self._fillStyle = fillStyle
+        self.webview.eval('ctx.fillStyle = "%s"' % [fillStyle])
+    }
+    def __get_fillStyle(self) = self._fillStyle
+
+    def __set_strokeStyle(self, strokeStyle) {
+        strokeStyle = str(strokeStyle)
+        self._strokeStyle = strokeStyle
+        self.webview.eval('ctx.strokeStyle = "%s"' % [strokeStyle])
+    }
+    def __get_strokeStyle(self) = self._strokeStyle
 }
 
 class Delegate {
