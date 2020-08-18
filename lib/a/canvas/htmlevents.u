@@ -9,8 +9,7 @@ CODE = r###"
 const downKeys = {};
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-canvas.width = canvas.offsetWidth;
-canvas.height = canvas.offsetHeight;
+updateCanvasDim();
 function newMouseButtonEventListener(type) {
     return function(event) {
         external.invoke(
@@ -45,6 +44,14 @@ function mkke(name, event) {
     }
     return ret + mods.join(',');
 }
+function updateCanvasDim() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+}
+canvas.addEventListener('resize', function() {
+    updateCanvasDim();
+    external.invoke('resize');
+});
 canvas.addEventListener('click', newMouseButtonEventListener('click'));
 canvas.addEventListener('mousedown', newMouseButtonEventListener('mousedown'));
 canvas.addEventListener('mouseup', newMouseButtonEventListener('mouseup'));

@@ -4,6 +4,7 @@ class Delegate(canvas.Delegate) {
     new() = {
         print('init with %r' % [cv])
 
+        cv.fullscreen = true
         cv.font = '50px sans-serif'
         cv.fillText('Hello', 50, 50)
         cv.strokeText('Hello', 250, 50)
@@ -47,6 +48,7 @@ class Delegate(canvas.Delegate) {
 print('before run')
 cv = canvas.init(
     title = 'canvas sample',
+    resizable = true,
     delegatecls = Delegate,
 )
 cv.run()

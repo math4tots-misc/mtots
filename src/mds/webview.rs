@@ -25,8 +25,8 @@ pub(super) fn new() -> NativeModule {
             ArgSpec::builder()
                 .def("title", "some-window")
                 .def("content", "<html></html>")
-                .def("size", [320, 480])
-                .def("resizeable", false)
+                .def("size", [800, 600])
+                .def("resizable", false)
                 .def("debug", false)
                 .def("handler", ()),
             "",

@@ -26,6 +26,8 @@ html_content = r###"
 def init(
     title = '',
     size = [800, 600],
+    resizable = false,
+    debug = false,
     delegatecls = nil,
 ) = {
     delegate = nil
@@ -33,6 +35,8 @@ def init(
         title = title,
         content = html_content,
         size = size,
+        resizable = resizable,
+        debug = debug,
         handler = def(arg) {
             nonlocal delegate
             parts = arg.split('/').list()
@@ -96,6 +100,11 @@ class Canvas {
     def delegate(self, delegatecls) {
         delegate = delegatecls()
         (self.swap_delegate)(delegate)
+    }
+
+    def __set_fullscreen(self, flag) {
+        self.webview.set_fullscreen(flag)
+        self.webview.eval('updateCanvasDim()')
     }
 
     # Lots of reference from
