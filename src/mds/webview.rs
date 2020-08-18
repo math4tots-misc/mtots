@@ -112,7 +112,7 @@ pub(super) fn new() -> NativeModule {
                         reg.resolve_map.insert(id, resolve);
                     });
                     let r = owner.borrow_mut().0.eval(&format!(
-                        "external.invoke('eval/{}/' + {})",
+                        "external.invoke('eval/{}/' + ({}))",
                         id,
                         js.str(),
                     ));
