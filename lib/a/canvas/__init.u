@@ -136,14 +136,21 @@ def init(
                 }
             }
         },
-    ), def(new_delegate) {
+    ), def(h) {
         nonlocal delegate
-        delegate = new_delegate
+        delegate = h
     })
 }
 
+# Some default values from
+# https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+# Unfortunately, these might not actually be the true initial values
+# for the given environment
 class Canvas {
-    new(wv, swap_delegate) = new(webview=wv, swap_delegate=swap_delegate)
+    new(wv, swap_handler) = new(
+        webview=wv,
+        swap_handler=swap_handler,
+    )
 
     def run(self) {
         self.webview.run()
@@ -154,8 +161,8 @@ class Canvas {
     }
 
     def delegate(self, delegatecls) {
-        delegate = delegatecls()
-        (self.swap_delegate)(delegate)
+        delegate = delegatecls(self)
+        (self.swap_handler)(delegate)
     }
 
     def clearRect(self, x, y, width, height) {
@@ -176,7 +183,9 @@ class Canvas {
         fillStyle = str(fillStyle)
         self.webview.eval('ctx.fillStyle = "%s"' % [fillStyle])
     }
-    async def __get_fillStyle(self) = await self.webview.async_eval('ctx.fillStyle')
+    async def __get_fillStyle(self) = {
+        await self.webview.async_eval('ctx.fillStyle')
+    }
 
     def __set_strokeStyle(self, strokeStyle) {
         strokeStyle = str(strokeStyle)
