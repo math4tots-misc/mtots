@@ -103,6 +103,10 @@ class Canvas {
     }
 
     def __set_fullscreen(self, flag) {
+        # Ugh, this doesn't seem to work consistently...
+        # :/ setting fullscreen twice seems to work better?
+        self.webview.set_fullscreen(flag)
+        self.webview.eval('updateCanvasDim()')
         self.webview.set_fullscreen(flag)
         self.webview.eval('updateCanvasDim()')
     }
