@@ -63,4 +63,21 @@ window.addEventListener('keypress', function(event) {
     external.invoke(mkke('keypress', event));
 });
 external.invoke('init')
+function measureText(text) {
+    const m = ctx.measureText(text);
+    return {
+        width: m.width,
+        actualBoundingBoxLeft: m.actualBoundingBoxLeft,
+        actualBoundingBoxRight: m.actualBoundingBoxRight,
+        fontBoundingBoxAscent: m.fontBoundingBoxAscent,
+        fontBoundingBoxDescent: m.fontBoundingBoxDescent,
+        actualBoundingBoxAscent: m.actualBoundingBoxAscent,
+        actualBoundingBoxDescent: m.actualBoundingBoxDescent,
+        emHeightAscent: m.emHeightAscent,
+        emHeightDescent: m.emHeightDescent,
+        hangingBaseline: m.hangingBaseline,
+        alphabeticBaseline: m.alphabeticBaseline,
+        ideographicBaseline: m.ideographicBaseline,
+    };
+}
 "###

@@ -11,6 +11,7 @@ html_content = r###"
     </button>
     <script>
         external.invoke('init');
+        external.invoke('userAgent = ' + navigator.userAgent)
     </script>
 </body></html>
 "###
@@ -28,7 +29,7 @@ wv = webview.init(
             'disable-fullscreen' => {
                 wv.set_fullscreen(false)
             }
-            => print('wv %r, arg %r' % [wv, arg])
+            => print('arg %r' % [arg])
         }
     },
 )

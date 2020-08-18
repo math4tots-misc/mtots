@@ -8,6 +8,14 @@ class Delegate(canvas.Delegate) {
         cv.fillText('Hello', 50, 50)
         cv.strokeText('Hello', 250, 50)
 
+        (async def {
+            text = 'Hello'
+            print('Measured text (%r) = %r' % [
+                text,
+                await cv.measureText(text),
+            ])
+        })().ordie()
+
         new()
     }
     def click(self, btn, x, y) = {

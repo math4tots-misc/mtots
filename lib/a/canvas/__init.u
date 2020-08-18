@@ -1,4 +1,5 @@
 import a.webview
+import a.json
 import .htmlevents
 
 html_content = r###"
@@ -117,6 +118,11 @@ class Canvas {
     }
     def strokeText(self, text, x, y) {
         self.webview.eval('ctx.strokeText(%r, %r, %r)' % [text, x, y])
+    }
+    async def measureText(self, text) = {
+        resp = await self.webview.async_eval('JSON.stringify(measureText(%r))' % [text])
+        print('resp = %r' % [resp])
+        json.loads(resp)
     }
 
     def __set_font(self, font) {
