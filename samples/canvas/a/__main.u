@@ -14,6 +14,9 @@ class Delegate(canvas.Delegate) {
     }
     def keydown(self, cv, key, mods) {
         print('keydown %r %r' % [key, mods])
+        if key == 'Escape' {
+            cv.exit()
+        }
     }
     def keyup(self, cv, key, mods) {
         print('keyup %r %r' % [key, mods])

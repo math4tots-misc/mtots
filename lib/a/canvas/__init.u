@@ -143,19 +143,21 @@ def run(
     )
 }
 
+# Some default values from
+# https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+# Unfortunately, these might not actually be the true initial values
+# for the given environment
 class Canvas {
     new(wv, swap_handler) = new(
         webview=wv,
         swap_handler=swap_handler,
-
-        # Some default values from
-        # https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
-        # Unfortunately, these might not actually be the true initial values
-        # for the given environment
         _font='10px sans-serif',
-        _fillStyle='#000000',
         _strokeStyle='#000000',
     )
+
+    def exit(self) {
+        self.webview.exit()
+    }
 
     def delegate(self, delegatecls) {
         delegate = delegatecls(self)
@@ -191,6 +193,9 @@ class Canvas {
     }
     def __get_strokeStyle(self) = self._strokeStyle
 }
+    # async def __get_fillStyle(self) = {
+    #     await self.webview.async_eval('ctx.fillStyle')
+    # }
 
 class Delegate {
     def click(self, cv, btn, x, y) = nil
