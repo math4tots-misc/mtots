@@ -83,64 +83,63 @@ html_content = r###"
 "###
 
 
-def run(
+def init(
     title = '',
     size = [800, 600],
     delegatecls = nil,
-) {
+) = {
     delegate = nil
-    webview.run(
+    Canvas(webview.init(
         title = title,
         content = html_content,
         size = size,
-        handler = def(wv, arg) {
+        handler = def(arg) {
             nonlocal delegate
             parts = arg.split('/').list()
-            canvas = Canvas(wv, def(h) {
-                nonlocal delegate
-                delegate = h
-            })
             switch parts[0] {
                 'init' => {
-                    delegate = delegatecls(canvas)
+                    delegate = delegatecls()
                 }
                 'click' => {
                     [btn, x, y] = parts[1:]
-                    delegate.click(canvas, int(btn), float(x), float(y))
+                    ordie(delegate.click(int(btn), float(x), float(y)))
                 }
                 'mousemove' => {
                     [x, y] = parts[1:]
-                    delegate.mousemove(canvas, float(x), float(y))
+                    ordie(delegate.mousemove(float(x), float(y)))
                 }
                 'mousedown' => {
                     [btn, x, y] = parts[1:]
-                    delegate.mousedown(canvas, int(btn), float(x), float(y))
+                    ordie(delegate.mousedown(int(btn), float(x), float(y)))
                 }
                 'mouseup' => {
                     [btn, x, y] = parts[1:]
-                    delegate.mouseup(canvas, int(btn), float(x), float(y))
+                    ordie(delegate.mouseup(int(btn), float(x), float(y)))
                 }
                 'keydown' => {
                     [key, mods] = parts[1:]
                     mods = mods.split(',').list()
-                    delegate.keydown(canvas, key, mods)
+                    ordie(delegate.keydown(key, mods))
                 }
                 'keyup' => {
                     [key, mods] = parts[1:]
                     mods = mods.split(',').list()
-                    delegate.keyup(canvas, key, mods)
+                    ordie(delegate.keyup(key, mods))
                 }
                 'keypress' => {
                     [key, mods] = parts[1:]
                     mods = mods.split(',').list()
-                    delegate.keypress(canvas, key, mods)
+                    ordie(delegate.keypress(key, mods))
                 }
                 => {
                     print('Unrecognized cmd %r' % [parts])
                 }
             }
         },
-    )
+    ), def(h) {
+        nonlocal delegate
+        delegate = h
+    })
 }
 
 # Some default values from
@@ -154,6 +153,10 @@ class Canvas {
         _font='10px sans-serif',
         _strokeStyle='#000000',
     )
+
+    def run(self) {
+        self.webview.run()
+    }
 
     def exit(self) {
         self.webview.exit()
@@ -198,11 +201,11 @@ class Canvas {
     # }
 
 class Delegate {
-    def click(self, cv, btn, x, y) = nil
-    def mousemove(self, cv, x, y) = nil
-    def mousedown(self, cv, btn, x, y) = nil
-    def mouseup(self, cv, btn, x, y) = nil
-    def keydown(self, cv, key, mods) = nil
-    def keyup(self, cv, key, mods) = nil
-    def keypress(self, cv, key, mods) = nil
+    def click(self, btn, x, y) = nil
+    def mousemove(self, x, y) = nil
+    def mousedown(self, btn, x, y) = nil
+    def mouseup(self, btn, x, y) = nil
+    def keydown(self, key, mods) = nil
+    def keyup(self, key, mods) = nil
+    def keypress(self, key, mods) = nil
 }

@@ -17,10 +17,10 @@ html_content = r###"
 
 print(webview)
 
-webview.run(
+wv = webview.init(
     title = 'title',
     content = html_content,
-    handler = def(wv, arg) {
+    handler = def(arg) {
         switch arg {
             'init' => {
                 # wv.set_fullscreen(true)
@@ -32,3 +32,5 @@ webview.run(
         }
     },
 )
+
+wv.run()

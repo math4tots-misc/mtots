@@ -1,33 +1,34 @@
 import a.canvas
 
 class Delegate(canvas.Delegate) {
-    new(cv) = {
+    new() = {
         print('init with %r' % [cv])
         new()
     }
-    def click(self, cv, btn, x, y) = {
+    def click(self, btn, x, y) = {
         print('click %r, %r, %r' % [btn, x, y])
         cv.fillRect(x, y, 10, 10)
     }
-    def mousemove(self, cv, x, y) {
+    def mousemove(self, x, y) {
         cv.fillRect(x, y, 10, 10)
     }
-    def keydown(self, cv, key, mods) {
+    async def keydown(self, key, mods) {
         print('keydown %r %r' % [key, mods])
         if key == 'Escape' {
             cv.exit()
         }
     }
-    def keyup(self, cv, key, mods) {
+    def keyup(self, key, mods) {
         print('keyup %r %r' % [key, mods])
     }
-    def mousedown(self, cv, btn, x, y) {
+    def mousedown(self, btn, x, y) {
         print('mousedown %r %r %r' % [btn, x, y])
     }
 }
 
 print('before run')
-canvas.run(
+cv = canvas.init(
     title = 'canvas sample',
     delegatecls = Delegate,
 )
+cv.run()

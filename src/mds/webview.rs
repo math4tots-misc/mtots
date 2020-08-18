@@ -1,5 +1,6 @@
 //! JSON bindings
 use crate::mtry;
+use crate::rterr;
 use crate::ordie;
 use crate::ArgSpec;
 use crate::Globals;
@@ -15,7 +16,7 @@ pub const NAME: &str = "a.webview";
 pub(super) fn new() -> NativeModule {
     NativeModule::new(NAME, |m| {
         m.func(
-            "run",
+            "init",
             ArgSpec::builder()
                 .def("title", "some-window")
                 .def("content", "<html></html>")
@@ -32,41 +33,58 @@ pub(super) fn new() -> NativeModule {
                 let resizable = args.next().unwrap().truthy();
                 let debug = args.next().unwrap().truthy();
                 let handler = args.next().unwrap();
+
+                // Yucky unsafe here
+                // But Globals needs to be available from callbacks and it's
+                // really tricky to not use unsafe with UI/event loops
+                let globals_copy = unsafe { &mut *(globals as *mut Globals) };
                 let r = web_view::builder()
-                    .title(title.str())
+                    .title(Box::leak(Box::new(title.str().to_owned())))
                     .content(web_view::Content::Html(content.str()))
                     .size(width, height)
                     .resizable(resizable)
                     .debug(debug)
                     .user_data(())
-                    .invoke_handler(|webview, arg| {
+                    .invoke_handler(move |_webview, arg| {
                         if arg.starts_with("eval/") {
-                            println!("EVAL: {}", arg);
                             let mut iter = arg.splitn(3, '/');
                             iter.next().unwrap(); // eval
                             let id: usize = iter.next().unwrap().parse().unwrap();
                             let resolve = {
                                 let mut reg =
-                                    globals.stash_mut().get_mut::<JsRequestRegistry>().unwrap();
+                                    globals_copy.stash_mut().get_mut::<JsRequestRegistry>().unwrap();
                                 reg.resolve_map.remove(&id).unwrap()
                             };
-                            resolve(globals, Ok(Value::from(iter.next().unwrap())));
+                            resolve(globals_copy, Ok(Value::from(iter.next().unwrap())));
                         } else {
-                            let webview = WV(unsafe { std::mem::transmute(webview) });
-                            let r = globals.new_handle::<WV>(webview);
-                            let webview = Value::from(ordie(globals, r));
                             let arg = Value::from(arg);
-                            let r = handler.apply(globals, vec![webview, arg], None);
-                            ordie(globals, r);
+                            let r = handler.apply(globals_copy, vec![arg], None);
+                            ordie(globals_copy, r);
                         }
                         Ok(())
                     })
-                    .run();
-                mtry!(r);
-                Ok(Value::Nil)
+                    .build();
+                let wv = WV(mtry!(r));
+                Ok(globals.new_handle(wv)?.into())
             },
         );
         m.class::<WV, _>("WebView", |cls| {
+            cls.ifunc("run", (), "", |owner, _globals, _, _| {
+                // This is kinda yucky, but extracting the webview like this when doing
+                // the step, allows me to return the 'WebView' value in init
+                // Otherwise, any operation that requires borrow_mut() inside any callback
+                // will cause a panic
+                let webview = unsafe {
+                    &mut *(&mut owner.borrow_mut().0 as *mut web_view::WebView<'static, ()>)
+                };
+                loop {
+                    match webview.step() {
+                        Some(Ok(_)) => {}
+                        Some(Err(e)) => return Err(rterr!("WebView error: {:?}", e)),
+                        None => return Ok(Value::Nil),
+                    }
+                }
+            });
             cls.ifunc("eval", ["js"], "", |owner, _globals, args, _| {
                 let mut args = args.into_iter();
                 let js = args.next().unwrap().into_string()?;
@@ -94,11 +112,6 @@ pub(super) fn new() -> NativeModule {
                         let mut reg = globals.stash_mut().get_mut::<JsRequestRegistry>().unwrap();
                         reg.resolve_map.insert(id, resolve);
                     });
-                    println!("EVAL START: {}", format!(
-                        "external.invoke('eval/{}/' + {})",
-                        id,
-                        js.str(),
-                    ));
                     let r = owner.borrow_mut().0.eval(&format!(
                         "external.invoke('eval/{}/' + {})",
                         id,
@@ -144,7 +157,7 @@ pub(super) fn new() -> NativeModule {
 }
 
 /// wrapper around WebView, so that they can be used in mtots
-struct WV(&'static mut web_view::WebView<'static, ()>);
+struct WV(web_view::WebView<'static, ()>);
 
 #[derive(Default)]
 struct JsRequestRegistry {
