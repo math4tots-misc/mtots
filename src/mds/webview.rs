@@ -100,7 +100,6 @@ pub(super) fn new() -> NativeModule {
                     "returns the result (as a string)",
                 ),
                 |owner, globals, args, _| {
-                    println!("start ASYNC_EVAL");
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
                     let id = {

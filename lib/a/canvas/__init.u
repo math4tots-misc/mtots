@@ -150,8 +150,6 @@ class Canvas {
     new(wv, swap_handler) = new(
         webview=wv,
         swap_handler=swap_handler,
-        _font='10px sans-serif',
-        _strokeStyle='#000000',
     )
 
     def run(self) {
@@ -177,28 +175,24 @@ class Canvas {
 
     def __set_font(self, font) {
         font = str(font)
-        self._font = font
         self.webview.eval('ctx.font = "%s"' % [font])
     }
-    def __get_font(self) = self._font
+    async def __get_font(self) = await self.webview.async_eval('ctx.font')
 
     def __set_fillStyle(self, fillStyle) {
         fillStyle = str(fillStyle)
-        self._fillStyle = fillStyle
         self.webview.eval('ctx.fillStyle = "%s"' % [fillStyle])
     }
-    def __get_fillStyle(self) = self._fillStyle
+    async def __get_fillStyle(self) = {
+        await self.webview.async_eval('ctx.fillStyle')
+    }
 
     def __set_strokeStyle(self, strokeStyle) {
         strokeStyle = str(strokeStyle)
-        self._strokeStyle = strokeStyle
         self.webview.eval('ctx.strokeStyle = "%s"' % [strokeStyle])
     }
-    def __get_strokeStyle(self) = self._strokeStyle
+    async def __get_strokeStyle(self) = await self.webview.async_eval('ctx.strokeStyle')
 }
-    # async def __get_fillStyle(self) = {
-    #     await self.webview.async_eval('ctx.fillStyle')
-    # }
 
 class Delegate {
     def click(self, btn, x, y) = nil

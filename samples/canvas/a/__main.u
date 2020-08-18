@@ -14,8 +14,13 @@ class Delegate(canvas.Delegate) {
     }
     async def keydown(self, key, mods) {
         print('keydown %r %r' % [key, mods])
-        if key == 'Escape' {
-            cv.exit()
+        switch key {
+            'Escape' => cv.exit()
+            'f' => print('fillStyle = %r' % [await cv.fillStyle])
+            'y' => cv.fillStyle = 'yellow'
+            'g' => cv.fillStyle = 'green'
+            'b' => cv.fillStyle = 'black'
+            'r' => cv.fillStyle = 'red'
         }
     }
     def keyup(self, key, mods) {
