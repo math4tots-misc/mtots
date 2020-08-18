@@ -1,4 +1,5 @@
 import a.webview
+import .htmlevents
 
 html_content = r###"
 <html>
@@ -7,80 +8,18 @@ html_content = r###"
             html, body, canvas {
                 margin: 0px;
                 padding: 0px;
-                width: 100%;
-                height: 100%;
+                width: 100%%;
+                height: 100%%;
                 overflow: hidden;
             }
         </style>
     </head>
     <body>
         <canvas id="canvas"></canvas>
-        <script>
-            // event.repeat is unreliable
-            // (in particular, it doesn't work on windows)
-            // So we keep track keydown/keyup for each key to indicate
-            // whether it's repeating
-            const downKeys = {};
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            function newMouseButtonEventListener(type) {
-                return function(event) {
-                    external.invoke(
-                        type +
-                        '/' +
-                        event.button +
-                        '/' +
-                        event.clientX +
-                        '/' +
-                        event.clientY);
-                    event.preventDefault();
-                };
-            }
-            function mkke(name, event) {
-                var ret = name + '/' + event.key + '/';
-                var mods = [];
-                if (event.altKey) {
-                    mods.push('alt');
-                }
-                if (event.ctrlKey) {
-                    mods.push('ctrl');
-                }
-                if (event.metaKey) {
-                    mods.push('meta');
-                }
-                if (downKeys[event.key]) {
-                    // event.repeat doesn't work on Windows
-                    mods.push('repeat');
-                }
-                if (event.shiftKey) {
-                    mods.push('shift');
-                }
-                return ret + mods.join(',');
-            }
-            canvas.addEventListener('click', newMouseButtonEventListener('click'));
-            canvas.addEventListener('mousedown', newMouseButtonEventListener('mousedown'));
-            canvas.addEventListener('mouseup', newMouseButtonEventListener('mouseup'));
-            canvas.addEventListener('mousemove', function(event) {
-                external.invoke('mousemove/' + event.clientX + '/' + event.clientY);
-            });
-            window.addEventListener('keydown', function(event) {
-                external.invoke(mkke('keydown', event));
-                downKeys[event.key] = true;
-            });
-            window.addEventListener('keyup', function(event) {
-                downKeys[event.key] = false;
-                external.invoke(mkke('keyup', event));
-            });
-            window.addEventListener('keypress', function(event) {
-                external.invoke(mkke('keypress', event));
-            });
-            external.invoke('init')
-        </script>
+        <script>%s</script>
     </body>
 </html>
-"###
+"### % [htmlevents.CODE]
 
 
 def init(
