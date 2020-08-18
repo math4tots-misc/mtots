@@ -97,12 +97,26 @@ class Canvas {
         (self.swap_delegate)(delegate)
     }
 
+    # Lots of reference from
+    # https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+
+    # Drawing rectangles
     def clearRect(self, x, y, width, height) {
         self.webview.eval('ctx.clearRect(%r, %r, %r, %r)' % [x, y, width, height])
     }
-
     def fillRect(self, x, y, width, height) {
         self.webview.eval('ctx.fillRect(%r, %r, %r, %r)' % [x, y, width, height])
+    }
+    def strokeRect(self, x, y, width, height) {
+        self.webview.eval('ctx.strokeRect(%r, %r, %r, %r)' % [x, y, width, height])
+    }
+
+    # Drawing Text
+    def fillText(self, text, x, y) {
+        self.webview.eval('ctx.fillText(%r, %r, %r)' % [text, x, y])
+    }
+    def strokeText(self, text, x, y) {
+        self.webview.eval('ctx.strokeText(%r, %r, %r)' % [text, x, y])
     }
 
     def __set_font(self, font) {

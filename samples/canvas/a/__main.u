@@ -3,6 +3,11 @@ import a.canvas
 class Delegate(canvas.Delegate) {
     new() = {
         print('init with %r' % [cv])
+
+        cv.font = '50px sans-serif'
+        cv.fillText('Hello', 50, 50)
+        cv.strokeText('Hello', 250, 50)
+
         new()
     }
     def click(self, btn, x, y) = {
