@@ -1,20 +1,25 @@
 //! JSON bindings
 use crate::mtry;
-use crate::rterr;
 use crate::ordie;
+use crate::rterr;
 use crate::ArgSpec;
 use crate::Globals;
 use crate::NativeModule;
 use crate::Promise;
 use crate::Result;
 use crate::Value;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::rc::Rc;
 
 pub const NAME: &str = "a.webview";
 
 pub(super) fn new() -> NativeModule {
     NativeModule::new(NAME, |m| {
+        let reg = Rc::new(RefCell::new(JsRequestRegistry::default()));
+
+        let reg_for_init = reg.clone();
         m.func(
             "init",
             ArgSpec::builder()
@@ -25,7 +30,7 @@ pub(super) fn new() -> NativeModule {
                 .def("debug", false)
                 .def("handler", ()),
             "",
-            |globals, args, _| {
+            move |globals, args, _| {
                 let mut args = args.into_iter();
                 let title = args.next().unwrap().into_string()?;
                 let content = args.next().unwrap().into_string()?;
@@ -38,6 +43,7 @@ pub(super) fn new() -> NativeModule {
                 // But Globals needs to be available from callbacks and it's
                 // really tricky to not use unsafe with UI/event loops
                 let globals_copy = unsafe { &mut *(globals as *mut Globals) };
+                let reg_for_handler = reg_for_init.clone();
                 let r = web_view::builder()
                     .title(Box::leak(Box::new(title.str().to_owned())))
                     .content(web_view::Content::Html(content.str()))
@@ -50,11 +56,11 @@ pub(super) fn new() -> NativeModule {
                             let mut iter = arg.splitn(3, '/');
                             iter.next().unwrap(); // eval
                             let id: usize = iter.next().unwrap().parse().unwrap();
-                            let resolve = {
-                                let mut reg =
-                                    globals_copy.stash_mut().get_mut::<JsRequestRegistry>().unwrap();
-                                reg.resolve_map.remove(&id).unwrap()
-                            };
+                            let resolve = reg_for_handler
+                                .borrow_mut()
+                                .resolve_map
+                                .remove(&id)
+                                .unwrap();
                             resolve(globals_copy, Ok(Value::from(iter.next().unwrap())));
                         } else {
                             let arg = Value::from(arg);
@@ -68,7 +74,8 @@ pub(super) fn new() -> NativeModule {
                 Ok(globals.new_handle(wv)?.into())
             },
         );
-        m.class::<WV, _>("WebView", |cls| {
+
+        m.class::<WV, _>("WebView", move |cls| {
             cls.ifunc("run", (), "", |owner, _globals, _, _| {
                 // This is kinda yucky, but extracting the webview like this when doing
                 // the step, allows me to return the 'WebView' value in init
@@ -99,17 +106,16 @@ pub(super) fn new() -> NativeModule {
                     "Evaluates a js code snippet, and (asynchronously) ",
                     "returns the result (as a string)",
                 ),
-                |owner, globals, args, _| {
+                move |owner, globals, args, _| {
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
                     let id = {
-                        let mut reg = globals.stash_mut().get_mut::<JsRequestRegistry>()?;
+                        let mut reg = reg.borrow_mut();
                         reg.next_id += 1;
                         reg.next_id
                     };
-                    let promise = Promise::new(globals, |globals, resolve| {
-                        let mut reg = globals.stash_mut().get_mut::<JsRequestRegistry>().unwrap();
-                        reg.resolve_map.insert(id, resolve);
+                    let promise = Promise::new(globals, |_globals, resolve| {
+                        reg.borrow_mut().resolve_map.insert(id, resolve);
                     });
                     let r = owner.borrow_mut().0.eval(&format!(
                         "external.invoke('eval/{}/' + ({}))",
@@ -138,19 +144,10 @@ pub(super) fn new() -> NativeModule {
                     Ok(().into())
                 },
             );
-            cls.ifunc(
-                "exit",
-                (),
-                "",
-                |owner, _globals, _args, _| {
-                    owner.borrow_mut().0.exit();
-                    Ok(().into())
-                },
-            );
-        });
-        m.action(|globals, _map| {
-            globals.stash_mut().set(JsRequestRegistry::default())?;
-            Ok(())
+            cls.ifunc("exit", (), "", |owner, _globals, _args, _| {
+                owner.borrow_mut().0.exit();
+                Ok(().into())
+            });
         });
     })
 }
