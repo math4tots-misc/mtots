@@ -26,7 +26,7 @@ pub(super) fn new() -> NativeModule {
 
         m.val(
             "JS_PRELUDE",
-            "Little JS stub needed some of the binding features to work",
+            "Little JS stub needed for some of the binding features to work",
             r##"'use strict';
             const $$REFS = Object.create(null);
             var $$REFID = 0;
@@ -169,9 +169,9 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
-            let reg_for_async_eval = reg_for_webview.clone();
+            let reg_for_evalstr = reg_for_webview.clone();
             cls.ifunc(
-                "async_eval",
+                "evalstr",
                 ["js"],
                 concat!(
                     "Evaluates a js code snippet, and (asynchronously) ",
@@ -180,9 +180,9 @@ pub(super) fn new() -> NativeModule {
                 move |owner, globals, args, _| {
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
-                    let id = reg_for_async_eval.borrow_mut().new_id();
+                    let id = reg_for_evalstr.borrow_mut().new_id();
                     let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_async_eval
+                        reg_for_evalstr
                             .borrow_mut()
                             .resolve_map
                             .insert(id, resolve);

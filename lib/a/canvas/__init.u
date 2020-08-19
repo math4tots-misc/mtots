@@ -127,7 +127,7 @@ class Canvas(Canvas2DMixin) {
         self._eval('updateCanvasDim()')
     }
 
-    def _aeval(self, js) = self.webview.async_eval(js)
+    def _aeval(self, js) = self.webview.evalstr(js)
     def _eval(self, js) = self.webview.eval(js)
     async def _evaljson(self, js) = {
         s = await self._aeval('JSON.stringify(%s)' % [js])
