@@ -4,7 +4,7 @@ class Delegate(canvas.Delegate) {
     new() = {
         print('init with %r' % [cv])
 
-        cv.fullscreen = true
+        # cv.fullscreen = true
         cv.font = '50px sans-serif'
         cv.fillText('Hello', 50, 50)
         cv.strokeText('Hello', 250, 50)
@@ -15,6 +15,14 @@ class Delegate(canvas.Delegate) {
                 text,
                 await cv.measureText(text),
             ])
+            print('miterLimit = %r' % [
+                await cv.miterLimit,
+            ])
+            print('getLineDash() = %r' % [
+                await cv.getLineDash()
+            ])
+            cv.setLineDash([2, 2, 2])
+            cv.strokeText('Hello', 250, 250)
         })().ordie()
 
         new()

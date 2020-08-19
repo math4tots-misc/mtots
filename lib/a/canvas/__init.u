@@ -119,6 +119,10 @@ class Canvas {
 
     def _aeval(self, js) = self.webview.async_eval(js)
     def _eval(self, js) = self.webview.eval(js)
+    async def _evaljson(self, js) = {
+        s = await self._aeval('JSON.stringify(%s)' % [js])
+        json.loads(s)
+    }
 
     async def __get_width(self) = await self._aeval('canvas.width')
     async def __get_height(self) = await self._aeval('canvas.height')
@@ -146,16 +150,72 @@ class Canvas {
     }
     async def measureText(self, text) = {
         resp = await self._aeval('JSON.stringify(measureText(%r))' % [text])
-        print('resp = %r' % [resp])
         json.loads(resp)
     }
 
+    # Line styles
+    async def __get_lineWidth(self) = float(await self._aeval('ctx.lineWidth'))
+    def __set_lineWidth(self, width) {
+        self._eval('ctx.lineWidth = %r' % [width])
+    }
+    async def __get_lineCap(self) = await self._aeval('ctx.lineCap')
+    def __set_lineCap(self, cap) {
+        # Type of endings on the end of lines.
+        # Possible values: butt (default), round, square.
+        self._eval('ctx.lineCap = %r' % [cap])
+    }
+    async def __get_lineJoin(self) = await self._aeval('ctx.lineJoin')
+    def __set_lineJoin(self, cap) {
+        # Defines the type of corners where two lines meet.
+        # Possible values: round, bevel, miter (default).
+        self._eval('ctx.lineJoin = %r' % [cap])
+    }
+    async def __get_miterLimit(self) = float(await self._aeval('ctx.miterLimit'))
+    def __set_miterLimit(self, cap) {
+        # Miter limit ratio. Default 10.
+        self._eval('ctx.miterLimit = %r' % [cap])
+    }
+    async def getLineDash(self) = await self._evaljson('ctx.getLineDash()')
+    def setLineDash(self, segments) {
+        self._eval('ctx.setLineDash(%s)' % [json.dumps(segments)])
+    }
+    async def __get_lineDashOffset(self) = {
+        float(await self._aeval('ctx.lineDashOffset'))
+    }
+    def __set_lineDashOffset(self, cap) {
+        # Specifies where to start a dash array on a line.
+        self._eval('ctx.lineDashOffset = %r' % [cap])
+    }
+
+    # Text styles
+    async def __get_font(self) = await self._aeval('ctx.font')
     def __set_font(self, font) {
         font = str(font)
         self._eval('ctx.font = "%s"' % [font])
     }
-    async def __get_font(self) = await self._aeval('ctx.font')
+    async def __get_textAlign(self) = await self._aeval('ctx.textAlign')
+    def __set_textAlign(self, textAlign) {
+        # Text alignment setting.
+        # Possible values: start (default), end, left, right, center.
+        textAlign = str(textAlign)
+        self._eval('ctx.textAlign = "%s"' % [textAlign])
+    }
+    async def __get_textBaseline(self) = await self._aeval('ctx.textBaseline')
+    def __set_textBaseline(self, textBaseline) {
+        # Baseline alignment setting.
+        # Possible values: top, hanging, middle, alphabetic (default),
+        # ideographic, bottom.
+        textBaseline = str(textBaseline)
+        self._eval('ctx.textBaseline = "%s"' % [textBaseline])
+    }
+    async def __get_direction(self) = await self._aeval('ctx.direction')
+    def __set_direction(self, direction) {
+        # Directionality. Possible values: ltr, rtl, inherit (default).
+        direction = str(direction)
+        self._eval('ctx.direction = "%s"' % [direction])
+    }
 
+    # Fill and stroke styles
     def __set_fillStyle(self, fillStyle) {
         fillStyle = str(fillStyle)
         self._eval('ctx.fillStyle = "%s"' % [fillStyle])
