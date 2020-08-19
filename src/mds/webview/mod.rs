@@ -13,6 +13,10 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
 
+mod jsref;
+
+use jsref::*;
+
 pub const NAME: &str = "a.webview";
 
 pub(super) fn new() -> NativeModule {
@@ -151,6 +155,12 @@ pub(super) fn new() -> NativeModule {
                 owner.borrow_mut().0.exit();
                 Ok(().into())
             });
+        });
+
+        m.class::<JsRef, _>("JsRef", move |cls| {
+            cls.doc(concat!(
+                "Reference to a Javascript object",
+            ));
         });
     })
 }
