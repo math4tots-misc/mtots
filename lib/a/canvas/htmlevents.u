@@ -69,7 +69,7 @@ window.addEventListener('keyup', function(event) {
 window.addEventListener('keypress', function(event) {
     external.invoke(mkke('keypress', event));
 });
-external.invoke('init')
+external.invoke('init');
 function measureText(text) {
     const m = ctx.measureText(text);
     return {
