@@ -1,7 +1,7 @@
 # JS Code snippet for adding event listeners
 # and some useful global variables
 
-CODE = r###"
+CODE = r###"'use strict';
 // event.repeat is unreliable
 // (in particular, it doesn't work on windows)
 // So we keep track keydown/keyup for each key to indicate

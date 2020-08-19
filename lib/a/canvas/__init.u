@@ -19,9 +19,10 @@ html_content = r###"
     <body>
         <canvas id="canvas"></canvas>
         <script>%s</script>
+        <script>%s</script>
     </body>
 </html>
-"### % [htmlevents.CODE]
+"### % [webview.JS_PRELUDE, htmlevents.CODE]
 
 
 def init(

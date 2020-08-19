@@ -1,0 +1,74 @@
+import a.webview
+
+html_content = r###"
+<html><body>
+    <h1>Hello, World!</h1>
+    <button onclick='external.invoke("button-click")'>
+        Button
+    </button>
+    <button onclick='external.invoke("disable-fullscreen")'>
+        Disable Fullscreen
+    </button>
+    <canvas id="canvas">
+    </canvas>
+    <script>%s</script>
+    <script>
+        external.invoke('init');
+        external.invoke('userAgent = ' + navigator.userAgent)
+        window.addEventListener('keydown', function(event) {
+            external.invoke('keydown/' + event.key);
+        });
+    </script>
+</body></html>
+"### % [webview.JS_PRELUDE]
+
+print(webview)
+canvas = nil
+ctx = nil
+wv = webview.init(
+    title = 'title',
+    content = html_content,
+    handler = def(arg) { (async def {
+        nonlocal canvas, ctx
+        parts = arg.split('/').list()
+        switch parts[0] {
+            'init' => {
+                # wv.set_fullscreen(true)
+                canvas = await wv.evalref('document.getElementById("canvas")')
+                ctx = await canvas.mref('getContext', '2d')
+            }
+            'disable-fullscreen' => {
+                wv.set_fullscreen(false)
+            }
+            'keydown'=> {
+                [_, key] = parts
+                switch key {
+                    'Escape' => wv.exit()
+                    'd' => {
+                        canvas = nil
+                    }
+                    'r' => {
+                        print('fillstyle = %r' % [await ctx.f('fillStyle')])
+                        await ctx.m('fillRect', 0, 0, 100, 100)
+                    }
+                    'y' => {
+                        ctx.sf('fillStyle', 'yellow')
+                    }
+                    'j' => {
+                        ctx.sf('fillStyle', 'blue')
+                    }
+                    'b' => {
+                        ctx.sf('fillStyle', 'black')
+                    }
+                    'g' => {
+                        ctx.sf('fillStyle', 'green')
+                    }
+                    => print('keydown %r' % [key])
+                }
+            }
+            => print('arg %r' % [arg])
+        }
+    })().ordie() },
+)
+
+wv.run()

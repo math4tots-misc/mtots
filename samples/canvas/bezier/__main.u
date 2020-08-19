@@ -34,6 +34,9 @@ class Delegate(canvas.Delegate) {
         print('click %r, %r, %r' % [btn, x, y])
         # cv.fillRect(x, y, 10, 10)
 
+        cv.webview.eval('$$REFS.x = 1')
+        cv.webview.eval('external.invoke("debug/" + JSON.stringify($$REFS))')
+
         switch self.nclicks % 4 {
             0 => {
                 cv.beginPath()

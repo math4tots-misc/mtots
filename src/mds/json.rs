@@ -40,7 +40,7 @@ pub(super) fn new() -> NativeModule {
     })
 }
 
-fn to_serde(value: Value) -> Result<serde_json::Value> {
+pub fn to_serde(value: Value) -> Result<serde_json::Value> {
     match value {
         Value::Invalid => panic!("to_serde(Value::Invalid)"),
         Value::Nil => Ok(serde_json::Value::Null),
@@ -79,7 +79,7 @@ fn to_serde(value: Value) -> Result<serde_json::Value> {
     }
 }
 
-fn from_serde(value: serde_json::Value) -> Result<Value> {
+pub fn from_serde(value: serde_json::Value) -> Result<Value> {
     match value {
         serde_json::Value::Null => Ok(Value::Nil),
         serde_json::Value::Bool(x) => Ok(Value::from(x)),
