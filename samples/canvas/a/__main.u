@@ -66,7 +66,7 @@ print('before run')
 cv = canvas.init(
     title = 'canvas sample',
     resizable = true,
-    frameless = true,
+    # frameless = true,
     delegatecls = Delegate,
 )
 cv.run()
