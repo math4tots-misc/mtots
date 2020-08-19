@@ -169,4 +169,12 @@ class Canvas2DMixin {
     def clip(self) {
         self._eval('ctx.clip()')
     }
+
+    # The canvas state
+    def save(self) {
+        self._eval('ctx.save()')
+    }
+    def restore(self) {
+        self._eval('ctx.restore()')
+    }
 }

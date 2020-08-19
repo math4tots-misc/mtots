@@ -76,21 +76,6 @@ class Delegate(canvas.Delegate) {
 
         self.nclicks = (self.nclicks + 1) % 4
     }
-    def mousemove(self, x, y) {
-        print('down = %r' % [self.down])
-        if self.down {
-            cv.fillRect(x, y, 10, 10)
-        }
-    }
-    def mousedown(self, btn, x, y) {
-        print('AAA self.down = %r' % [self.down])
-        self.down = true
-        print('BBB self.down = %r' % [self.down])
-    }
-    def mouseup(self, btn, x, y) {
-        self.down = false
-        print('self.down = %r' % [self.down])
-    }
     async def keydown(self, key, mods) {
         print('keydown %r %r' % [key, mods])
         switch key {
