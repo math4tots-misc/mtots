@@ -57,6 +57,9 @@ pub(super) fn new() -> NativeModule {
             function $$ERR(reqId, e) {
                 external.invoke('eval/' + reqId + '/3/' + e);
             }
+            function $$TIMEOUT(reqId) {
+                external.invoke('eval/' + reqId + '/4/');
+            }
             "##,
         );
 
@@ -130,6 +133,10 @@ pub(super) fn new() -> NativeModule {
                                 3 => {
                                     // Error
                                     Err(rterr!("JSError: {}", encoded_data))
+                                }
+                                4 => {
+                                    // Timeout
+                                    Ok(Value::Nil)
                                 }
                                 _ => panic!("Invalid JS eval result type: {:?}", type_),
                             };
@@ -266,17 +273,30 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
+            let reg_for_timeout = reg_for_webview.clone();
+            cls.ifunc("timeout", ["nsec"], "", move |owner, globals, args, _| {
+                let mut args = args.into_iter();
+                let nsec = args.next().unwrap().f64()?;
+                let promise = reg_for_timeout.borrow_mut().timeout(
+                    globals,
+                    &mut owner.borrow_mut(),
+                    (nsec * 1000.0) as usize,
+                )?;
+                Ok(promise.into())
+            });
+
             let reg_for_bytes = reg_for_webview.clone();
             cls.ifunc(
                 "blob",
                 ArgSpec::builder().req("bytes").def("type", ""),
-                concat!(
-                    "Creates and (asynchronously) returns a JS reference to a Blob",
-                ),
+                concat!("Creates and (asynchronously) returns a JS reference to a Blob",),
                 move |owner, globals, args, _| {
                     let mut args = args.into_iter();
                     let bytes = args.next().unwrap().convert::<Vec<u8>>(globals)?;
-                    let bytes = bytes.into_iter().map(|b| format!("{}", b)).collect::<Vec<String>>();
+                    let bytes = bytes
+                        .into_iter()
+                        .map(|b| format!("{}", b))
+                        .collect::<Vec<String>>();
                     let bstr = bytes.join(",");
                     let type_ = args.next().unwrap().into_string()?;
                     let promise = reg_for_bytes.borrow_mut().evalr(
@@ -424,6 +444,12 @@ impl WV {
     fn evalx(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("$$RETX({},{})", req_id, js))
     }
+    fn timeout(&mut self, req_id: usize, millis: usize) -> Result<()> {
+        self.evaltry(
+            req_id,
+            &format!("setTimeout($$TIMEOUT,{},{})", millis, req_id),
+        )
+    }
 }
 
 #[derive(Default)]
@@ -487,6 +513,19 @@ impl JsRequestRegistry {
             self.resolve_map.insert(req_id, resolve);
         });
         wv.evalr(req_id, js)?;
+        Ok(promise)
+    }
+    pub fn timeout(
+        &mut self,
+        globals: &mut Globals,
+        wv: &mut WV,
+        millis: usize,
+    ) -> Result<Rc<RefCell<Promise>>> {
+        let req_id = self.new_id();
+        let promise = Promise::new(globals, |_globals, resolve| {
+            self.resolve_map.insert(req_id, resolve);
+        });
+        wv.timeout(req_id, millis)?;
         Ok(promise)
     }
 }

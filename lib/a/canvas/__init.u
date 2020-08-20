@@ -152,6 +152,8 @@ class Canvas(Canvas2DMixin, CanvasImageMixin) {
         (self.swap_delegate)(delegate)
     }
 
+    def timeout(self, nsecs) = self.webview.timeout(nsecs)
+
     def __set_fullscreen(self, flag) {
         # Ugh, this doesn't seem to work consistently...
         # :/ setting fullscreen twice seems to work better?
