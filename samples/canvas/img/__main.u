@@ -89,7 +89,17 @@ class Delegate(canvas.Delegate) {
         if self.png is not nil {
             iwidth = self.png.width.await
             iheight = self.png.height.await
-            cv.drawImage(self.png, x - iwidth / 2, y - iheight / 2)
+            # cv.drawImage(self.png, x - iwidth / 2, y - iheight / 2).await
+            cv.drawImage(
+                self.png,
+                0,
+                iheight / 2,
+                iwidth / 2,
+                iheight / 2,
+                x - iwidth / 4,
+                y - iheight / 4,
+                iwidth / 2,
+                iheight / 2).await
         }
 
         self.nclicks = (self.nclicks + 1) % 4
