@@ -328,9 +328,9 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
-            let reg_for_mref = reg_for_jsref.clone();
+            let reg_for_mr = reg_for_jsref.clone();
             cls.ifunc(
-                "mref",
+                "mr",
                 ArgSpec::builder().req("name").var("args"),
                 "Calls a method, and returns the result as a JsRef",
                 move |handle, globals, args, _| {
@@ -339,9 +339,9 @@ pub(super) fn new() -> NativeModule {
                     let args = args_for_js(globals, args)?;
                     let ref_ = handle.borrow();
                     let wv = ref_.wv()?;
-                    let req_id = reg_for_mref.borrow_mut().new_id();
+                    let req_id = reg_for_mr.borrow_mut().new_id();
                     let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_mref
+                        reg_for_mr
                             .borrow_mut()
                             .resolve_map
                             .insert(req_id, resolve);
