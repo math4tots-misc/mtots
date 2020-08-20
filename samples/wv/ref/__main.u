@@ -34,7 +34,7 @@ wv = webview.init(
         switch parts[0] {
             'init' => {
                 # wv.set_fullscreen(true)
-                canvas = await wv.evalref('document.getElementById("canvas")')
+                canvas = await wv.evalr('document.getElementById("canvas")')
                 ctx = await canvas.mref('getContext', '2d')
             }
             'disable-fullscreen' => {

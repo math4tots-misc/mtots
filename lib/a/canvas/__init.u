@@ -122,20 +122,18 @@ class Canvas(Canvas2DMixin) {
         # Ugh, this doesn't seem to work consistently...
         # :/ setting fullscreen twice seems to work better?
         self.webview.set_fullscreen(flag)
-        self._eval('updateCanvasDim()')
+        self.eval0('updateCanvasDim()')
         self.webview.set_fullscreen(flag)
-        self._eval('updateCanvasDim()')
+        self.eval0('updateCanvasDim()')
     }
 
-    def _aeval(self, js) = self.webview.evalstr(js)
-    def _eval(self, js) = self.webview.eval(js)
-    async def _evaljson(self, js) = {
-        s = await self._aeval('JSON.stringify(%s)' % [js])
-        json.loads(s)
-    }
+    def evals(self, js) = self.webview.evals(js)
+    def eval0(self, js) = self.webview.eval0(js)
+    def evalj(self, js) = self.webview.evalj(js)
+    def evalr(self, js) = self.webview.evalr(js)
 
-    async def __get_width(self) = await self._aeval('canvas.width')
-    async def __get_height(self) = await self._aeval('canvas.height')
+    async def __get_width(self) = await self.evals('canvas.width')
+    async def __get_height(self) = await self.evals('canvas.height')
 }
 
 class Delegate {

@@ -158,20 +158,20 @@ pub(super) fn new() -> NativeModule {
                 }
             });
             cls.ifunc(
-                "eval",
+                "eval0",
                 ["js"],
                 "Evaluates a js code snippet; returns nil",
                 |owner, _globals, args, _| {
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
-                    owner.borrow_mut().evalraw(js.str())?;
+                    owner.borrow_mut().eval0(js.str())?;
                     Ok(().into())
                 },
             );
 
             let reg_for_evalstr = reg_for_webview.clone();
             cls.ifunc(
-                "evalstr",
+                "evals",
                 ["js"],
                 concat!(
                     "Evaluates a js code snippet, and (asynchronously) ",
@@ -187,14 +187,14 @@ pub(super) fn new() -> NativeModule {
                             .resolve_map
                             .insert(id, resolve);
                     });
-                    owner.borrow_mut().evalstr(id, js.str())?;
+                    owner.borrow_mut().evals(id, js.str())?;
                     Ok(promise.into())
                 },
             );
 
             let reg_for_evaljson = reg_for_webview.clone();
             cls.ifunc(
-                "evaljson",
+                "evalj",
                 ["js"],
                 concat!(
                     "Evaluates a js code snippet, and (asynchronously) ",
@@ -210,14 +210,14 @@ pub(super) fn new() -> NativeModule {
                             .resolve_map
                             .insert(id, resolve);
                     });
-                    owner.borrow_mut().evaljson(id, js.str())?;
+                    owner.borrow_mut().evalj(id, js.str())?;
                     Ok(promise.into())
                 },
             );
 
             let reg_for_evalref = reg_for_webview.clone();
             cls.ifunc(
-                "evalref",
+                "evalr",
                 ["js"],
                 concat!(
                     "Evaluates a js code snippet, and (asynchronously) ",
@@ -233,7 +233,7 @@ pub(super) fn new() -> NativeModule {
                             .resolve_map
                             .insert(id, resolve);
                     });
-                    owner.borrow_mut().evalref(id, js.str())?;
+                    owner.borrow_mut().evalr(id, js.str())?;
                     Ok(promise.into())
                 },
             );
@@ -284,7 +284,7 @@ pub(super) fn new() -> NativeModule {
                             .insert(req_id, resolve);
                     });
                     wv.borrow_mut()
-                        .evalref(req_id, &format!("$$REFS.a{}.{}", ref_.id, name))?;
+                        .evalr(req_id, &format!("$$REFS.a{}.{}", ref_.id, name))?;
                     Ok(promise.into())
                 },
             );
@@ -307,7 +307,7 @@ pub(super) fn new() -> NativeModule {
                             .insert(req_id, resolve);
                     });
                     wv.borrow_mut()
-                        .evaljson(req_id, &format!("$$REFS.a{}.{}", ref_.id, name))?;
+                        .evalj(req_id, &format!("$$REFS.a{}.{}", ref_.id, name))?;
                     Ok(promise.into())
                 },
             );
@@ -323,7 +323,7 @@ pub(super) fn new() -> NativeModule {
                     let ref_ = handle.borrow();
                     let wv = ref_.wv()?;
                     wv.borrow_mut()
-                        .evalraw(&format!("$$REFS.a{}.{} = {}", ref_.id, name, value))?;
+                        .eval0(&format!("$$REFS.a{}.{} = {}", ref_.id, name, value))?;
                     Ok(().into())
                 },
             );
@@ -347,7 +347,7 @@ pub(super) fn new() -> NativeModule {
                             .insert(req_id, resolve);
                     });
                     wv.borrow_mut()
-                        .evalref(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, name, args))?;
+                        .evalr(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, name, args))?;
                     Ok(promise.into())
                 },
             );
@@ -371,7 +371,7 @@ pub(super) fn new() -> NativeModule {
                             .insert(req_id, resolve);
                     });
                     wv.borrow_mut()
-                        .evaljson(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, name, args))?;
+                        .evalj(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, name, args))?;
                     Ok(promise.into())
                 },
             );
@@ -383,20 +383,20 @@ pub(super) fn new() -> NativeModule {
 struct WV(web_view::WebView<'static, ()>);
 
 impl WV {
-    fn evalraw(&mut self, js: &str) -> Result<()> {
+    fn eval0(&mut self, js: &str) -> Result<()> {
         mtry!(self.0.eval(js));
         Ok(())
     }
     fn evaltry(&mut self, req_id: usize, js: &str) -> Result<()> {
-        self.evalraw(&format!("try{{{}}}catch(e){{$$ERR({},e)}}", js, req_id))
+        self.eval0(&format!("try{{{}}}catch(e){{$$ERR({},e)}}", js, req_id))
     }
-    fn evalstr(&mut self, req_id: usize, js: &str) -> Result<()> {
+    fn evals(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("external.invoke('eval/{}/0/'+({}))", req_id, js))
     }
-    fn evaljson(&mut self, req_id: usize, js: &str) -> Result<()> {
+    fn evalj(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("$$RETJSON({},{})", req_id, js))
     }
-    fn evalref(&mut self, req_id: usize, js: &str) -> Result<()> {
+    fn evalr(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("$$RETREF({},{})", req_id, js))
     }
 }
