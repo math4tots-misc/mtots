@@ -111,8 +111,9 @@ pub(super) fn new() -> NativeModule {
                                     // JSON
                                     let sval = serde_json::from_str(encoded_data)
                                         .expect("Bad JSON data from webview");
-                                    Ok(super::json::from_serde(sval)
-                                        .expect("Could not convert JSON data from webview to mtots"))
+                                    Ok(super::json::from_serde(sval).expect(
+                                        "Could not convert JSON data from webview to mtots",
+                                    ))
                                 }
                                 2 => {
                                     // Reference
@@ -184,7 +185,7 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
-            let reg_for_evalstr = reg_for_webview.clone();
+            let reg_for_evals = reg_for_webview.clone();
             cls.ifunc(
                 "evals",
                 ["js"],
@@ -195,19 +196,16 @@ pub(super) fn new() -> NativeModule {
                 move |owner, globals, args, _| {
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
-                    let id = reg_for_evalstr.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_evalstr
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(id, resolve);
-                    });
-                    owner.borrow_mut().evals(id, js.str())?;
+                    let promise = reg_for_evals.borrow_mut().evals(
+                        globals,
+                        &mut owner.borrow_mut(),
+                        js.str(),
+                    )?;
                     Ok(promise.into())
                 },
             );
 
-            let reg_for_evaljson = reg_for_webview.clone();
+            let reg_for_evalj = reg_for_webview.clone();
             cls.ifunc(
                 "evalj",
                 ["js"],
@@ -218,19 +216,16 @@ pub(super) fn new() -> NativeModule {
                 move |owner, globals, args, _| {
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
-                    let id = reg_for_evaljson.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_evaljson
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(id, resolve);
-                    });
-                    owner.borrow_mut().evalj(id, js.str())?;
+                    let promise = reg_for_evalj.borrow_mut().evalj(
+                        globals,
+                        &mut owner.borrow_mut(),
+                        js.str(),
+                    )?;
                     Ok(promise.into())
                 },
             );
 
-            let reg_for_evalref = reg_for_webview.clone();
+            let reg_for_evalr = reg_for_webview.clone();
             cls.ifunc(
                 "evalr",
                 ["js"],
@@ -241,19 +236,16 @@ pub(super) fn new() -> NativeModule {
                 move |owner, globals, args, _| {
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
-                    let id = reg_for_evalref.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_evalref
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(id, resolve);
-                    });
-                    owner.borrow_mut().evalr(id, js.str())?;
+                    let promise = reg_for_evalr.borrow_mut().evalr(
+                        globals,
+                        &mut owner.borrow_mut(),
+                        js.str(),
+                    )?;
                     Ok(promise.into())
                 },
             );
 
-            let reg_for_evalref = reg_for_webview.clone();
+            let reg_for_evalx = reg_for_webview.clone();
             cls.ifunc(
                 "evalx",
                 ["js"],
@@ -265,14 +257,11 @@ pub(super) fn new() -> NativeModule {
                 move |owner, globals, args, _| {
                     let mut args = args.into_iter();
                     let js = args.next().unwrap().into_string()?;
-                    let id = reg_for_evalref.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_evalref
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(id, resolve);
-                    });
-                    owner.borrow_mut().evalx(id, js.str())?;
+                    let promise = reg_for_evalx.borrow_mut().evalx(
+                        globals,
+                        &mut owner.borrow_mut(),
+                        js.str(),
+                    )?;
                     Ok(promise.into())
                 },
             );
@@ -318,15 +307,12 @@ pub(super) fn new() -> NativeModule {
                     let ref_ = args.next().unwrap().into_handle::<JsRef>()?;
                     let ref_ = ref_.borrow();
                     let wv = ref_.wv()?;
-                    let req_id = reg_for_json.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_json
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(req_id, resolve);
-                    });
-                    wv.borrow_mut()
-                        .evalj(req_id, &format!("$$REFS.a{}", ref_.id))?;
+                    let mut wv = wv.borrow_mut();
+                    let promise = reg_for_json.borrow_mut().evalj(
+                        globals,
+                        &mut wv,
+                        &format!("$$REFS.a{}", ref_.id),
+                    )?;
                     Ok(promise.into())
                 },
             );
@@ -335,14 +321,12 @@ pub(super) fn new() -> NativeModule {
             cls.getattr(move |globals, handle, attrname| {
                 let ref_ = handle.borrow();
                 let wv = ref_.wv()?;
-                let req_id = reg_for_getattr.borrow_mut().new_id();
-                let promise = Promise::new(globals, |_globals, resolve| {
-                    reg_for_getattr
-                        .borrow_mut()
-                        .resolve_map
-                        .insert(req_id, resolve);
-                });
-                wv.borrow_mut().evalx(req_id, &format!("$$REFS.a{}.{}", ref_.id, attrname))?;
+                let mut wv = wv.borrow_mut();
+                let promise = reg_for_getattr.borrow_mut().evalx(
+                    globals,
+                    &mut wv,
+                    &format!("$$REFS.a{}.{}", ref_.id, attrname),
+                )?;
                 Ok(Some(promise.into()))
             });
 
@@ -350,26 +334,27 @@ pub(super) fn new() -> NativeModule {
                 let ref_ = handle.borrow();
                 let wv = ref_.wv()?;
                 let value = arg_for_js(globals, value)?;
-                wv.borrow_mut().eval0(&format!("$$REFS.a{}.{}={}", ref_.id, attrname, value))?;
+                wv.borrow_mut()
+                    .eval0(&format!("$$REFS.a{}.{}={}", ref_.id, attrname, value))?;
                 Ok(())
             });
 
             let reg_for_method_call = reg_for_jsref.clone();
             cls.method_call(move |globals, handle, methodname, args, kwargs| {
                 if kwargs.is_some() {
-                    return Err(rterr!("kwargs are not allowed in method calls to Javascript objects"));
+                    return Err(rterr!(
+                        "kwargs are not allowed in method calls to Javascript objects"
+                    ));
                 }
                 let args = args_for_js(globals, args)?;
                 let ref_ = handle.borrow();
                 let wv = ref_.wv()?;
-                let req_id = reg_for_method_call.borrow_mut().new_id();
-                let promise = Promise::new(globals, |_globals, resolve| {
-                    reg_for_method_call
-                        .borrow_mut()
-                        .resolve_map
-                        .insert(req_id, resolve);
-                });
-                wv.borrow_mut().evalx(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, methodname, args))?;
+                let mut wv = wv.borrow_mut();
+                let promise = reg_for_method_call.borrow_mut().evalx(
+                    globals,
+                    &mut wv,
+                    &format!("$$REFS.a{}.{}{}", ref_.id, methodname, args),
+                )?;
                 Ok(promise.into())
             });
         });
@@ -388,7 +373,10 @@ impl WV {
         self.eval0(&format!("try{{{}}}catch(e){{$$ERR({},e)}}", js, req_id))
     }
     fn evals(&mut self, req_id: usize, js: &str) -> Result<()> {
-        self.evaltry(req_id, &format!("external.invoke('eval/{}/0/'+({}))", req_id, js))
+        self.evaltry(
+            req_id,
+            &format!("external.invoke('eval/{}/0/'+({}))", req_id, js),
+        )
     }
     fn evalj(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("$$RETJSON({},{})", req_id, js))
@@ -411,6 +399,58 @@ impl JsRequestRegistry {
         let id = self.next_id;
         self.next_id += 1;
         id
+    }
+    pub fn evals(
+        &mut self,
+        globals: &mut Globals,
+        wv: &mut WV,
+        js: &str,
+    ) -> Result<Rc<RefCell<Promise>>> {
+        let req_id = self.new_id();
+        let promise = Promise::new(globals, |_globals, resolve| {
+            self.resolve_map.insert(req_id, resolve);
+        });
+        wv.evals(req_id, js)?;
+        Ok(promise)
+    }
+    pub fn evalx(
+        &mut self,
+        globals: &mut Globals,
+        wv: &mut WV,
+        js: &str,
+    ) -> Result<Rc<RefCell<Promise>>> {
+        let req_id = self.new_id();
+        let promise = Promise::new(globals, |_globals, resolve| {
+            self.resolve_map.insert(req_id, resolve);
+        });
+        wv.evalx(req_id, js)?;
+        Ok(promise)
+    }
+    pub fn evalj(
+        &mut self,
+        globals: &mut Globals,
+        wv: &mut WV,
+        js: &str,
+    ) -> Result<Rc<RefCell<Promise>>> {
+        let req_id = self.new_id();
+        let promise = Promise::new(globals, |_globals, resolve| {
+            self.resolve_map.insert(req_id, resolve);
+        });
+        wv.evalj(req_id, js)?;
+        Ok(promise)
+    }
+    pub fn evalr(
+        &mut self,
+        globals: &mut Globals,
+        wv: &mut WV,
+        js: &str,
+    ) -> Result<Rc<RefCell<Promise>>> {
+        let req_id = self.new_id();
+        let promise = Promise::new(globals, |_globals, resolve| {
+            self.resolve_map.insert(req_id, resolve);
+        });
+        wv.evalr(req_id, js)?;
+        Ok(promise)
     }
 }
 
