@@ -49,7 +49,6 @@ def init(
 
             switch cmd {
                 'init' => {
-                    d = delegatecls()
                     delegate = {
                         d = delegatecls()
                         if type(d) is Promise {

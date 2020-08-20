@@ -282,7 +282,7 @@ pub(super) fn new() -> NativeModule {
                     let promise = reg_for_bytes.borrow_mut().evalr(
                         globals,
                         &mut owner.borrow_mut(),
-                        &format!("Blob([{}],'{}')", bstr, type_),
+                        &format!("new Blob([{}],'{}')", bstr, type_),
                     )?;
                     Ok(promise.into())
                 },
