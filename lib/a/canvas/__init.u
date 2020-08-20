@@ -2,6 +2,7 @@ import a.webview
 import a.json
 import .htmlevents
 from .c2d import Canvas2DMixin
+from .img import CanvasImageMixin
 
 html_content = r###"
 <html>
@@ -41,13 +42,36 @@ def init(
         resizable = resizable,
         debug = debug,
         frameless = frameless,
-        handler = def(arg) {
+        handler = def(arg) { (async def {
             nonlocal delegate
             parts = arg.split('/').list()
-            switch parts[0] {
+            cmd = parts[0]
+
+            switch cmd {
                 'init' => {
-                    delegate = delegatecls()
+                    d = delegatecls()
+                    delegate = {
+                        d = delegatecls()
+                        if type(d) is Promise {
+                            d.await
+                        } else {
+                            d
+                        }
+                    }
+                    return
                 }
+                'debug' => {
+                    print(arg)
+                    return
+                }
+            }
+
+            if delegate is nil {
+                # Delegate isn't ready to handle events yet
+                return
+            }
+
+            switch cmd {
                 'click' => {
                     [btn, x, y] = parts[1:]
                     ordie(delegate.click(int(btn), float(x), float(y)))
@@ -87,14 +111,14 @@ def init(
                     print('Unrecognized cmd %r' % [parts])
                 }
             }
-        },
+        })().ordie() },
     ), def(new_delegate) {
         nonlocal delegate
         delegate = new_delegate
     })
 }
 
-class Canvas(Canvas2DMixin) {
+class Canvas(Canvas2DMixin, CanvasImageMixin) {
     # Wraps the HTML5 canvas API, largely following the methods on
     # CanvasRenderingContext2D as documented here:
     # https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
@@ -103,7 +127,14 @@ class Canvas(Canvas2DMixin) {
     # make a round trip to and from the webview.
     #
 
-    new(wv, swap_delegate) = new(webview=wv, swap_delegate=swap_delegate)
+    new(wv, swap_delegate) = new(webview=wv, swap_delegate=swap_delegate, ctx=nil)
+
+    async def ctx(self) = {
+        if self.ctx == nil {
+            self.ctx = self.webview.evalr('ctx').await
+        }
+        self.ctx
+    }
 
     def run(self) {
         self.webview.run()

@@ -87,4 +87,16 @@ function measureText(text) {
         ideographicBaseline: m.ideographicBaseline,
     };
 }
+function imageFromBlob(blob) {
+    try {
+        return createImageBitmap(blob);
+    } catch(_) {
+        // const img = document.createElement('img');
+        const img = new Image(100, 200);
+        img.src = URL.createObjectURL(blob);
+        external.invoke('debug/' + URL.createObjectURL(blob));
+        external.invoke('debug/img.width=' + img.width + ',img.height=' + img.height);
+        return img;
+    }
+}
 "###

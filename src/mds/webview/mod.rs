@@ -266,6 +266,28 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
+            let reg_for_bytes = reg_for_webview.clone();
+            cls.ifunc(
+                "blob",
+                ArgSpec::builder().req("bytes").def("type", ""),
+                concat!(
+                    "Creates and (asynchronously) returns a JS reference to a Blob",
+                ),
+                move |owner, globals, args, _| {
+                    let mut args = args.into_iter();
+                    let bytes = args.next().unwrap().convert::<Vec<u8>>(globals)?;
+                    let bytes = bytes.into_iter().map(|b| format!("{}", b)).collect::<Vec<String>>();
+                    let bstr = bytes.join(",");
+                    let type_ = args.next().unwrap().into_string()?;
+                    let promise = reg_for_bytes.borrow_mut().evalr(
+                        globals,
+                        &mut owner.borrow_mut(),
+                        &format!("Blob([{}],'{}')", bstr, type_),
+                    )?;
+                    Ok(promise.into())
+                },
+            );
+
             cls.ifunc("set_title", ["title"], "", |owner, _globals, args, _| {
                 let mut args = args.into_iter();
                 let title = args.next().unwrap().into_string()?;
@@ -314,6 +336,21 @@ pub(super) fn new() -> NativeModule {
                         &format!("$$REFS.a{}", ref_.id),
                     )?;
                     Ok(promise.into())
+                },
+            );
+
+            cls.sfunc(
+                "name",
+                ["ref"],
+                concat!(
+                    "Given a JsRef, returns a string that when evaluated ",
+                    "on the JS side will retrieve the reference",
+                ),
+                move |_globals, args, _| {
+                    let mut args = args.into_iter();
+                    let ref_ = args.next().unwrap().into_handle::<JsRef>()?;
+                    let ref_ = ref_.borrow();
+                    Ok(format!("$$REFS.a{}", ref_.id).into())
                 },
             );
 

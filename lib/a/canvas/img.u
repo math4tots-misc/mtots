@@ -1,0 +1,12 @@
+from a.webview import JsRef
+
+class CanvasImageMixin {
+    # Some utils for dealing with images
+
+    async def png(self, bytes) = {
+        # Given the bytes of a png image, loads the image into a
+        # ImageBitmap (if avaialable) or img object and returns a JsRef to it
+        blob = self.webview.blob(bytes, 'image/png').await
+        self.evalr('imageFromBlob(%s)' % [JsRef.name(blob)]).await
+    }
+}

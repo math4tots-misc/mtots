@@ -177,4 +177,12 @@ class Canvas2DMixin {
     def restore(self) {
         self.eval0('ctx.restore()')
     }
+
+    # Drawing images
+    async def drawImage(self, image, dx, dy) {
+        # void ctx.drawImage(image, dx, dy);
+        # void ctx.drawImage(image, dx, dy, dWidth, dHeight);
+        # void ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+        self.ctx().await.drawImage(image, dx, dy).await
+    }
 }
