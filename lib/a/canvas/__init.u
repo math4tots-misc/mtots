@@ -24,7 +24,7 @@ html_content = r###"
                 src="https://www.fnordware.com/superpng/pnggrad8rgb.png">
         </div>
         <script>%s</script>
-        <script>%s</script>
+        %s
     </body>
 </html>
 "### % [webview.JS_PRELUDE, htmlevents.CODE]
@@ -167,6 +167,7 @@ class Canvas(Canvas2DMixin, CanvasImageMixin) {
     def eval0(self, js) = self.webview.eval0(js)
     def evalj(self, js) = self.webview.evalj(js)
     def evalr(self, js) = self.webview.evalr(js)
+    def evalp(self, js) = self.webview.evalp(js)
 
     async def __get_width(self) = self.evals('canvas.width').await
     async def __get_height(self) = self.evals('canvas.height').await

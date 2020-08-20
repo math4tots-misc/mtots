@@ -54,11 +54,26 @@ pub(super) fn new() -> NativeModule {
                         return $$RETREF(reqId, x);
                 }
             }
+            function $$RETP(reqId, p) {
+                p.then(function(v) {
+                    $$RETX(reqId, v);
+                }).catch(function(e) {
+                    $$ERR(reqId, e);
+                });
+            }
             function $$ERR(reqId, e) {
                 external.invoke('eval/' + reqId + '/3/' + e);
             }
             function $$TIMEOUT(reqId) {
                 external.invoke('eval/' + reqId + '/4/');
+            }
+            function $$BLOB(bytes, mime) {
+                let arr = new Uint8Array(bytes.length);
+                for (var i = 0; i < bytes.length; i++) {
+                    arr[i] = bytes[i];
+                }
+                const blob = new Blob([arr], {type: mime});
+                return blob;
             }
             "##,
         );
@@ -273,6 +288,27 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
+            let reg_for_evalp = reg_for_webview.clone();
+            cls.ifunc(
+                "evalp",
+                ["js"],
+                concat!(
+                    "Evaluates a js code snippet that evaluates into a promise, ",
+                    "and (asynchronously) returns the resolved result as a value ",
+                    "as though it were returned with evalp",
+                ),
+                move |owner, globals, args, _| {
+                    let mut args = args.into_iter();
+                    let js = args.next().unwrap().into_string()?;
+                    let promise = reg_for_evalp.borrow_mut().evalp(
+                        globals,
+                        &mut owner.borrow_mut(),
+                        js.str(),
+                    )?;
+                    Ok(promise.into())
+                },
+            );
+
             let reg_for_timeout = reg_for_webview.clone();
             cls.ifunc("timeout", ["nsec"], "", move |owner, globals, args, _| {
                 let mut args = args.into_iter();
@@ -302,7 +338,7 @@ pub(super) fn new() -> NativeModule {
                     let promise = reg_for_bytes.borrow_mut().evalr(
                         globals,
                         &mut owner.borrow_mut(),
-                        &format!("new Blob([{}],'{}')", bstr, type_),
+                        &format!("$$BLOB([{}],'{}')", bstr, type_),
                     )?;
                     Ok(promise.into())
                 },
@@ -444,6 +480,9 @@ impl WV {
     fn evalx(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("$$RETX({},{})", req_id, js))
     }
+    fn evalp(&mut self, req_id: usize, js: &str) -> Result<()> {
+        self.evaltry(req_id, &format!("$$RETP({},{})", req_id, js))
+    }
     fn timeout(&mut self, req_id: usize, millis: usize) -> Result<()> {
         self.evaltry(
             req_id,
@@ -487,6 +526,19 @@ impl JsRequestRegistry {
             self.resolve_map.insert(req_id, resolve);
         });
         wv.evalx(req_id, js)?;
+        Ok(promise)
+    }
+    pub fn evalp(
+        &mut self,
+        globals: &mut Globals,
+        wv: &mut WV,
+        js: &str,
+    ) -> Result<Rc<RefCell<Promise>>> {
+        let req_id = self.new_id();
+        let promise = Promise::new(globals, |_globals, resolve| {
+            self.resolve_map.insert(req_id, resolve);
+        });
+        wv.evalp(req_id, js)?;
         Ok(promise)
     }
     pub fn evalj(

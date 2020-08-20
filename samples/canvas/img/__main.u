@@ -1,5 +1,6 @@
 import a.canvas
 import a.fs
+import a.time
 
 png_bytes = fs.read(fs.join(fs.dirname(__file), 'love.png'), encoding=nil)
 
@@ -27,8 +28,10 @@ class Delegate(canvas.Delegate) {
         cv.strokeText('Hello', 250, 250)
 
         (async def {
+            start = time.now()
             png = cv.png(png_bytes).await
-            cv.timeout(0.02).await
+            end = time.now()
+            print('png load time: %r' % [end - start])
             print('png.width = %r' % [png.width.await])
             cv.drawImage(png, 50, 50).await
         })().ordie()

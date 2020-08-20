@@ -1,7 +1,9 @@
 # JS Code snippet for adding event listeners
 # and some useful global variables
 
-CODE = r###"'use strict';
+CODE = r###"
+<div id='misc' style="display:none;"></div>
+<script>'use strict';
 // event.repeat is unreliable
 // (in particular, it doesn't work on windows)
 // So we keep track keydown/keyup for each key to indicate
@@ -87,15 +89,17 @@ function measureText(text) {
         ideographicBaseline: m.ideographicBaseline,
     };
 }
-function imageFromBlob(blob) {
-    try {
-        return createImageBitmap(blob);
-    } catch(_) {
+function asyncImageFromBlob(blob) {
+    return new Promise(function(resolve, reject) {
         const img = document.createElement('img');
+        img.onload = function() {
+            resolve(img);
+        };
         img.src = URL.createObjectURL(blob);
         external.invoke('debug/' + URL.createObjectURL(blob));
         external.invoke('debug/img.width=' + img.width + ',img.height=' + img.height);
-        return img;
-    }
+        document.getElementById('misc').appendChild(img);
+    });
 }
+</script>
 "###
