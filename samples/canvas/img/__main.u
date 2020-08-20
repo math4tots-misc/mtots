@@ -29,7 +29,7 @@ class Delegate(canvas.Delegate) {
 
         (async def {
             start = time.now()
-            png = cv.png(png_bytes).await
+            png = cv.image(png_bytes).await
             delegate.png = png
             end = time.now()
             print('png load time: %r' % [end - start])

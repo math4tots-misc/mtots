@@ -68,10 +68,7 @@ pub(super) fn new() -> NativeModule {
                 external.invoke('eval/' + reqId + '/4/');
             }
             function $$BLOB(bytes, mime) {
-                let arr = new Uint8Array(bytes.length);
-                for (var i = 0; i < bytes.length; i++) {
-                    arr[i] = bytes[i];
-                }
+                const arr = Uint8Array.from(bytes);
                 const blob = new Blob([arr], {type: mime});
                 return blob;
             }
