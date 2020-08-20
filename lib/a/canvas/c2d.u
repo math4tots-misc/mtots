@@ -179,10 +179,28 @@ class Canvas2DMixin {
     }
 
     # Drawing images
-    async def drawImage(self, image, dx, dy) {
+    async def drawImage(
+            self,
+            image,
+            sx,
+            sy,
+            sWidth=nil,
+            sHeight=nil,
+            dx=nil,
+            dy=nil,
+            dWidth=nil,
+            dHeight=nil,
+    ) {
         # void ctx.drawImage(image, dx, dy);
         # void ctx.drawImage(image, dx, dy, dWidth, dHeight);
         # void ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-        self.ctx().await.drawImage(image, dx, dy).await
+        ctx = self.ctx().await
+        if sWidth is nil {
+            ctx.drawImage(image, sx, sy).await
+        } elif dx is nil {
+            ctx.drawImage(image, sx, sy, sWidth, sHeight).await
+        } else {
+            ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight).await
+        }
     }
 }
