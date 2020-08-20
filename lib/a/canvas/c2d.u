@@ -170,14 +170,6 @@ class Canvas2DMixin {
         self.eval0('ctx.clip()')
     }
 
-    # The canvas state
-    def save(self) {
-        self.eval0('ctx.save()')
-    }
-    def restore(self) {
-        self.eval0('ctx.restore()')
-    }
-
     # Drawing images
     async def drawImage(
             self,
@@ -202,5 +194,13 @@ class Canvas2DMixin {
         } else {
             ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight).await
         }
+    }
+
+    # The canvas state
+    def save(self) {
+        self.eval0('ctx.save()')
+    }
+    def restore(self) {
+        self.eval0('ctx.restore()')
     }
 }
