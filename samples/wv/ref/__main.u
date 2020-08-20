@@ -34,8 +34,8 @@ wv = webview.init(
         switch parts[0] {
             'init' => {
                 # wv.set_fullscreen(true)
-                canvas = await wv.evalr('document.getElementById("canvas")')
-                ctx = await canvas.mr('getContext', '2d')
+                canvas = wv.evalr('document.getElementById("canvas")').await
+                ctx = canvas.getContext('2d').await
             }
             'disable-fullscreen' => {
                 wv.set_fullscreen(false)
@@ -48,20 +48,20 @@ wv = webview.init(
                         canvas = nil
                     }
                     'r' => {
-                        print('fillstyle = %r' % [await ctx.f('fillStyle')])
-                        await ctx.m('fillRect', 0, 0, 100, 100)
+                        print('fillstyle = %r' % [ctx.fillStyle.await])
+                        ctx.fillRect(0, 0, 100, 100).await
                     }
                     'y' => {
-                        ctx.sf('fillStyle', 'yellow')
+                        ctx.fillStyle = 'yellow'
                     }
                     'j' => {
-                        ctx.sf('fillStyle', 'blue')
+                        ctx.fillStyle = 'blue'
                     }
                     'b' => {
-                        ctx.sf('fillStyle', 'black')
+                        ctx.fillStyle = 'black'
                     }
                     'g' => {
-                        ctx.sf('fillStyle', 'green')
+                        ctx.fillStyle = 'green'
                     }
                     => print('keydown %r' % [key])
                 }

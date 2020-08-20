@@ -132,8 +132,8 @@ class Canvas(Canvas2DMixin) {
     def evalj(self, js) = self.webview.evalj(js)
     def evalr(self, js) = self.webview.evalr(js)
 
-    async def __get_width(self) = await self.evals('canvas.width')
-    async def __get_height(self) = await self.evals('canvas.height')
+    async def __get_width(self) = self.evals('canvas.width').await
+    async def __get_height(self) = self.evals('canvas.height').await
 }
 
 class Delegate {

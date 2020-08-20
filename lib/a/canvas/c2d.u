@@ -27,37 +27,37 @@ class Canvas2DMixin {
         self.eval0('ctx.strokeText(%r, %r, %r)' % [text, x, y])
     }
     async def measureText(self, text) = {
-        await self.evalj('measureText(%r)' % [text])
+        self.evalj('measureText(%r)' % [text]).await
     }
 
     # Line styles
-    async def __get_lineWidth(self) = float(await self.evals('ctx.lineWidth'))
+    async def __get_lineWidth(self) = float(self.evals('ctx.lineWidth').await)
     def __set_lineWidth(self, width) {
         self.eval0('ctx.lineWidth = %r' % [width])
     }
-    async def __get_lineCap(self) = await self.evals('ctx.lineCap')
+    async def __get_lineCap(self) = self.evals('ctx.lineCap').await
     def __set_lineCap(self, cap) {
         # Type of endings on the end of lines.
         # Possible values: butt (default), round, square.
         self.eval0('ctx.lineCap = %r' % [cap])
     }
-    async def __get_lineJoin(self) = await self.evals('ctx.lineJoin')
+    async def __get_lineJoin(self) = self.evals('ctx.lineJoin').await
     def __set_lineJoin(self, cap) {
         # Defines the type of corners where two lines meet.
         # Possible values: round, bevel, miter (default).
         self.eval0('ctx.lineJoin = %r' % [cap])
     }
-    async def __get_miterLimit(self) = float(await self.evals('ctx.miterLimit'))
+    async def __get_miterLimit(self) = float(self.evals('ctx.miterLimit').await)
     def __set_miterLimit(self, cap) {
         # Miter limit ratio. Default 10.
         self.eval0('ctx.miterLimit = %r' % [cap])
     }
-    async def getLineDash(self) = await self.evalj('ctx.getLineDash()')
+    async def getLineDash(self) = self.evalj('ctx.getLineDash()').await
     def setLineDash(self, segments) {
         self.eval0('ctx.setLineDash(%s)' % [json.dumps(segments)])
     }
     async def __get_lineDashOffset(self) = {
-        float(await self.evals('ctx.lineDashOffset'))
+        float(self.evals('ctx.lineDashOffset').await)
     }
     def __set_lineDashOffset(self, cap) {
         # Specifies where to start a dash array on a line.
@@ -65,19 +65,19 @@ class Canvas2DMixin {
     }
 
     # Text styles
-    async def __get_font(self) = await self.evals('ctx.font')
+    async def __get_font(self) = self.evals('ctx.font').await
     def __set_font(self, font) {
         font = str(font)
         self.eval0('ctx.font = "%s"' % [font])
     }
-    async def __get_textAlign(self) = await self.evals('ctx.textAlign')
+    async def __get_textAlign(self) = self.evals('ctx.textAlign').await
     def __set_textAlign(self, textAlign) {
         # Text alignment setting.
         # Possible values: start (default), end, left, right, center.
         textAlign = str(textAlign)
         self.eval0('ctx.textAlign = "%s"' % [textAlign])
     }
-    async def __get_textBaseline(self) = await self.evals('ctx.textBaseline')
+    async def __get_textBaseline(self) = self.evals('ctx.textBaseline').await
     def __set_textBaseline(self, textBaseline) {
         # Baseline alignment setting.
         # Possible values: top, hanging, middle, alphabetic (default),
@@ -85,7 +85,7 @@ class Canvas2DMixin {
         textBaseline = str(textBaseline)
         self.eval0('ctx.textBaseline = "%s"' % [textBaseline])
     }
-    async def __get_direction(self) = await self.evals('ctx.direction')
+    async def __get_direction(self) = self.evals('ctx.direction').await
     def __set_direction(self, direction) {
         # Directionality. Possible values: ltr, rtl, inherit (default).
         direction = str(direction)
@@ -97,12 +97,12 @@ class Canvas2DMixin {
         fillStyle = str(fillStyle)
         self.eval0('ctx.fillStyle = "%s"' % [fillStyle])
     }
-    async def __get_fillStyle(self) = await self.evals('ctx.fillStyle')
+    async def __get_fillStyle(self) = self.evals('ctx.fillStyle').await
     def __set_strokeStyle(self, strokeStyle) {
         strokeStyle = str(strokeStyle)
         self.eval0('ctx.strokeStyle = "%s"' % [strokeStyle])
     }
-    async def __get_strokeStyle(self) = await self.evals('ctx.strokeStyle')
+    async def __get_strokeStyle(self) = self.evals('ctx.strokeStyle').await
 
     # Paths
     def beginPath(self) = self.eval0('ctx.beginPath()')

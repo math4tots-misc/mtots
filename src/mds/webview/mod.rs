@@ -39,6 +39,21 @@ pub(super) fn new() -> NativeModule {
                 $$REFS['a' + refId] = x;
                 external.invoke('eval/' + reqId + '/2/' + refId);
             }
+            function $$RETX(reqId, x) {
+                switch (typeof x) {
+                    case 'undefined':
+                        return $$RETJSON(reqId, null);
+                    case 'boolean':
+                    case 'number':
+                    case 'bigint':
+                    case 'string':
+                        return $$RETJSON(reqId, x);
+                    case 'object':
+                        return x === null ? $$RETJSON(reqId, x) : $$RETREF(reqId, x);
+                    default:
+                        return $$RETREF(reqId, x);
+                }
+            }
             function $$ERR(reqId, e) {
                 external.invoke('eval/' + reqId + '/3/' + e);
             }
@@ -238,6 +253,30 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
+            let reg_for_evalref = reg_for_webview.clone();
+            cls.ifunc(
+                "evalx",
+                ["js"],
+                concat!(
+                    "Evaluates a js code snippet, and (asynchronously) ",
+                    "returns the result as a value (if it is a primitive type) or ",
+                    "as a JsRef otherwise",
+                ),
+                move |owner, globals, args, _| {
+                    let mut args = args.into_iter();
+                    let js = args.next().unwrap().into_string()?;
+                    let id = reg_for_evalref.borrow_mut().new_id();
+                    let promise = Promise::new(globals, |_globals, resolve| {
+                        reg_for_evalref
+                            .borrow_mut()
+                            .resolve_map
+                            .insert(id, resolve);
+                    });
+                    owner.borrow_mut().evalx(id, js.str())?;
+                    Ok(promise.into())
+                },
+            );
+
             cls.ifunc("set_title", ["title"], "", |owner, _globals, args, _| {
                 let mut args = args.into_iter();
                 let title = args.next().unwrap().into_string()?;
@@ -266,115 +305,73 @@ pub(super) fn new() -> NativeModule {
         m.class::<JsRef, _>("JsRef", move |cls| {
             cls.doc("Reference to a Javascript object");
 
-            let reg_for_fref = reg_for_jsref.clone();
-            cls.ifunc(
-                "fref",
-                ["name"],
-                "Gets the field of an object, and returns the result as a JsRef",
-                move |handle, globals, args, _| {
+            let reg_for_json = reg_for_jsref.clone();
+            cls.sfunc(
+                "json",
+                ["ref"],
+                concat!(
+                    "Converts and (asynchronously) returns the JS reference ",
+                    "as a JSON blob",
+                ),
+                move |globals, args, _| {
                     let mut args = args.into_iter();
-                    let name = args.next().unwrap().into_string()?;
-                    let ref_ = handle.borrow();
+                    let ref_ = args.next().unwrap().into_handle::<JsRef>()?;
+                    let ref_ = ref_.borrow();
                     let wv = ref_.wv()?;
-                    let req_id = reg_for_fref.borrow_mut().new_id();
+                    let req_id = reg_for_json.borrow_mut().new_id();
                     let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_fref
+                        reg_for_json
                             .borrow_mut()
                             .resolve_map
                             .insert(req_id, resolve);
                     });
                     wv.borrow_mut()
-                        .evalr(req_id, &format!("$$REFS.a{}.{}", ref_.id, name))?;
+                        .evalj(req_id, &format!("$$REFS.a{}", ref_.id))?;
                     Ok(promise.into())
                 },
             );
 
-            let reg_for_f = reg_for_jsref.clone();
-            cls.ifunc(
-                "f",
-                ["name"],
-                "Gets the field of the object, and returns the result as deserialized JSON",
-                move |handle, globals, args, _| {
-                    let mut args = args.into_iter();
-                    let name = args.next().unwrap().into_string()?;
-                    let ref_ = handle.borrow();
-                    let wv = ref_.wv()?;
-                    let req_id = reg_for_f.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_f
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(req_id, resolve);
-                    });
-                    wv.borrow_mut()
-                        .evalj(req_id, &format!("$$REFS.a{}.{}", ref_.id, name))?;
-                    Ok(promise.into())
-                },
-            );
+            let reg_for_getattr = reg_for_jsref.clone();
+            cls.getattr(move |globals, handle, attrname| {
+                let ref_ = handle.borrow();
+                let wv = ref_.wv()?;
+                let req_id = reg_for_getattr.borrow_mut().new_id();
+                let promise = Promise::new(globals, |_globals, resolve| {
+                    reg_for_getattr
+                        .borrow_mut()
+                        .resolve_map
+                        .insert(req_id, resolve);
+                });
+                wv.borrow_mut().evalx(req_id, &format!("$$REFS.a{}.{}", ref_.id, attrname))?;
+                Ok(Some(promise.into()))
+            });
 
-            cls.ifunc(
-                "sf",
-                ["name", "value"],
-                "Sets the field of the object",
-                move |handle, globals, args, _| {
-                    let mut args = args.into_iter();
-                    let name = args.next().unwrap().into_string()?;
-                    let value = arg_for_js(globals, args.next().unwrap())?;
-                    let ref_ = handle.borrow();
-                    let wv = ref_.wv()?;
-                    wv.borrow_mut()
-                        .eval0(&format!("$$REFS.a{}.{} = {}", ref_.id, name, value))?;
-                    Ok(().into())
-                },
-            );
+            cls.setattr(move |globals, handle, attrname, value| {
+                let ref_ = handle.borrow();
+                let wv = ref_.wv()?;
+                let value = arg_for_js(globals, value)?;
+                wv.borrow_mut().eval0(&format!("$$REFS.a{}.{}={}", ref_.id, attrname, value))?;
+                Ok(())
+            });
 
-            let reg_for_mr = reg_for_jsref.clone();
-            cls.ifunc(
-                "mr",
-                ArgSpec::builder().req("name").var("args"),
-                "Calls a method, and returns the result as a JsRef",
-                move |handle, globals, args, _| {
-                    let mut args = args.into_iter();
-                    let name = args.next().unwrap().into_string()?;
-                    let args = args_for_js(globals, args)?;
-                    let ref_ = handle.borrow();
-                    let wv = ref_.wv()?;
-                    let req_id = reg_for_mr.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_mr
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(req_id, resolve);
-                    });
-                    wv.borrow_mut()
-                        .evalr(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, name, args))?;
-                    Ok(promise.into())
-                },
-            );
-
-            let reg_for_m = reg_for_jsref.clone();
-            cls.ifunc(
-                "m",
-                ArgSpec::builder().req("name").var("args"),
-                "Calls a method, and returns the result as deserialized JSON",
-                move |handle, globals, args, _| {
-                    let mut args = args.into_iter();
-                    let name = args.next().unwrap().into_string()?;
-                    let args = args_for_js(globals, args)?;
-                    let ref_ = handle.borrow();
-                    let wv = ref_.wv()?;
-                    let req_id = reg_for_m.borrow_mut().new_id();
-                    let promise = Promise::new(globals, |_globals, resolve| {
-                        reg_for_m
-                            .borrow_mut()
-                            .resolve_map
-                            .insert(req_id, resolve);
-                    });
-                    wv.borrow_mut()
-                        .evalj(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, name, args))?;
-                    Ok(promise.into())
-                },
-            );
+            let reg_for_method_call = reg_for_jsref.clone();
+            cls.method_call(move |globals, handle, methodname, args, kwargs| {
+                if kwargs.is_some() {
+                    return Err(rterr!("kwargs are not allowed in method calls to Javascript objects"));
+                }
+                let args = args_for_js(globals, args)?;
+                let ref_ = handle.borrow();
+                let wv = ref_.wv()?;
+                let req_id = reg_for_method_call.borrow_mut().new_id();
+                let promise = Promise::new(globals, |_globals, resolve| {
+                    reg_for_method_call
+                        .borrow_mut()
+                        .resolve_map
+                        .insert(req_id, resolve);
+                });
+                wv.borrow_mut().evalx(req_id, &format!("$$REFS.a{}.{}{}", ref_.id, methodname, args))?;
+                Ok(promise.into())
+            });
         });
     })
 }
@@ -398,6 +395,9 @@ impl WV {
     }
     fn evalr(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("$$RETREF({},{})", req_id, js))
+    }
+    fn evalx(&mut self, req_id: usize, js: &str) -> Result<()> {
+        self.evaltry(req_id, &format!("$$RETX({},{})", req_id, js))
     }
 }
 
