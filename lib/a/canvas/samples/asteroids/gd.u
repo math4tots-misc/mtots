@@ -1,0 +1,65 @@
+import a.canvas
+import ..draw
+from ..model import Ship
+
+SHIP_ACCEL = 0.02
+
+class GameDelegate(canvas.Delegate) {
+    static async def __call(cv) = {
+        cwidth = cv.width.await
+        cheight = cv.height.await
+        new(
+            cv=cv,
+            ts=nil,
+            cwidth=cwidth,
+            cheight=cheight,
+            ship=Ship(
+                cwidth / 2,
+                cheight / 2,
+                xcap = cwidth,
+                ycap = cheight,
+            ),
+        )
+    }
+    def resize(self, width, height) {
+        self.cwidth = width
+        self.cheight = height
+    }
+    def keydown(self, key, mods) {
+        print('dx %r, dy %r' % [self.ship.m.dx, self.ship.m.dy])
+        print('ax %r, ay %r' % [self.ship.m.ax, self.ship.m.ay])
+        switch key {
+            'w' => self.ship.ay = -SHIP_ACCEL
+            's' => self.ship.ay = SHIP_ACCEL
+            'a' => self.ship.ax = -SHIP_ACCEL
+            'd' => self.ship.ax = SHIP_ACCEL
+            'Escape' => self.cv.exit()
+            => print('keydown %r' % [[key, mods]])
+        }
+    }
+    def keyup(self, key, mods) {
+        switch key {
+            'w' => self.ship.ay = 0
+            's' => self.ship.ay = 0
+            'a' => self.ship.ax = 0
+            'd' => self.ship.ax = 0
+        }
+    }
+    def tick(self, ts) {
+        dt = if self.ts is nil { 0 } else { ts - self.ts }
+        self.ts = ts
+        ship = self.ship
+        ship.update(ts / 1000)
+        # print('%r' % [['ship', ship.x, ship.y, ship.ax, ship.ay]])
+        self.cv.draw(def(b) {
+            b.fillStyle = 'black'
+            b.fillRect(0, 0, self.cwidth, self.cheight)
+            b.save()
+            b.strokeStyle = 'white'
+            b.translate(ship.x, ship.y)
+            b.rotate(ship.r)
+            draw.ship(b)
+            b.restore()
+        })
+    }
+}

@@ -138,7 +138,15 @@ def init(
         },
     ), def(new_delegate) {
         nonlocal delegate
-        delegate = new_delegate
+        if type(new_delegate) is Promise {
+            delegate = nil
+            (async def {
+                nonlocal delegate
+                delegate = new_delegate.await
+            })().ordie()
+        } else {
+            delegate = new_delegate
+        }
     })
 }
 

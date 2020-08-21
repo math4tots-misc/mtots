@@ -1,0 +1,81 @@
+from a.math import tau
+from a.math import atan2
+
+class Matter {
+    new(
+        x,
+        y,
+        r=0,
+        dx=0,
+        dy=0,
+        dr=0,
+        ax=0,
+        ay=0,
+        ar=0,
+        xcap=nil,
+        ycap=nil,
+        fric=0.99,
+    ) = {
+        new(
+            x=x,
+            y=y,
+            r=0,
+            dx=dx,
+            dy=dy,
+            dr=dr,
+            ax=ax,
+            ay=ay,
+            ar=ar,
+            xcap=xcap,
+            ycap=ycap,
+            fric=fric,
+        )
+    }
+
+    def update(self, dt) {
+        self.dx += self.ax * dt
+        self.dy += self.ay * dt
+        self.dr += self.ar * dt
+        self.dx *= self.fric ** dt
+        self.dy *= self.fric ** dt
+        self.dr *= self.fric ** dt
+        self.x += self.dx * dt
+        self.y += self.dy * dt
+        self.r += self.dr * dt
+        self.r %%= tau
+        if self.xcap is not nil {
+            self.x %%= self.xcap
+        }
+        if self.ycap is not nil {
+            self.y %%= self.ycap
+        }
+    }
+}
+
+class Ship {
+    new(x, y, xcap=nil, ycap=nil) = {
+        new(m=Matter(x, y, xcap=xcap, ycap=ycap))
+    }
+
+    def update(self, dt) {
+        self.m.update(dt)
+    }
+
+    def __get_x(self) = self.m.x
+    def __get_y(self) = self.m.y
+    def __get_r(self) = self.m.r
+    def __get_ax(self) = self.m.ax
+    def __get_ay(self) = self.m.ay
+    def __set_x(self, x) {
+        self.m.x = x
+    }
+    def __set_y(self, y) {
+        self.m.y = y
+    }
+    def __set_ax(self, ax) {
+        self.m.ax = ax
+    }
+    def __set_ay(self, ay) {
+        self.m.ay = ay
+    }
+}

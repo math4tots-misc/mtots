@@ -1,0 +1,13 @@
+
+
+
+def ship(b) {
+    b.lineWidth = 1
+    b.beginPath()
+    b.moveTo(0, 0)
+    b.lineTo(5, 5)
+    b.lineTo(0, -10)
+    b.lineTo(-5, 5)
+    b.closePath()
+    b.stroke()
+}
