@@ -72,8 +72,12 @@ def init(
 
             switch cmd {
                 'tick' => {
-                    [timestamp] = parts[1:]
-                    ordie(delegate.tick(float(timestamp)))
+                    if type(delegate.tick(float(parts[1]))) is Promise {
+                        throw(
+                            "Due to time sensitive nature of tick(), " +
+                            "the tick() method may not be async"
+                        )
+                    }
                 }
                 'click' => {
                     [btn, x, y] = parts[1:]

@@ -22,9 +22,13 @@ class Delegate(canvas.Delegate) {
                 height,
             ),
             last_tick=nil,
+            width=width,
+            height=height,
+            cx=nil,
+            cy=nil,
         )
     }
-    async def tick(self, ts) {
+    def tick(self, ts) {
         # print('tick start')
         if self.last_tick is nil {
             self.last_tick = ts
@@ -36,11 +40,19 @@ class Delegate(canvas.Delegate) {
         # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
 
         cv.fillStyle = '#000000'
-        cv.fillRect(0, 0, cv.width.await, cv.height.await)
+        cv.fillRect(0, 0, self.width, self.height)
         cv.fillStyle = '#FFFFFF'
         cv.fillRect(pos.x - 5, pos.y - 5, 10, 10)
 
+        if self.cx is not nil {
+            cv.fillRect(self.cx - 10, self.cy - 10, 20, 20)
+        }
+
         self.last_tick = ts
+    }
+    def click(self, btn, x, y) {
+        self.cx = x
+        self.cy = y
     }
     def keydown(self, key, mods) {
         if key == 'Escape' {
