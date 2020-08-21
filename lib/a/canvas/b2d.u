@@ -18,8 +18,6 @@ class Batch2D {
         cmds = self.cmds
         self.cmds = []
         cmds = ';'.join(del cmds)
-        # self.canvas.evalx('(function(){ctx.fillRect(0,0,100,100);})()').await
-        # self.canvas.evalx('ctx.fillRect(0,0,800,600);').await
         self.canvas.evalx('(function(){%s})()' % [cmds]).await
     }
 
@@ -168,7 +166,7 @@ class Batch2D {
     }
 
     # Drawing images
-    async def drawImage(
+    def drawImage(
             self,
             image,
             sx,

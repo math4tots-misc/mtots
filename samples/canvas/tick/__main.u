@@ -46,17 +46,15 @@ class Delegate(canvas.Delegate) {
         pos.update(dt / 1000)
         # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
 
-        (async def {
-            b = cv.batch()
-            b.fillStyle = '#000000'
-            b.fillRect(0, 0, self.width, self.height)
-            b.fillStyle = '#FFFFFF'
-            b.fillRect(pos.x - 5, pos.y - 5, 10, 10)
-            if self.cx is not nil {
-                b.fillRect(self.cx - 10, self.cy - 10, 20, 20)
-            }
-            r = b.run().await
-        })().ordie()
+        b = cv.batch()
+        b.fillStyle = '#000000'
+        b.fillRect(0, 0, self.width, self.height)
+        b.fillStyle = '#FFFFFF'
+        b.fillRect(pos.x - 5, pos.y - 5, 10, 10)
+        if self.cx is not nil {
+            b.fillRect(self.cx - 10, self.cy - 10, 20, 20)
+        }
+        r = b.run().ordie()
 
         self.last_tick = ts
     }
@@ -71,6 +69,7 @@ class Delegate(canvas.Delegate) {
     }
 }
 
+print('before init')
 cv = canvas.init(
     title = 'tick sample',
     delegatecls = Delegate,

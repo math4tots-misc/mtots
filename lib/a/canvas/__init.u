@@ -53,6 +53,7 @@ def init(
                     d = delegatecls()
                     if type(d) is Promise {
                         (async def {
+                            nonlocal delegate
                             delegate = d.await
                         })().ordie()
                     } else {
@@ -73,7 +74,6 @@ def init(
 
             switch cmd {
                 'tick' => {
-                    print(parts)
                     if type(delegate.tick(float(parts[1]))) is Promise {
                         throw(
                             "Due to time sensitive nature of tick(), " +
