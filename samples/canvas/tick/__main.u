@@ -18,8 +18,8 @@ class Delegate(canvas.Delegate) {
             pos=Foo(
                 width / 2,
                 height / 2,
-                1,
-                1,
+                60,
+                60,
                 width,
                 height,
             ),
@@ -33,7 +33,7 @@ class Delegate(canvas.Delegate) {
     def tick(self, ts) {
         nonlocal last_print
         # print('tick start')
-        if last_print is nil or (ts - last_print) > 1 {
+        if last_print is nil or (ts - last_print) > 1000 {
             print('tick %r' % [ts])
             last_print = ts
         }
@@ -43,7 +43,7 @@ class Delegate(canvas.Delegate) {
         dt = ts - self.last_tick
         pos = self.pos
 
-        pos.update(dt)
+        pos.update(dt / 1000)
         # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
 
         (async def {

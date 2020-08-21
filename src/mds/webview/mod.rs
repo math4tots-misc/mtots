@@ -30,26 +30,46 @@ pub(super) fn new() -> NativeModule {
             r##"'use strict';
             const $$REFS = Object.create(null);
             var $$REFID = 0;
-            function $$RETJSON(reqId, x) {
-                const json = JSON.stringify(x);
-                external.invoke('eval/' + reqId + '/1/' + (json === undefined ? null : json));
+            function $$RETNIL(reqId) {
+                external.invoke('$/' + reqId + '/0');
+            }
+            function $$RETSTR(reqId, x) {
+                external.invoke('$/' + reqId + '/1/' + x);
+            }
+            function $$RETTRUE(reqId) {
+                external.invoke('$/' + reqId + '/2');
+            }
+            function $$RETFALSE(reqId) {
+                external.invoke('$/' + reqId + '/3');
+            }
+            function $$RETNUM(reqId, x) {
+                external.invoke('$/' + reqId + '/4/' + x);
             }
             function $$RETREF(reqId, x) {
                 const refId = $$REFID++;
                 $$REFS['a' + refId] = x;
-                external.invoke('eval/' + reqId + '/2/' + refId);
+                external.invoke('$/' + reqId + '/5/' + refId);
+            }
+            function $$RETJSON(reqId, x) {
+                const json = JSON.stringify(x);
+                external.invoke('$/' + reqId + '/6/' + (json === undefined ? null : json));
+            }
+            function $$ERR(reqId, e) {
+                external.invoke('$/' + reqId + '/7/' + e);
             }
             function $$RETX(reqId, x) {
                 switch (typeof x) {
                     case 'undefined':
-                        return $$RETJSON(reqId, null);
+                        return $$RETNIL(reqId);
                     case 'boolean':
+                        return x ? $$RETTRUE(reqId) : $$RETFALSE(reqId);
                     case 'number':
                     case 'bigint':
+                        return $$RETNUM(reqId, x);
                     case 'string':
-                        return $$RETJSON(reqId, x);
+                        return $$RETSTR(reqId, x);
                     case 'object':
-                        return x === null ? $$RETJSON(reqId, x) : $$RETREF(reqId, x);
+                        return x === null ? $$RETNIL(reqId) : $$RETREF(reqId, x);
                     default:
                         return $$RETREF(reqId, x);
                 }
@@ -61,11 +81,8 @@ pub(super) fn new() -> NativeModule {
                     $$ERR(reqId, e);
                 });
             }
-            function $$ERR(reqId, e) {
-                external.invoke('eval/' + reqId + '/3/' + e);
-            }
             function $$TIMEOUT(reqId) {
-                external.invoke('eval/' + reqId + '/4/');
+                $$RETNIL(reqId);
             }
             function $$BLOB(bytes, mime) {
                 const arr = Uint8Array.from(bytes);
@@ -111,27 +128,39 @@ pub(super) fn new() -> NativeModule {
                     .frameless(frameless)
                     .user_data(())
                     .invoke_handler(move |_webview, arg| {
-                        if arg.starts_with("eval/") {
+                        if arg.starts_with("$/") {
                             let mut iter = arg.splitn(4, '/');
-                            iter.next().unwrap(); // eval
+                            iter.next().unwrap(); // '$'
                             let id: usize = iter.next().unwrap().parse().unwrap();
                             let type_: usize = iter.next().unwrap().parse().unwrap();
-                            let encoded_data = iter.next().unwrap();
                             let result = match type_ {
                                 0 => {
-                                    // Raw string
-                                    Ok(Value::from(encoded_data))
+                                    // nil
+                                    Ok(Value::Nil)
                                 }
                                 1 => {
-                                    // JSON
-                                    let sval = serde_json::from_str(encoded_data)
-                                        .expect("Bad JSON data from webview");
-                                    Ok(super::json::from_serde(sval).expect(
-                                        "Could not convert JSON data from webview to mtots",
-                                    ))
+                                    // string
+                                    let encoded_data = iter.next().unwrap();
+                                    Ok(Value::from(encoded_data))
                                 }
                                 2 => {
+                                    // true
+                                    Ok(Value::Bool(true))
+                                }
+                                3 => {
+                                    // false
+                                    Ok(Value::Bool(false))
+                                }
+                                4 => {
+                                    // number
+                                    let encoded_data = iter.next().unwrap();
+                                    Ok(Value::Number(encoded_data.parse().unwrap_or_else(|e| {
+                                        panic!("Could not parse number from JS: {:?}", e);
+                                    })))
+                                }
+                                5 => {
                                     // Reference
+                                    let encoded_data = iter.next().unwrap();
                                     let wv = globals_copy
                                         .stash()
                                         .get::<WeakHandle<WV>>()
@@ -142,13 +171,19 @@ pub(super) fn new() -> NativeModule {
                                     let jsref = JsRef { wv, id };
                                     Ok(globals_copy.new_handle(jsref).unwrap().into())
                                 }
-                                3 => {
-                                    // Error
-                                    Err(rterr!("JSError: {}", encoded_data))
+                                6 => {
+                                    // JSON
+                                    let encoded_data = iter.next().unwrap();
+                                    let sval = serde_json::from_str(encoded_data)
+                                        .expect("Bad JSON data from webview");
+                                    Ok(super::json::from_serde(sval).expect(
+                                        "Could not convert JSON data from webview to mtots",
+                                    ))
                                 }
-                                4 => {
-                                    // Timeout
-                                    Ok(Value::Nil)
+                                7 => {
+                                    // Error
+                                    let encoded_data = iter.next().unwrap();
+                                    Err(rterr!("JSError: {}", encoded_data))
                                 }
                                 _ => panic!("Invalid JS eval result type: {:?}", type_),
                             };
@@ -463,10 +498,7 @@ impl WV {
         self.eval0(&format!("try{{{}}}catch(e){{$$ERR({},e)}}", js, req_id))
     }
     fn evals(&mut self, req_id: usize, js: &str) -> Result<()> {
-        self.evaltry(
-            req_id,
-            &format!("external.invoke('eval/{}/0/'+({}))", req_id, js),
-        )
+        self.evaltry(req_id, &format!("$$RETSTR({},{})", req_id, js))
     }
     fn evalj(&mut self, req_id: usize, js: &str) -> Result<()> {
         self.evaltry(req_id, &format!("$$RETJSON({},{})", req_id, js))
