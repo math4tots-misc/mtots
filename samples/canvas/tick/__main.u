@@ -47,15 +47,15 @@ class Delegate(canvas.Delegate) {
         # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
 
         (async def {
-            ctx = cv.ctx().await
-            ctx.fillStyle = '#000000'
-            ctx.fillRect(0, 0, self.width, self.height).await
-            ctx.fillStyle = '#FFFFFF'
-            ctx.fillRect(pos.x - 5, pos.y - 5, 10, 10).await
-
+            b = cv.batch()
+            b.fillStyle = '#000000'
+            b.fillRect(0, 0, self.width, self.height)
+            b.fillStyle = '#FFFFFF'
+            b.fillRect(pos.x - 5, pos.y - 5, 10, 10)
             if self.cx is not nil {
-                ctx.fillRect(self.cx - 10, self.cy - 10, 20, 20)
+                b.fillRect(self.cx - 10, self.cy - 10, 20, 20)
             }
+            r = b.run().await
         })().ordie()
 
         self.last_tick = ts

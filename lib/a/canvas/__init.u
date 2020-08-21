@@ -1,6 +1,7 @@
 import a.webview
 import a.json
 import .htmlevents
+from .b2d import Batch2D
 from .c2d import Canvas2DMixin
 from .img import CanvasImageMixin
 
@@ -167,10 +168,13 @@ class Canvas(Canvas2DMixin, CanvasImageMixin) {
         self.eval0('updateCanvasDim()')
     }
 
+    def batch(self) = Batch2D(self)
+
     def evals(self, js) = self.webview.evals(js)
     def eval0(self, js) = self.webview.eval0(js)
     def evalj(self, js) = self.webview.evalj(js)
     def evalr(self, js) = self.webview.evalr(js)
+    def evalx(self, js) = self.webview.evalx(js)
     def evalp(self, js) = self.webview.evalp(js)
 
     async def __get_width(self) = float(self.evals('canvas.width').await)
