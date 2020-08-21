@@ -1,7 +1,7 @@
 import a.canvas
 
 class Delegate(canvas.Delegate) {
-    new() = {
+    new(cv) = {
         print('init with %r' % [cv])
 
         # cv.fullscreen = true

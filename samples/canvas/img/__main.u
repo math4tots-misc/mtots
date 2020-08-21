@@ -5,7 +5,7 @@ import a.time
 png_bytes = fs.read(fs.join(fs.dirname(__file), 'love.png'), encoding=nil)
 
 class Delegate(canvas.Delegate) {
-    static async def __call() = {
+    static async def __call(cv) = {
         print('init with %r' % [cv])
 
         # cv.fullscreen = true

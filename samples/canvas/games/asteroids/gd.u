@@ -1,0 +1,4 @@
+import a.canvas
+
+class GameDelegate {
+}

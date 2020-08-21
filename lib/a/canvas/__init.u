@@ -25,6 +25,10 @@ html_content = r###"
 </html>
 "### % [webview.JS_PRELUDE, htmlevents.CODE]
 
+def run(*args, **kwargs) {
+    cv = init(*args, **kwargs)
+    cv.run()
+}
 
 def init(
     title = '',
@@ -35,7 +39,7 @@ def init(
     delegatecls = nil,
 ) = {
     delegate = nil
-    Canvas(webview.init(
+    cv = Canvas(webview.init(
         title = title,
         content = html_content,
         size = size,
@@ -49,7 +53,7 @@ def init(
 
             switch cmd {
                 'init' => {
-                    d = delegatecls()
+                    d = delegatecls(cv)
                     if type(d) is Promise {
                         (async def {
                             nonlocal delegate
@@ -165,7 +169,7 @@ class Canvas(Canvas2DMixin, CanvasImageMixin) {
     }
 
     def delegate(self, delegatecls) {
-        delegate = delegatecls()
+        delegate = delegatecls(self)
         (self.swap_delegate)(delegate)
     }
 
