@@ -103,7 +103,7 @@ function asyncImageFromBlob(blob) {
 }
 function animate(timestamp) {
     requestAnimationFrame(animate);
-    external.invoke('tick/' + timestamp);
+    // external.invoke('tick/' + timestamp);
 }
 animate();
 </script>
