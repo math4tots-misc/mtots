@@ -19,10 +19,6 @@ html_content = r###"
     </head>
     <body>
         <canvas id="canvas"></canvas>
-        <div style="display:none;">
-            <img id="img"
-                src="https://www.fnordware.com/superpng/pnggrad8rgb.png">
-        </div>
         <script>%s</script>
         %s
     </body>
