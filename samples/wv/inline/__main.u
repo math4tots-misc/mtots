@@ -1,0 +1,126 @@
+# Little sample for writing raw HTML for testing the current
+# Webview environment
+import a.webview
+
+html = r###'
+<html>
+<body>
+
+<div id="container-main">
+    <div id="container-editors">
+        <div id="container-buttons">
+            <button onclick='run()'>Run</button>
+        </div>
+        <textarea id='codehtml'></textarea>
+        <textarea id='codejs'></textarea>
+    </div>
+    <div id="display" />
+</div>
+
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.57.0/codemirror.min.css"
+/>
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.57.0/theme/darcula.min.css"
+/>
+<style>
+    .CodeMirror {
+        height: 100%;
+        width: 50%;
+    }
+    #display {
+        height: 100%;
+        width: 50%;
+    }
+    #container-main {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+    }
+    #container-editors {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    #container-buttons {
+        height: 4%;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+    }
+</style>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.57.0/codemirror.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.57.0/mode/htmlmixed/htmlmixed.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.57.0/mode/css/css.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.57.0/mode/javascript/javascript.min.js"
+></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.57.0/mode/xml/xml.min.js"
+></script>
+<script>
+const display = document.getElementById('display');
+const codehtml = CodeMirror.fromTextArea(
+    document.getElementById('codehtml'),
+    {
+        lineNumbers: true,
+        mode: 'htmlmixed',
+        theme: 'darcula',
+        extraKeys: {
+            "Ctrl-R": function() {
+                run();
+            }
+        }
+    }
+);
+const codejs = CodeMirror.fromTextArea(
+    document.getElementById('codejs'),
+    {
+        lineNumbers: true,
+        mode: 'javascript',
+        theme: 'darcula',
+        extraKeys: {
+            "Ctrl-R": function() {
+            }
+        }
+    }
+);
+function run() {
+    display.innerHTML = codehtml.getValue();
+    Function(codejs.getValue())();
+}
+window.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        external.invoke('Esc');
+        event.preventDefault();
+    }
+})
+</script>
+</body>
+</html>
+'###
+
+wv = webview.init(
+    title = 'Inline HTML Demo',
+    content = html,
+    resizable = true,
+    handler = def(arg) {
+        parts = arg.split('/').list()
+        cmd = parts[0]
+        switch cmd {
+            'Esc' => wv.exit()
+            => print('arg %r' % [arg])
+        }
+    },
+)
+wv.run()
