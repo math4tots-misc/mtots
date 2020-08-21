@@ -8,6 +8,8 @@ class Foo {
     }
 }
 
+last_print = nil
+
 class Delegate(canvas.Delegate) {
     static async def __call() = {
         width = cv.width.await
@@ -29,7 +31,12 @@ class Delegate(canvas.Delegate) {
         )
     }
     def tick(self, ts) {
+        nonlocal last_print
         # print('tick start')
+        if last_print is nil or (ts - last_print) > 1 {
+            print('tick %r' % [ts])
+            last_print = ts
+        }
         if self.last_tick is nil {
             self.last_tick = ts
         }
@@ -39,14 +46,17 @@ class Delegate(canvas.Delegate) {
         pos.update(dt)
         # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
 
-        cv.fillStyle = '#000000'
-        cv.fillRect(0, 0, self.width, self.height)
-        cv.fillStyle = '#FFFFFF'
-        cv.fillRect(pos.x - 5, pos.y - 5, 10, 10)
+        (async def {
+            ctx = cv.ctx().await
+            ctx.fillStyle = '#000000'
+            ctx.fillRect(0, 0, self.width, self.height).await
+            ctx.fillStyle = '#FFFFFF'
+            ctx.fillRect(pos.x - 5, pos.y - 5, 10, 10).await
 
-        if self.cx is not nil {
-            cv.fillRect(self.cx - 10, self.cy - 10, 20, 20)
-        }
+            if self.cx is not nil {
+                ctx.fillRect(self.cx - 10, self.cy - 10, 20, 20)
+            }
+        })().ordie()
 
         self.last_tick = ts
     }
