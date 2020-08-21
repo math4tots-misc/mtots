@@ -24,7 +24,7 @@ hound = { version = "3.4", optional = true }
 web-view = { version = "0.6", features = ["edge"], optional = true }
 
 [features]
-default = ["basekit", "gamekit", "webview"]
+default = ["basekit", "webview"]
 gamekit = ["ggez", "hound", "image"]
 basekit = ["rand", "rand_chacha", "regex", "serde_json"]
 webview = ["web-view"]
