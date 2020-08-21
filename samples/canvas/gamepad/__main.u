@@ -3,8 +3,18 @@ import a.canvas
 class Foo {
     new(x, y, dx, dy, w, h) = new(x=x, y=y, dx=dx, dy=dy, w=w, h=h)
     def update(self, dt) = {
-        self.x = (self.x + dt * self.dx) % self.w
-        self.y = (self.y + dt * self.dy) % self.h
+        self.x = (self.x + dt * self.dx) %% self.w
+        self.y = (self.y + dt * self.dy) %% self.h
+    }
+}
+
+class X2 {
+    new(x, y, dx, dy, ax, ay, w, h) = new(x=x, y=y, dx=dx, dy=dy, ax=0, ay=0, w=w, h=h)
+    def update(self, dt) = {
+        self.dx += dt * self.ax
+        self.dy += dt * self.ay
+        self.x = (self.x + dt * self.dx) %% self.w
+        self.y = (self.y + dt * self.dy) %% self.h
     }
 }
 
@@ -23,11 +33,19 @@ class Delegate(canvas.Delegate) {
                 width,
                 height,
             ),
+            pos2=X2(
+                width * 3 / 4,
+                height * 3 / 4,
+                0,
+                0,
+                0,
+                0,
+                width,
+                height,
+            ),
             last_tick=nil,
             width=width,
             height=height,
-            cx=nil,
-            cy=nil,
             rectFillStyle='#FFFFFF',
         )
     }
@@ -43,8 +61,10 @@ class Delegate(canvas.Delegate) {
         }
         dt = ts - self.last_tick
         pos = self.pos
+        pos2 = self.pos2
 
         pos.update(dt / 1000)
+        pos2.update(dt / 1000)
         # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
 
         b = cv.batch()
@@ -52,21 +72,29 @@ class Delegate(canvas.Delegate) {
         b.fillRect(0, 0, self.width, self.height)
         b.fillStyle = '#FFFFFF'
         b.fillRect(pos.x - 5, pos.y - 5, 10, 10)
-        if self.cx is not nil {
-            b.fillStyle = self.rectFillStyle
-            b.fillRect(self.cx - 10, self.cy - 10, 20, 20)
-        }
+        b.fillStyle = self.rectFillStyle
+        b.fillRect(pos2.x - 10, pos2.y - 10, 20, 20)
         r = b.run().ordie()
 
         self.last_tick = ts
     }
     def click(self, btn, x, y) {
-        self.cx = x
-        self.cy = y
+        self.pos2.x = x
+        self.pos2.y = y
     }
     def keydown(self, key, mods) {
         if key == 'Escape' {
             cv.exit()
+        }
+    }
+    def gamepadaxis(self, gid, axis, state) {
+        print('dx,dy %r,%r' % [self.pos2.ax, self.pos2.ay])
+        if abs(state) < 0.2 {
+            state = 0
+        }
+        switch axis {
+            0 => self.pos2.ax = state * 1000
+            1 => self.pos2.ay = state * 1000
         }
     }
     def gamepadbtn(self, gid, btn, state) {
