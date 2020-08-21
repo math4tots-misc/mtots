@@ -43,20 +43,20 @@ def init(
         resizable = resizable,
         debug = debug,
         frameless = frameless,
-        handler = def(arg) { (async def {
+        handler = def(arg) {
             nonlocal delegate
             parts = arg.split('/').list()
             cmd = parts[0]
 
             switch cmd {
                 'init' => {
-                    delegate = {
-                        d = delegatecls()
-                        if type(d) is Promise {
-                            d.await
-                        } else {
-                            d
-                        }
+                    d = delegatecls()
+                    if type(d) is Promise {
+                        (async def {
+                            delegate = d.await
+                        })().ordie()
+                    } else {
+                        delegate = d
                     }
                     return
                 }
@@ -73,6 +73,7 @@ def init(
 
             switch cmd {
                 'tick' => {
+                    print(parts)
                     if type(delegate.tick(float(parts[1]))) is Promise {
                         throw(
                             "Due to time sensitive nature of tick(), " +
@@ -119,7 +120,7 @@ def init(
                     print('Unrecognized cmd %r' % [parts])
                 }
             }
-        })().ordie() },
+        },
     ), def(new_delegate) {
         nonlocal delegate
         delegate = new_delegate

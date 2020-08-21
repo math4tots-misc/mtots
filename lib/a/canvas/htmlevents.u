@@ -63,6 +63,7 @@ canvas.addEventListener('mousemove', function(event) {
 window.addEventListener('keydown', function(event) {
     external.invoke(mkke('keydown', event));
     downKeys[event.key] = true;
+    event.preventDefault();
 });
 window.addEventListener('keyup', function(event) {
     downKeys[event.key] = false;
@@ -105,6 +106,6 @@ function animate(timestamp) {
     requestAnimationFrame(animate);
     external.invoke('tick/' + timestamp);
 }
-animate();
+requestAnimationFrame(animate);
 </script>
 "###

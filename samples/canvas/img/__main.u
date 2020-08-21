@@ -30,20 +30,32 @@ class Delegate(canvas.Delegate) {
         (async def {
             start = time.now()
             png = cv.image(png_bytes).await
+            pngw = png.width.await
+            pngh = png.height.await
             delegate.png = png
+            delegate.pngw = pngw
+            delegate.pngh = pngh
             end = time.now()
             print('png load time: %r' % [end - start])
-            print('png.width = %r' % [png.width.await])
+            print('png.width = %r' % [pngw])
             cv.drawImage(png, 50, 50).await
         })().ordie()
 
-        delegate = new(down=false, nclicks=0, cp1=nil, cp2=nil, png=nil)
+        delegate = new(
+            down=false,
+            nclicks=0,
+            cp1=nil,
+            cp2=nil,
+            png=nil,
+            pngw=nil,
+            pngh=nil,
+        )
         delegate
     }
     def resize(self, width, height) = {
         print('resize %r' % [[width, height]])
     }
-    async def click(self, btn, x, y) = {
+    def click(self, btn, x, y) = {
         print('click %r, %r, %r' % [btn, x, y])
         # cv.fillRect(x, y, 10, 10)
         switch self.nclicks % 4 {
@@ -87,10 +99,10 @@ class Delegate(canvas.Delegate) {
         }
 
         if self.png is not nil {
-            iwidth = self.png.width.await
-            iheight = self.png.height.await
+            iwidth = self.pngw
+            iheight = self.pngh
             # cv.drawImage(self.png, x - iwidth / 2, y - iheight / 2).await
-            cv.drawImage(
+            cv.batch().drawImage(
                 self.png,
                 0,
                 iheight / 2,
@@ -99,7 +111,7 @@ class Delegate(canvas.Delegate) {
                 x - iwidth / 4,
                 y - iheight / 4,
                 iwidth / 2,
-                iheight / 2).await
+                iheight / 2).run().ordie()
         }
 
         self.nclicks = (self.nclicks + 1) % 4
