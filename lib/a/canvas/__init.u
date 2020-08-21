@@ -116,6 +116,18 @@ def init(
                     [width, height] = parts[1:]
                     ordie(delegate.resize(width, height))
                 }
+                'gamepadbtn' => {
+                    [gamepad_id, btn_id, state] = parts[1:].iter().map(float).list()
+                    ordie(delegate.gamepadbtn(gamepad_id, btn_id, state))
+                }
+                'gamepadaxis' => {
+                    [gamepad_id, axis_id, state] = parts[1:].iter().map(float).list()
+                    ordie(delegate.gamepadaxis(gamepad_id, axis_id, state))
+                }
+                'gamepadconnected' => {
+                    [gamepad_id] = parts[1:].iter().map(float).list()
+                    ordie(delegate.gamepadconnected(gamepad_id))
+                }
                 => {
                     print('Unrecognized cmd %r' % [parts])
                 }
@@ -192,4 +204,8 @@ class Delegate {
     def keydown(self, key, mods) = nil
     def keyup(self, key, mods) = nil
     def keypress(self, key, mods) = nil
+
+    def gamepadconnected(self, gamepad_id) = nil
+    def gamepadbtn(self, gamepad_id, btn, state) = nil
+    def gamepadaxis(self, gamepad_id, axis, state) = nil
 }

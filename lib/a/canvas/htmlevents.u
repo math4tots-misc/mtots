@@ -102,9 +102,59 @@ function asyncImageFromBlob(blob) {
         document.getElementById('misc').appendChild(img);
     });
 }
+let gamepadData = [];
+function handleGamepadEvents() {
+    let gamepads = navigator.getGamepads();
+    for (var i = 0; i < gamepads.length; i++) {
+        let gamepad = gamepads[i];
+        if (gamepad === null) {
+            continue;
+        }
+        let index = gamepad.index;
+        if (gamepadData.length <= i) {
+            gamepadData.push({buttons: [], axes: [], index: index});
+        }
+        let data = gamepadData[i];
+        if (data.index !== index) {
+            // If the indices have changed, simply clear out the running data
+            // and just rebuild from scratch on the next call to handleGamepadEvents
+            gamepadData = [];
+            return;
+        }
+        let buttons = gamepad.buttons;
+        for (var j = 0; j < buttons.length; j++) {
+            let button = buttons[j];
+            if ((typeof button) === 'object') {
+                button = button.value;
+            }
+            if (data.buttons.length <= j) {
+                data.buttons.push(0);
+            }
+            if (data.buttons[j] !== button) {
+                external.invoke('gamepadbtn/' + index + '/' + j + '/' + button);
+            }
+            data.buttons[j] = button;
+        }
+        let axes = gamepad.axes;
+        for (var j = 0; j < axes.length; j++) {
+            let axis = axes[j];
+            if (data.axes.length <= j) {
+                data.axes.push(0);
+            }
+            if (Math.abs(data.axes[j] - axis) > 0.01) {
+                external.invoke('gamepadaxis/' + index + '/' + j + '/' + axis);
+            }
+            data.axes[j] = axis;
+        }
+    }
+}
+window.addEventListener("gamepadconnected", function(event) {
+    external.invoke('gamepadconnected/' + event.gamepad.index);
+});
 function animate(timestamp) {
     requestAnimationFrame(animate);
     external.invoke('tick/' + timestamp);
+    handleGamepadEvents();
 }
 requestAnimationFrame(animate);
 </script>

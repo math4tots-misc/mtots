@@ -1,0 +1,93 @@
+import a.canvas
+
+class Foo {
+    new(x, y, dx, dy, w, h) = new(x=x, y=y, dx=dx, dy=dy, w=w, h=h)
+    def update(self, dt) = {
+        self.x = (self.x + dt * self.dx) % self.w
+        self.y = (self.y + dt * self.dy) % self.h
+    }
+}
+
+last_print = nil
+
+class Delegate(canvas.Delegate) {
+    static async def __call() = {
+        width = cv.width.await
+        height = cv.height.await
+        new(
+            pos=Foo(
+                width / 2,
+                height / 2,
+                60,
+                60,
+                width,
+                height,
+            ),
+            last_tick=nil,
+            width=width,
+            height=height,
+            cx=nil,
+            cy=nil,
+            rectFillStyle='#FFFFFF',
+        )
+    }
+    def tick(self, ts) {
+        nonlocal last_print
+        # print('tick start')
+        if last_print is nil or (ts - last_print) > 1000 {
+            print('tick %r' % [ts])
+            last_print = ts
+        }
+        if self.last_tick is nil {
+            self.last_tick = ts
+        }
+        dt = ts - self.last_tick
+        pos = self.pos
+
+        pos.update(dt / 1000)
+        # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
+
+        b = cv.batch()
+        b.fillStyle = '#000000'
+        b.fillRect(0, 0, self.width, self.height)
+        b.fillStyle = '#FFFFFF'
+        b.fillRect(pos.x - 5, pos.y - 5, 10, 10)
+        if self.cx is not nil {
+            b.fillStyle = self.rectFillStyle
+            b.fillRect(self.cx - 10, self.cy - 10, 20, 20)
+        }
+        r = b.run().ordie()
+
+        self.last_tick = ts
+    }
+    def click(self, btn, x, y) {
+        self.cx = x
+        self.cy = y
+    }
+    def keydown(self, key, mods) {
+        if key == 'Escape' {
+            cv.exit()
+        }
+    }
+    def gamepadbtn(self, gid, btn, state) {
+        if state {
+            self.rectFillStyle = switch btn {
+                0 => 'green'
+                1 => 'red'
+                2 => 'blue'
+                3 => 'yellow'
+                => {
+                    print('btn %r %r' % [btn, state])
+                    'white'
+                }
+            }
+        }
+    }
+}
+
+print('before init')
+cv = canvas.init(
+    title = 'tick sample',
+    delegatecls = Delegate,
+)
+cv.run()
