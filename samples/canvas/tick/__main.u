@@ -1,0 +1,56 @@
+import a.canvas
+
+class Foo {
+    new(x, y, dx, dy, w, h) = new(x=x, y=y, dx=dx, dy=dy, w=w, h=h)
+    def update(self, dt) = {
+        self.x = (self.x + dt * self.dx) % self.w
+        self.y = (self.y + dt * self.dy) % self.h
+    }
+}
+
+class Delegate(canvas.Delegate) {
+    static async def __call() = {
+        width = cv.width.await
+        height = cv.height.await
+        new(
+            pos=Foo(
+                width / 2,
+                height / 2,
+                1,
+                1,
+                width,
+                height,
+            ),
+            last_tick=nil,
+        )
+    }
+    async def tick(self, ts) {
+        # print('tick start')
+        if self.last_tick is nil {
+            self.last_tick = ts
+        }
+        dt = ts - self.last_tick
+        pos = self.pos
+
+        pos.update(dt)
+        # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
+
+        cv.fillStyle = '#000000'
+        cv.fillRect(0, 0, cv.width.await, cv.height.await)
+        cv.fillStyle = '#FFFFFF'
+        cv.fillRect(pos.x - 5, pos.y - 5, 10, 10)
+
+        self.last_tick = ts
+    }
+    def keydown(self, key, mods) {
+        if key == 'Escape' {
+            cv.exit()
+        }
+    }
+}
+
+cv = canvas.init(
+    title = 'tick sample',
+    delegatecls = Delegate,
+)
+cv.run()

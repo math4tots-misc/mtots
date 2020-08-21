@@ -71,6 +71,10 @@ def init(
             }
 
             switch cmd {
+                'tick' => {
+                    [timestamp] = parts[1:]
+                    ordie(delegate.tick(float(timestamp)))
+                }
                 'click' => {
                     [btn, x, y] = parts[1:]
                     ordie(delegate.click(int(btn), float(x), float(y)))
@@ -165,11 +169,12 @@ class Canvas(Canvas2DMixin, CanvasImageMixin) {
     def evalr(self, js) = self.webview.evalr(js)
     def evalp(self, js) = self.webview.evalp(js)
 
-    async def __get_width(self) = self.evals('canvas.width').await
-    async def __get_height(self) = self.evals('canvas.height').await
+    async def __get_width(self) = float(self.evals('canvas.width').await)
+    async def __get_height(self) = float(self.evals('canvas.height').await)
 }
 
 class Delegate {
+    def tick(self, timestamp) = nil
     def resize(self, width, height) = nil
     def click(self, btn, x, y) = nil
     def mousemove(self, x, y) = nil

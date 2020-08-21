@@ -101,5 +101,10 @@ function asyncImageFromBlob(blob) {
         document.getElementById('misc').appendChild(img);
     });
 }
+function animate(timestamp) {
+    requestAnimationFrame(animate);
+    external.invoke('tick/' + timestamp);
+}
+animate();
 </script>
 "###
