@@ -176,8 +176,7 @@ class Canvas(Canvas2DMixin, CanvasImageMixin) {
         self.webview.exit()
     }
 
-    def delegate(self, delegatecls) {
-        delegate = delegatecls(self)
+    def delegate(self, delegate) {
         (self.swap_delegate)(delegate)
     }
 

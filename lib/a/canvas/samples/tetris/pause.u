@@ -1,0 +1,19 @@
+import a.canvas
+
+
+class Delegate(canvas.Delegate) {
+    new(canvas, game_delegate) = {
+        new(
+            canvas=canvas,
+            game_delegate=game_delegate,
+        )
+    }
+
+    def keydown(self, key, mods) {
+        switch key {
+            'Escape' => self.canvas.delegate(self.game_delegate)
+            'Enter' => self.canvas.exit()
+            => print('pause keydown %r' % [[key, mods]])
+        }
+    }
+}

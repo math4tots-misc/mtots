@@ -1,15 +1,25 @@
 
+_BOARD_BG_COLOR = 'black'
+_PIECE_COLOR = 'magenta'
+_FILLED_COLOR = 'green'
 
-def board(b, scale, board) {
+
+def board(b, board) {
     # Draws the board with upper-left corner at (0, 0)
     # with 1px per cell
     nrows = board.nrows
     ncols = board.ncols
-    b.save()
-    b.fillStyle = 'black'
-    b.fillRect(0, 0, ncols * scale, nrows * scale)
+    b.fillStyle = _BOARD_BG_COLOR
+    b.fillRect(0, 0, ncols, nrows)
+    b.fillStyle = _FILLED_COLOR
     for [r, c] in board.cells() {
-        b.fillRect(scale * c, scale * r, scale, scale)
+        b.fillRect(c, r, 1, 1)
     }
-    b.restore()
+}
+
+def piece(b, piece) {
+    b.fillStyle = _PIECE_COLOR
+    for [r, c] in piece.cells() {
+        b.fillRect(c, r, 1, 1)
+    }
 }

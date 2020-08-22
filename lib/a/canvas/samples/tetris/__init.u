@@ -1,33 +1,125 @@
 import a.canvas
-import .model
+from .model import Board
+from .model import Piece
 import .draw
+import .pause
 
+NROWS = 24
+NCOLS = 10
 BOARD_SCALE = 30
-CWIDTH = 10 * BOARD_SCALE * 2
-CHEIGHT = 24 * BOARD_SCALE
+CWIDTH = NCOLS * BOARD_SCALE * 2
+CHEIGHT = NROWS * BOARD_SCALE
+STEP_TIME = 1
 
 class Delegate(canvas.Delegate) {
-    new(cv) = new(cv=cv, model=model.Tetris(nrows=24, ncols=10))
+    new(cv) = {
+        new(
+            cv=cv,
+            board=Board(nrows=NROWS, ncols=NCOLS),
+            piece=nil,
+            last_step=nil,
+            state='play',
+        )
+    }
+
     def keydown(self, key, mods) {
         switch key {
-            'Escape' => self.cv.exit()
+            'Escape' => self.cv.delegate(pause.Delegate(self.cv, self))
+            'a' | 'ArrowLeft' => self.move_piece(0, -1)
+            'd' | 'ArrowRight' => self.move_piece(0, 1)
+            's' | 'ArrowDown' => self.move_piece(1, 0)
+            'w' | 'ArrowUp' => self.rotate_piece(1)
+            ' ' => self.hard_drop()
             => print('keydown %r' % [[key, mods]])
         }
     }
 
-    def __get_board(self) = self.model.board
-
     def tick(self, ts) {
+        if self.last_step is nil or ts - self.last_step >= STEP_TIME {
+            self.step()
+            self.last_step = ts
+        }
+
         b = self.cv.batch()
+
+        b.fillStyle = 'blue'
+        b.fillRect(CWIDTH / 2, 0, CWIDTH / 2, CHEIGHT)
+
         b.save()
-        b.setTransform(0, 0, 0, 0, 1, 1)
-        # b.scale(BOARD_SCALE, BOARD_SCALE)
-        b.fillRect(0, 0, 100, 100)
-        # b.fillStyle = '#AA0010'
-        # b.fillRect(0, 0, CWIDTH, CHEIGHT)
-        # draw.board(b, 1, self.board)
+        b.scale(BOARD_SCALE, BOARD_SCALE)
+        draw.board(b, self.board)
+        if self.piece is not nil {
+            draw.piece(b, self.piece)
+        }
         b.restore()
         b.run()
+    }
+
+    def step(self) {
+        switch self.state {
+            'play' => {
+                if self.piece is nil {
+                    self.set_new_piece()
+                } else {
+                    self.descend()
+                }
+            }
+            => print('Unrecognized state: %r' % [self.state])
+        }
+    }
+
+    def freeze_piece(self) {
+        self.board.fill(self.piece)
+        self.piece = nil
+        self.set_new_piece()
+    }
+
+    def descend(self) {
+        piece = self.piece
+        new_piece = piece.move(1, 0)
+        if self.board.can_fit(new_piece) {
+            self.piece = new_piece
+        } else {
+            self.freeze_piece()
+        }
+    }
+
+    def set_new_piece(self) {
+        piece = Piece.rand()
+        piece.c = max(0, NCOLS // 2 - 2)
+        self.piece = piece
+        if !self.board.can_fit(self.piece) {
+            self.state = 'gameover'
+        }
+    }
+
+    def hard_drop(self) {
+        if self.piece {
+            while self.move_piece(1) {}
+            self.freeze_piece()
+        }
+    }
+
+    def move_piece(self, dr=0, dc=0, drot=0) = {
+        if self.piece is not nil {
+            piece = self.piece.move(dr, dc, drot)
+            if self.board.can_fit(piece) {
+                self.piece = piece
+                true
+            }
+        }
+    }
+
+    def rotate_piece(self, drot) {
+        if self.piece is not nil {
+            piece = self.piece.rotate(drot)
+            for dc in [0, 1, -1, 2, -2] {
+                if self.board.can_fit(piece) {
+                    self.piece = piece
+                    return
+                }
+            }
+        }
     }
 }
 

@@ -1,31 +1,5 @@
 import a.rand
 
-class Tetris {
-    new(rng=nil, nrows=nil, ncols=nil) = {
-        new(
-            rng=rng or rand.Rng(),
-            board=Board(nrows, ncols),
-            piece=nil,
-            _next_piece = nil,
-        )
-    }
-    def step(self) {
-    }
-    def __get_next_piece(self) = {
-        if self._next_piece is nil {
-            shape = self.rng.choose(_SHAPES)
-            c = max(0, self.nrows // 2 - 2)
-            self._next_piece = Piece(shape, r=0, c=c)
-        }
-        self._next_piece
-    }
-    def load_piece(self) {
-        if self.piece is nil {
-            self.piece = self.next_piece
-        }
-    }
-}
-
 class Board {
     new(nrows=nil, ncols=nil) = {
         if nrows is nil {
@@ -42,10 +16,10 @@ class Board {
             ).list(),
         )
     }
-    def vacant(self, cell) = {
+    def can_fit(self, cell) = {
         # Check if the given cell or Piece can fit into this board
         if type(cell) is Piece {
-            cell.cells().all(def(cell) = self.vacant(cell))
+            cell.cells().all(def(cell) = self.can_fit(cell))
         } else {
             [r, c] = cell
             (
@@ -54,6 +28,27 @@ class Board {
                 self.cells[r][c] == 0
             )
         }
+    }
+    def fill(self, cell) {
+        # Fill the given cell or Piece in this board
+        if type(cell) is Piece {
+            for cell in cell.cells() {
+                self.fill(cell)
+            }
+        } else {
+            [r, c] = cell
+            self.cells[r][c] = 1
+        }
+        self.clear_filled_rows()
+    }
+    def clear_filled_rows(self) {
+        rows = self.cells.filter(def(row) = !row.all())
+        rows.reverse()
+        while rows.len() < self.nrows {
+            rows.push(range(self.ncols).map(def(_) = 0).list())
+        }
+        rows.reverse()
+        self.cells = rows
     }
     def* cells(self) {
         for r in range(self.nrows) {
@@ -70,7 +65,7 @@ class Piece {
     new(shape, r, c, rot=0) = new(shape=shape, r=r, c=c, rot=rot%%4)
     static def rand(rng=nil) = {
         shape = (rng or rand.Rng()).choose(_SHAPES)
-
+        Piece(shape, 0, 0)
     }
     def* cells(self) {
         rot = self.rot
@@ -90,7 +85,12 @@ class Piece {
     }
     def has(self, cell) = cell in self.cells()
     def rotate(self, n) = Piece(self.shape, self.r, self.c, self.rot + n)
-    def move(self, dr, dc) = Piece(self.shape, self.r + dr, self.c + dc, self.rot)
+    def move(self, dr=0, dc=0, drot=0) = Piece(
+        self.shape,
+        self.r + dr,
+        self.c + dc,
+        self.rot + drot,
+    )
     def str(self) = {
         parts = range(4).map(def(_) = range(4).map(def(_) = 0).list()).list()
         for [r, c] in Piece(self.shape, 0, 0, self.rot).cells() {
