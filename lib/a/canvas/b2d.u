@@ -175,6 +175,9 @@ class Batch2D {
     def translate(self, x, y) {
         self.cmd('ctx.translate(%r,%r)' % [float(x), float(y)])
     }
+    def setTransform(self, a, b, c, d, e, f) {
+        self.cmd('ctx.setTransform(%r,%r,%r,%r,%r,%r)' % [a, b, c, d, e, f])
+    }
 
     # Drawing images
     def drawImage(

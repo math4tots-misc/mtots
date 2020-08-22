@@ -49,7 +49,7 @@ class GameDelegate(canvas.Delegate) {
         dt = if self.ts is nil { 0 } else { ts - self.ts }
         self.ts = ts
         ship = self.ship
-        ship.update(ts / 1000)
+        ship.update(ts)
         # print('%r' % [['ship', ship.x, ship.y, ship.ax, ship.ay]])
         self.cv.draw(def(b) {
             b.fillStyle = 'black'

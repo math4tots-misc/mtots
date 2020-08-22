@@ -33,7 +33,7 @@ class Delegate(canvas.Delegate) {
     def tick(self, ts) {
         nonlocal last_print
         # print('tick start')
-        if last_print is nil or (ts - last_print) > 1000 {
+        if last_print is nil or (ts - last_print) > 1 {
             print('tick %r' % [ts])
             last_print = ts
         }
@@ -43,7 +43,7 @@ class Delegate(canvas.Delegate) {
         dt = ts - self.last_tick
         pos = self.pos
 
-        pos.update(dt / 1000)
+        pos.update(dt)
         # print('pos.x = %r, pos.y = %r' % [pos.x, pos.y])
 
         b = cv.batch()

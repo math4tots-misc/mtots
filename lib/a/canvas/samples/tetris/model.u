@@ -1,0 +1,167 @@
+import a.rand
+
+class Tetris {
+    new(rng=nil, nrows=nil, ncols=nil) = {
+        new(
+            rng=rng or rand.Rng(),
+            board=Board(nrows, ncols),
+        )
+    }
+}
+
+class Board {
+    new(nrows=nil, ncols=nil) = {
+        if nrows is nil {
+            nrows = 24
+        }
+        if ncols is nil {
+            ncols = 10
+        }
+        new(
+            nrows=nrows,
+            ncols=ncols,
+            cells=range(nrows).map(def(_) =
+                range(ncols).map(def(_) = 0).list()
+            ).list(),
+        )
+    }
+    def vacant(self, cell) = {
+        # Check if the given cell or Piece can fit into this board
+        if type(cell) is Piece {
+            cell.cells().all(def(cell) = self.vacant(cell))
+        } else {
+            [r, c] = cell
+            (
+                r >= 0 and r < self.nrows and
+                c >= 0 and c < self.ncols and
+                self.cells[r][c] == 0
+            )
+        }
+    }
+    def* cells(self) {
+        for r in range(self.nrows) {
+            for c in range(self.ncols) {
+                if self.cells[r][c] {
+                    yield [r, c]
+                }
+            }
+        }
+    }
+}
+
+class Piece {
+    new(shape, r, c, rot=0) = new(shape=shape, r=r, c=c, rot=rot%%4)
+    def* cells(self) {
+        rot = self.rot
+        for dr in range(4) {
+            for dc in range(4) {
+                if self.shape[dr][dc] {
+                    [xr, xc] = switch rot {
+                        0 => [dr, dc]
+                        1 => [dc, 3 - dr]
+                        2 => [3 - dr, 3 - dc]
+                        3 => [3 - dc, dr]
+                    }
+                    yield [self.r + xr, self.c + xc]
+                }
+            }
+        }
+    }
+    def has(self, cell) = cell in self.cells()
+    def rotate(self, n) = Piece(self.shape, self.r, self.c, self.rot + n)
+    def move(self, dr, dc) = Piece(self.shape, self.r + dr, self.c + dc, self.rot)
+    def str(self) = {
+        parts = range(4).map(def(_) = range(4).map(def(_) = 0).list()).list()
+        for [r, c] in Piece(self.shape, 0, 0, self.rot).cells() {
+            parts[r][c] = 1
+        }
+        ''.join(parts.map(def(part) = ''.join(part.map(str)) + '\n'))
+    }
+}
+
+_SHAPES = [
+    (
+        #0100
+        #0110
+        #0100
+        #0000
+    ),
+    (
+        #0100
+        #0100
+        #0100
+        #0100
+    ),
+    (
+        #0000
+        #1100
+        #0110
+        #0000
+    ),
+    (
+        #0000
+        #0011
+        #0110
+        #0000
+    ),
+    (
+        #0000
+        #0110
+        #0110
+        #0000
+    ),
+    (
+        #0100
+        #0100
+        #0110
+        #0000
+    ),
+    (
+        #0010
+        #0010
+        #0110
+        #0000
+    ),
+].map(def(s) =
+    s.lines().filter().map(def(line) =
+        line.chars().map(def(c) = int(c == '1')).list()
+    ).list()
+)
+
+def __test_rotation() {
+    piece = Piece(_SHAPES[0], 0, 0)
+    assert_eq(piece.str(),
+        (
+            #0100
+            #0110
+            #0100
+            #0000
+        ),
+    )
+    assert_eq(piece.rotate(1).str(),
+        (
+            #0000
+            #0111
+            #0010
+            #0000
+        ),
+    )
+    assert_eq(piece.rotate(2).str(),
+        (
+            #0000
+            #0010
+            #0110
+            #0010
+        ),
+    )
+    assert_eq(piece.rotate(3).str(),
+        (
+            #0000
+            #0100
+            #1110
+            #0000
+        ),
+    )
+    assert_eq(piece.rotate(4).str(), piece.str())
+    assert_eq(piece.rotate(0).str(), piece.str())
+}

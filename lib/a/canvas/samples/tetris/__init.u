@@ -1,0 +1,45 @@
+import a.canvas
+import .model
+import .draw
+
+BOARD_SCALE = 30
+CWIDTH = 10 * BOARD_SCALE * 2
+CHEIGHT = 24 * BOARD_SCALE
+
+class Delegate(canvas.Delegate) {
+    new(cv) = new(cv=cv, model=model.Tetris(nrows=24, ncols=10))
+    def keydown(self, key, mods) {
+        switch key {
+            'Escape' => self.cv.exit()
+            => print('keydown %r' % [[key, mods]])
+        }
+    }
+
+    def __get_board(self) = self.model.board
+
+    def tick(self, ts) {
+        b = self.cv.batch()
+        b.save()
+        b.setTransform(0, 0, 0, 0, 1, 1)
+        # b.scale(BOARD_SCALE, BOARD_SCALE)
+        b.fillRect(0, 0, 100, 100)
+        # b.fillStyle = '#AA0010'
+        # b.fillRect(0, 0, CWIDTH, CHEIGHT)
+        # draw.board(b, 1, self.board)
+        b.restore()
+        b.run()
+    }
+}
+
+def main() {
+    canvas.run(
+        title = 'tetris',
+        delegatecls = Delegate,
+        size = [CWIDTH, CHEIGHT],
+    )
+}
+
+
+if __name == __main() {
+    main()
+}

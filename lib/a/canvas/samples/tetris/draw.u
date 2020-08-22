@@ -1,0 +1,15 @@
+
+
+def board(b, scale, board) {
+    # Draws the board with upper-left corner at (0, 0)
+    # with 1px per cell
+    nrows = board.nrows
+    ncols = board.ncols
+    b.save()
+    b.fillStyle = 'black'
+    b.fillRect(0, 0, ncols * scale, nrows * scale)
+    for [r, c] in board.cells() {
+        b.fillRect(scale * c, scale * r, scale, scale)
+    }
+    b.restore()
+}

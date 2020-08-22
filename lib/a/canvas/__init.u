@@ -77,7 +77,7 @@ def init(
 
             switch cmd {
                 'tick' => {
-                    if type(delegate.tick(float(parts[1]))) is Promise {
+                    if type(delegate.tick(float(parts[1])/1000)) is Promise {
                         throw(
                             "Due to time sensitive nature of tick(), " +
                             "the tick() method may not be async"
