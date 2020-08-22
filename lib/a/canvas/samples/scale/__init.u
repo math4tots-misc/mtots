@@ -1,0 +1,53 @@
+import a.canvas
+
+class Delegate(canvas.Delegate) {
+    static async def __call(cv) = {
+        width = cv.width.await
+        height = cv.height.await
+
+        cv.draw(def(b) {
+            b.fillStyle = 'black'
+            b.fillRect(0, 0, width, height)
+
+            b.save()
+            b.scale(2, 2)
+            b.fillStyle = 'blue'
+            b.fillRect(0, 0, width / 3, height / 3)
+            b.restore()
+
+            b.save()
+            b.fillStyle = 'red'
+            b.fillRect(width * 2 / 3, 0, width / 3, height / 3)
+            b.restore()
+        })
+
+        new(cv=cv, width=width, height=height)
+    }
+    def __get_dim(self) = [self.width, self.height]
+    def tick(self, ts) {
+        cv = self.cv
+        [width, height] = self.dim
+        # cv.draw(def(b) {
+        #     b.fillStyle = 'black'
+        #     b.fillRect(0, 0, width, height)
+        # })
+    }
+    def keydown(self, key, mods) {
+        switch key {
+            'Escape' => self.cv.exit()
+        }
+    }
+}
+
+
+def main() {
+    canvas.run(
+        title = 'scale demo',
+        delegatecls = Delegate,
+    )
+}
+
+
+if __name == __main() {
+    main()
+}

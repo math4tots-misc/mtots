@@ -170,7 +170,7 @@ class Batch2D {
         self.cmd('ctx.rotate(%r)' % [float(angle)])
     }
     def scale(self, x, y) {
-        self.cmd('ctx.rotate(%r,%r)' % [float(x), float(y)])
+        self.cmd('ctx.scale(%r,%r)' % [float(x), float(y)])
     }
     def translate(self, x, y) {
         self.cmd('ctx.translate(%r,%r)' % [float(x), float(y)])

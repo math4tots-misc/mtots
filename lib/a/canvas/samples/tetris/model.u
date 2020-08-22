@@ -5,7 +5,24 @@ class Tetris {
         new(
             rng=rng or rand.Rng(),
             board=Board(nrows, ncols),
+            piece=nil,
+            _next_piece = nil,
         )
+    }
+    def step(self) {
+    }
+    def __get_next_piece(self) = {
+        if self._next_piece is nil {
+            shape = self.rng.choose(_SHAPES)
+            c = max(0, self.nrows // 2 - 2)
+            self._next_piece = Piece(shape, r=0, c=c)
+        }
+        self._next_piece
+    }
+    def load_piece(self) {
+        if self.piece is nil {
+            self.piece = self.next_piece
+        }
     }
 }
 
@@ -51,6 +68,10 @@ class Board {
 
 class Piece {
     new(shape, r, c, rot=0) = new(shape=shape, r=r, c=c, rot=rot%%4)
+    static def rand(rng=nil) = {
+        shape = (rng or rand.Rng()).choose(_SHAPES)
+
+    }
     def* cells(self) {
         rot = self.rot
         for dr in range(4) {

@@ -66,6 +66,19 @@ pub(super) fn new() -> NativeModule {
                     }
                 },
             );
+            cls.ifunc(
+                "choose",
+                ["list"],
+                "",
+                |owner, _globals, args, _| {
+                    let mut args = args.into_iter();
+                    let list = args.next().unwrap().into_list()?;
+                    let list = list.borrow();
+                    let len = list.len();
+                    let index = owner.borrow_mut().gen_range(0, len);
+                    Ok(list[index].clone())
+                },
+            );
         });
         m.func(
             "float",
