@@ -1,0 +1,86 @@
+from .board import Board
+from .board import Piece
+
+STEP_TIME = 1
+
+class Tetris {
+    new(nrows, ncols) = {
+        new(
+            state='play',
+            board=Board(nrows=nrows, ncols=ncols),
+            piece=nil,
+            step_time=STEP_TIME,
+        )
+    }
+
+    def __get_ncols(self) = self.board.ncols
+    def __get_nrows(self) = self.board.nrows
+
+    def step(self) {
+        switch self.state {
+            'play' => {
+                if self.piece is nil {
+                    self.set_new_piece()
+                } else {
+                    self.descend()
+                }
+            }
+            => print('Unrecognized state: %r' % [self.state])
+        }
+    }
+
+    def freeze_piece(self) {
+        self.board.fill(self.piece)
+        self.piece = nil
+        self.set_new_piece()
+    }
+
+    def descend(self) {
+        piece = self.piece
+        new_piece = piece.move(1, 0)
+        if self.board.can_fit(new_piece) {
+            self.piece = new_piece
+        } else {
+            self.freeze_piece()
+        }
+    }
+
+    def set_new_piece(self) {
+        piece = Piece.rand()
+        piece.c = max(0, self.ncols // 2 - 2)
+        self.piece = piece
+        if !self.board.can_fit(self.piece) {
+            self.state = 'gameover'
+        }
+    }
+
+    def hard_drop(self) {
+        if self.piece {
+            while self.move_piece(1) {}
+            self.freeze_piece()
+        }
+    }
+
+    def move_piece(self, dr=0, dc=0, drot=0) = {
+        if self.piece is not nil {
+            piece = self.piece.move(dr, dc, drot)
+            if self.board.can_fit(piece) {
+                self.piece = piece
+                true
+            }
+        }
+    }
+
+    def rotate_piece(self, drot) {
+        if self.piece is not nil {
+            piece = self.piece.rotate(drot)
+            for dc in [0, 1, -1, 2, -2] {
+                moved_piece = piece.move(dc=dc)
+                if self.board.can_fit(moved_piece) {
+                    self.piece = moved_piece
+                    return
+                }
+            }
+        }
+    }
+}
