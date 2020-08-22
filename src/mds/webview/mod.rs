@@ -427,6 +427,32 @@ pub(super) fn new() -> NativeModule {
                 },
             );
 
+            let reg_for_set = reg_for_jsref.clone();
+            cls.sfunc(
+                "set",
+                ["ref", "attrname", "value"],
+                concat!(
+                    "Sets the value on a field, and returns a promise ",
+                    "so that you can await the completion of that assignment",
+                ),
+                move |globals, args, _| {
+                    let mut args = args.into_iter();
+                    let ref_ = args.next().unwrap().into_handle::<JsRef>()?;
+                    let ref_ = ref_.borrow();
+                    let wv = ref_.wv()?;
+                    let mut wv = wv.borrow_mut();
+                    let attrname = args.next().unwrap().into_string()?;
+                    let value = args.next().unwrap();
+                    let value = arg_for_js(globals, value)?;
+                    let promise = reg_for_set.borrow_mut().evalx(
+                        globals,
+                        &mut wv,
+                        &format!("$$REFS.a{}.{} = {}", ref_.id, attrname, value),
+                    )?;
+                    Ok(promise.into())
+                },
+            );
+
             cls.sfunc(
                 "name",
                 ["ref"],

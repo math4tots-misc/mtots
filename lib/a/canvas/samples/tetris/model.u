@@ -35,11 +35,11 @@ class Board {
             for cell in cell.cells() {
                 self.fill(cell)
             }
+            self.clear_filled_rows()
         } else {
             [r, c] = cell
             self.cells[r][c] = 1
         }
-        self.clear_filled_rows()
     }
     def clear_filled_rows(self) {
         rows = self.cells.filter(def(row) = !row.all())

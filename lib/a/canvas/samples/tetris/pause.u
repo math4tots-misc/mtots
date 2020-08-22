@@ -1,4 +1,5 @@
 import a.canvas
+from a.webview import JsRef
 
 
 class Delegate(canvas.Delegate) {
@@ -15,5 +16,20 @@ class Delegate(canvas.Delegate) {
             'Enter' => self.canvas.exit()
             => print('pause keydown %r' % [[key, mods]])
         }
+    }
+
+    def tick(self, ts) {
+        (async def {
+            width = self.canvas.width.await
+            height = self.canvas.height.await
+            msg = 'PAUSED'
+            ctx = self.canvas.ctx().await
+            JsRef.set(ctx, 'font', '30px sans-serif').await
+            twidth = self.canvas.measureText(msg).await['width']
+            self.canvas.draw(def(b) {
+                b.fillStyle = 'white'
+                b.fillText(msg, width / 2 - twidth / 2, height / 3)
+            })
+        })().ordie()
     }
 }

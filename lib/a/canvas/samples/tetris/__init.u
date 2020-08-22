@@ -114,8 +114,9 @@ class Delegate(canvas.Delegate) {
         if self.piece is not nil {
             piece = self.piece.rotate(drot)
             for dc in [0, 1, -1, 2, -2] {
-                if self.board.can_fit(piece) {
-                    self.piece = piece
+                moved_piece = piece.move(dc=dc)
+                if self.board.can_fit(moved_piece) {
+                    self.piece = moved_piece
                     return
                 }
             }
