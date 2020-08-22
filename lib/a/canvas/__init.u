@@ -24,7 +24,14 @@ def _content() = {
         <body>
             <canvas id="canvas"></canvas>
             <div id='misc' style="display:none;"></div>
-            <script>%s</script>
+            <script>
+            var ESS = 'start/';
+            ESS += 'x/';
+            </script>
+            <script>
+            ESS += 'parsed/';
+            %s;
+            external.invoke('debug/xxx');</script>
             <script>%s</script>
             <script>%s</script>
         </body>
