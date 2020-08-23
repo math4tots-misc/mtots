@@ -1,6 +1,7 @@
 import a.webview
 import a.json
 import a.fs
+from .tone import BatchTone
 from .c2d import Canvas2DMixin
 from .img import CanvasImageMixin
 
@@ -24,14 +25,7 @@ def _content() = {
         <body>
             <canvas id="canvas"></canvas>
             <div id='misc' style="display:none;"></div>
-            <script>
-            var ESS = 'start/';
-            ESS += 'x/';
-            </script>
-            <script>
-            ESS += 'parsed/';
-            %s;
-            external.invoke('debug/xxx');</script>
+            <script>%s</script>
             <script>%s</script>
             <script>%s</script>
         </body>
@@ -181,6 +175,8 @@ class Canvas(Canvas2DMixin, CanvasImageMixin) {
         }
         self.ctx
     }
+
+    def tone(self) = BatchTone(self)
 
     def run(self) {
         self.webview.run()

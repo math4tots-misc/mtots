@@ -27,7 +27,14 @@ class Delegate(canvas.Delegate) {
             'd' | 'ArrowRight' => self.model.move_piece(0, 1)
             's' | 'ArrowDown' => self.model.move_piece(1, 0)
             'w' | 'ArrowUp' => self.model.rotate_piece(1)
-            ' ' => self.model.hard_drop()
+            ' ' => {
+                t = self.cv.tone()
+                # t.triggerAttackRelease('C6', '8n')
+                # t.triggerAttackRelease('A4', '8n')
+                t.seq(['C6', 'A4'], '12t')
+                t.run()
+                self.model.hard_drop()
+            }
             => print('keydown %r' % [[key, mods]])
         }
     }
@@ -53,6 +60,11 @@ class Delegate(canvas.Delegate) {
         b.run()
     }
 
+    # def click(self, btn, x, y) {
+    #     t = self.cv.tone()
+    #     t.triggerAttackRelease('C4', '8n')
+    #     t.run()
+    # }
 }
 
 def main() {

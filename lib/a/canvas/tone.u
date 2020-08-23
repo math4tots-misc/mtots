@@ -1,0 +1,45 @@
+import a.json
+
+class BatchTone {
+    # API for batching commands to Tone.js
+    # so that commands can be executed all at once on the JS
+    # side
+
+    new(canvas) = new(canvas=canvas, cmds=[])
+
+    async def run(self) {
+        cmds = self.cmds
+        self.cmds = []
+        cmds = ';'.join(del cmds)
+        self.canvas.evalx('(function(){%s})()' % [cmds]).await
+    }
+
+    def emit(self, cmd) {
+        self.cmds.push(cmd)
+    }
+
+    def seq(self, notes, subdivision=nil) {
+        notes = json.dumps(notes)
+        subdivision = json.dumps(subdivision)
+        self.emit('playseq(%s,%s)' % [notes, subdivision])
+    }
+
+    def triggerAttackRelease(self, note, duration, time=nil) {
+        # Trigger the attack and then the release after
+        # the duration
+        #
+        # note:
+        #   the note to trigger
+        # duration: Time
+        #   How long the note should be held before triggering
+        #   the release. This value must be greater than 0.
+        # time?: Time
+        #   When the note should be triggered.
+        #   By default, it will trigger immediately
+        if time is nil {
+            self.emit('synth.triggerAttackRelease(%r,%r)' % [note, duration])
+        } else {
+            self.emit('synth.triggerAttackRelease(%r,%r,%r)' % [note, duration, time])
+        }
+    }
+}
