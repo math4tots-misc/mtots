@@ -2,6 +2,7 @@ import a.canvas
 from .model import Board
 from .model import Piece
 from .model import Tetris
+from .key import KeyMap
 import .draw
 import .pause
 
@@ -11,35 +12,48 @@ BOARD_SCALE = 30
 CWIDTH = NCOLS * BOARD_SCALE * 2
 CHEIGHT = NROWS * BOARD_SCALE
 
+KEYMAP = KeyMap([
+    'pause': ['Escape', 'GamepadView', 'GamepadMenu'],
+    'left': ['a', 'ArrowLeft', 'GamepadDPadLeft', 'GamepadLeftThumbstickLeft'],
+    'right': ['d', 'ArrowRight', 'GamepadDPadRight', 'GamepadLeftThumbstickRight'],
+    'down': ['s', 'ArrowDown', 'GamepadDPadDown', 'GamepadLeftThumbstickDown'],
+    'up': [
+        'w',
+        'ArrowUp',
+        'GamepadDPadUp',
+        'GamepadLeftThumbstickUp',
+    ],
+    'enter': ['Enter', 'GamepadA'],
+    'drop': [' ', 'GamepadY'],
+])
+
 class Delegate(canvas.Delegate) {
     new(cv) = {
         new(
             cv=cv,
             last_step=nil,
             model=Tetris(nrows=NROWS,ncols=NCOLS),
+            keymap=KEYMAP,
         )
     }
 
     def keydown(self, key, mods) {
-        switch key {
-            'Escape' | 'GamepadView' => self.cv.delegate(pause.Delegate(self.cv, self))
-            'a' | 'ArrowLeft' | 'GamepadDPadLeft' | 'GamepadLeftThumbstickLeft' => {
+        repeat = 'repeat' in mods
+        switch KEYMAP.get(key) {
+            'pause' => self.cv.delegate(pause.Delegate(self.cv, self))
+            'left' => {
                 self.model.move_piece(0, -1)
             }
-            'd' | 'ArrowRight' | 'GamepadDPadRight' | 'GamepadLeftThumbstickRight' => {
+            'right' => {
                 self.model.move_piece(0, 1)
             }
-            's' | 'ArrowDown' | 'GamepadDPadDown' | 'GamepadLeftThumbstickDown' => {
+            'down' => {
                 self.model.move_piece(1, 0)
             }
-            'w' |
-            'ArrowUp' |
-            'GamepadDPadUp' |
-            'GamepadLeftThumbstickUp' |
-            'GamepadA' => {
+            'up' | 'enter' => if !repeat {
                 self.model.rotate_piece(1)
             }
-            ' ' | 'GamepadY' => {
+            'drop' => if !repeat {
                 t = self.cv.tone()
                 # t.triggerAttackRelease('C6', '8n')
                 # t.triggerAttackRelease('A4', '8n')

@@ -1,0 +1,16 @@
+
+
+class KeyMap {
+    new(rmap) = {
+        map = [:]
+        for [value, keys] in rmap {
+            for key in keys {
+                map[key] = value
+            }
+        }
+        new(rmap=rmap, map=map)
+    }
+    def get(self, key) = {
+        self.map.get(key, key)
+    }
+}
