@@ -24,7 +24,7 @@ class Delegate(canvas.Delegate) {
 
     def keydown(self, key, mods) {
         switch key {
-            'Escape' => self.canvas.delegate(self.game_delegate)
+            'Escape' | 'GamepadView' => self.canvas.delegate(self.game_delegate)
             'Enter' => self.canvas.exit()
             => print('pause keydown %r' % [[key, mods]])
         }

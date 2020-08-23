@@ -22,12 +22,24 @@ class Delegate(canvas.Delegate) {
 
     def keydown(self, key, mods) {
         switch key {
-            'Escape' => self.cv.delegate(pause.Delegate(self.cv, self))
-            'a' | 'ArrowLeft' => self.model.move_piece(0, -1)
-            'd' | 'ArrowRight' => self.model.move_piece(0, 1)
-            's' | 'ArrowDown' => self.model.move_piece(1, 0)
-            'w' | 'ArrowUp' => self.model.rotate_piece(1)
-            ' ' => {
+            'Escape' | 'GamepadView' => self.cv.delegate(pause.Delegate(self.cv, self))
+            'a' | 'ArrowLeft' | 'GamepadDPadLeft' | 'GamepadLeftThumbstickLeft' => {
+                self.model.move_piece(0, -1)
+            }
+            'd' | 'ArrowRight' | 'GamepadDPadRight' | 'GamepadLeftThumbstickRight' => {
+                self.model.move_piece(0, 1)
+            }
+            's' | 'ArrowDown' | 'GamepadDPadDown' | 'GamepadLeftThumbstickDown' => {
+                self.model.move_piece(1, 0)
+            }
+            'w' |
+            'ArrowUp' |
+            'GamepadDPadUp' |
+            'GamepadLeftThumbstickUp' |
+            'GamepadA' => {
+                self.model.rotate_piece(1)
+            }
+            ' ' | 'GamepadY' => {
                 t = self.cv.tone()
                 # t.triggerAttackRelease('C6', '8n')
                 # t.triggerAttackRelease('A4', '8n')
@@ -37,6 +49,10 @@ class Delegate(canvas.Delegate) {
             }
             => print('keydown %r' % [[key, mods]])
         }
+    }
+
+    def gamepadbtn(self, gid, btn, state) {
+        print('gamepadbtn %r %r %r' % [gid, btn, state])
     }
 
     def tick(self, ts) {
