@@ -2,8 +2,36 @@ import a.canvas
 
 
 canvas.app(class Finder(canvas.Delegate) {
-    new(cv) = new(cv=cv)
 
     static title = 'finder app'
+    static size = [800, 600]
+    static resizable = true
 
+    static async def __call(cv) = {
+        width = cv.width.await
+        height = cv.height.await
+        ret = new(cv=cv, width=width, height=height)
+        ret.redraw()
+        ret
+    }
+
+    def keydown(self, key, mods) {
+        switch key {
+            'Escape' => self.cv.exit()
+            => print('keydown %r %r' % [key, mods])
+        }
+    }
+
+    def resize(self, width, height) {
+        self.width = width
+        self.height = height
+        self.redraw()
+    }
+
+    def redraw(self) {
+        b = self.cv.batch()
+        b.fillStyle = 'black'
+        b.fillRect(0, 0, self.width, self.height)
+        b.run()
+    }
 })

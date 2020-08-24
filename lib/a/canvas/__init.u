@@ -20,9 +20,21 @@ def _content() = {
                     height: 100%%;
                     overflow: hidden;
                 }
+                canvas {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                }
+                #canvasbg {
+                    z-index: 0;
+                }
+                #canvas {
+                    z-index: 1;
+                }
             </style>
         </head>
         <body>
+            <canvas id="canvasbg"></canvas>
             <canvas id="canvas"></canvas>
             <div id='misc' style="display:none;"></div>
             <script>%s</script>
