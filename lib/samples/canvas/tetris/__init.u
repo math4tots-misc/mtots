@@ -57,7 +57,9 @@ class Delegate(canvas.Delegate) {
                 t = self.cv.tone()
                 # t.triggerAttackRelease('C6', '8n')
                 # t.triggerAttackRelease('A4', '8n')
-                t.seq(['C6', 'A4'], '12t')
+                # t.seq(['C6', 'A4'], '12t')
+                # t.seq(['C6', 'A4'], 0.2)
+                t.seq(['E4', 'E6'], 0.1)
                 t.run()
                 self.model.hard_drop()
             }

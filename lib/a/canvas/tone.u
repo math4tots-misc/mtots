@@ -18,10 +18,10 @@ class BatchTone {
         self.cmds.push(cmd)
     }
 
-    def seq(self, notes, subdivision=nil) {
+    def seq(self, notes, nsec_per_note=nil) {
         notes = json.dumps(notes)
-        subdivision = json.dumps(subdivision)
-        self.emit('playseq(%s,%s)' % [notes, subdivision])
+        nsec_per_note = json.dumps(nsec_per_note)
+        self.emit('playseq(%s,%s)' % [notes, nsec_per_note])
     }
 
     def triggerAttackRelease(self, note, duration, time=nil) {

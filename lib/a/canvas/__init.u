@@ -7,7 +7,8 @@ from .img import CanvasImageMixin
 
 def _content() = {
     jsdir = fs.join(fs.dirname(__file), 'js')
-    tonejs = fs.read(fs.join(jsdir, 'tone', 'tone.js'))
+    afreqsjs = fs.read(fs.join(jsdir, 'afreqs.js'))
+    audiojs = fs.read(fs.join(jsdir, 'audio.js'))
     eventsjs = fs.read(fs.join(jsdir, 'events.js'))
     html_content = r###"
     <html>
@@ -40,9 +41,10 @@ def _content() = {
             <script>%s</script>
             <script>%s</script>
             <script>%s</script>
+            <script>%s</script>
         </body>
     </html>
-    "### % [tonejs, webview.JS_PRELUDE, eventsjs]
+    "### % [webview.JS_PRELUDE, afreqsjs, audiojs, eventsjs]
 }
 
 def app(delegatecls) {
