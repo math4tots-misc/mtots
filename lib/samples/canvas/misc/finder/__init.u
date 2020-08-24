@@ -1,0 +1,9 @@
+import a.canvas
+
+
+canvas.app(class Finder(canvas.Delegate) {
+    new(cv) = new(cv=cv)
+
+    static title = 'finder app'
+
+})

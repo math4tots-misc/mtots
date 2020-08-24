@@ -33,19 +33,37 @@ def _content() = {
     "### % [tonejs, webview.JS_PRELUDE, eventsjs]
 }
 
+def app(delegatecls) {
+    if $GetCallingModule == __main() {
+        run(delegatecls, **[
+            'title': getattr(delegatecls, 'title', nil),
+            'size': getattr(delegatecls, 'size', nil),
+            'resizable': getattr(delegatecls, 'resizable', nil),
+            'debug': getattr(delegatecls, 'debug', nil),
+            'frameless': getattr(delegatecls, 'frameless', nil),
+        ])
+    }
+}
+
 def run(*args, **kwargs) {
     cv = init(*args, **kwargs)
     cv.run()
 }
 
 def init(
-    title = '',
-    size = [800, 600],
-    resizable = false,
-    debug = false,
-    frameless = false,
+    title = nil,
+    size = nil,
+    resizable = nil,
+    debug = nil,
+    frameless = nil,
     delegatecls = nil,
 ) = {
+    title = nil.get(title, '')
+    size = nil.get(size, [800, 600])
+    resizable = nil.get(resizable, false)
+    debug = nil.get(debug, false)
+    frameless = nil.get(frameless, false)
+
     delegate = nil
     cv = Canvas(webview.init(
         title = title,
