@@ -37,6 +37,7 @@ canvas.app(class Finder(canvas.Delegate) {
             dir=nil,
             items=nil,
             select=nil,
+            select_item_stack=[],
             offset=nil,
 
             # text height in pixels
@@ -73,9 +74,21 @@ canvas.app(class Finder(canvas.Delegate) {
     }
 
     def pick(self) {
-        path = fs.join(self.dir, self.items[self.select])
+        basename = self.items[self.select]
+        path = fs.join(self.dir, basename)
         if fs.isdir(path) {
             self.set_dir(path)
+            if self.select_item_stack {
+                item = self.select_item_stack.pop()
+                if item == basename and self.select_item_stack {
+                    index = self.items.index(self.select_item_stack[-1], nil)
+                    if index is nil {
+                        self.select_item_stack = []
+                    } else {
+                        self.select = index
+                    }
+                }
+            }
         } else {
             print('TODO: file data display')
         }
@@ -126,6 +139,7 @@ canvas.app(class Finder(canvas.Delegate) {
 
     def set_to_parent_dir(self) {
         name = fs.basename(self.dir)
+        self.select_item_stack.push(name)
         self.set_dir(fs.dirname(self.dir))
         self.select = self.items.index(name, 0)
     }
