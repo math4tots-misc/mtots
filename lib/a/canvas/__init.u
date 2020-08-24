@@ -154,7 +154,7 @@ def init(
                     ordie(delegate.keypress(key, mods))
                 }
                 'resize' => {
-                    [width, height] = parts[1:]
+                    [width, height] = parts[1:].iter().map(float)
                     ordie(delegate.resize(width, height))
                 }
                 'gamepadbtn' => {

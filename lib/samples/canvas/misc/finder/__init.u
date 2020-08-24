@@ -1,5 +1,25 @@
 import a.canvas
+import a.fs
 
+TEXT_HEIGHT = 28
+TEXT_COLOR = '#AAAAAA'
+HIGHLIGHT_COLOR = 'blue'
+TITLE_BG_COLOR = '#00003A'
+ITEM_OFFSET = 5
+
+KEYMAP = [
+    'GamepadLeftThumbstickDown': 'down',
+    'GamepadLeftThumbstickUp': 'up',
+    'GamepadA': 'enter',
+    'GamepadB': 'parent',
+    'GamepadMenu': 'exit',
+
+    'ArrowDown': 'down',
+    'ArrowUp': 'up',
+    'Enter': 'enter',
+    'ArrowLeft': 'parent',
+    'Escape': 'exit',
+]
 
 canvas.app(class Finder(canvas.Delegate) {
 
@@ -10,28 +30,110 @@ canvas.app(class Finder(canvas.Delegate) {
     static async def __call(cv) = {
         width = cv.width.await
         height = cv.height.await
-        ret = new(cv=cv, width=width, height=height)
+        ret = new(
+            cv=cv,
+            width=nil,
+            height=nil,
+            dir=nil,
+            items=nil,
+            select=nil,
+            offset=nil,
+
+            # text height in pixels
+            text_height=TEXT_HEIGHT,
+        )
+        ret.set_dir(fs.cwd())
+        ret.resize(width, height)
         ret.redraw()
         ret
     }
 
     def keydown(self, key, mods) {
-        switch key {
-            'Escape' => self.cv.exit()
+        switch KEYMAP.get(key, key) {
+            'exit' => self.cv.exit()
+            'up' => self.move(-1)
+            'down' => self.move(1)
+            'parent' => self.set_to_parent_dir()
+            'enter' => self.pick()
             => print('keydown %r %r' % [key, mods])
         }
+        self.redraw()
     }
 
     def resize(self, width, height) {
         self.width = width
         self.height = height
+        self.offset = height / self.text_height / 4
+        self.redraw()
+    }
+
+    def move(self, dir) {
+        self.select += dir
+        self.select %%= self.items.len()
+    }
+
+    def pick(self) {
+        path = fs.join(self.dir, self.items[self.select])
+        if fs.isdir(path) {
+            self.set_dir(path)
+        } else {
+            print('TODO: file data display')
+        }
+    }
+
+    def resume(self) {
         self.redraw()
     }
 
     def redraw(self) {
         b = self.cv.batch()
+        b.font = '%spx sans-serif' % [self.text_height]
         b.fillStyle = 'black'
         b.fillRect(0, 0, self.width, self.height)
+
+        start_y = self.text_height * 2
+
+        # Draw the directory items
+        x = 40
+        base_y = start_y + self.text_height * (2 + self.offset)
+        b.fillStyle = TEXT_COLOR
+        for [i, item] in self.items.iter().enumerate() {
+            y = base_y + ((i - self.select) * self.text_height)
+            if i == self.select {
+                b.save()
+                b.fillStyle = 'blue'
+                b.fillRect(
+                    x,
+                    y - self.text_height * 7 / 8,
+                    self.width - 2 * x,
+                    self.text_height,
+                )
+                b.restore()
+            }
+            b.fillText(item, x, y)
+        }
+
+        # Draw the current directory name
+        x = 20
+        y = self.text_height * 2
+        b.fillStyle = TITLE_BG_COLOR
+        b.fillRect(0, 0, self.width, self.text_height * 3)
+        b.fillStyle = TEXT_COLOR
+        b.fillText(self.dir, x, y)
+
         b.run()
+    }
+
+    def set_to_parent_dir(self) {
+        name = fs.basename(self.dir)
+        self.set_dir(fs.dirname(self.dir))
+        self.select = self.items.index(name, 0)
+    }
+
+    def set_dir(self, new_dir) {
+        items = fs.ls(new_dir)
+        self.dir = new_dir
+        self.items = items
+        self.select = 0
     }
 })
