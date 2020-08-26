@@ -97,10 +97,10 @@ def init(
                     if type(d) is Promise {
                         (async def {
                             nonlocal delegate
-                            delegate = d.await
+                            delegate = WrappingDelegate(d.await, cv)
                         })().ordie()
                     } else {
-                        delegate = d
+                        delegate = WrappingDelegate(d, cv)
                     }
                     return
                 }
@@ -182,10 +182,10 @@ def init(
             delegate = nil
             (async def {
                 nonlocal delegate
-                delegate = new_delegate.await
+                delegate = WrappingDelegate(new_delegate.await, cv)
             })().ordie()
         } else {
-            delegate = new_delegate
+            delegate = WrappingDelegate(new_delegate, cv)
         }
     })
 }
@@ -258,4 +258,88 @@ class Delegate {
     def gamepadconnected(self, gamepad_id) = nil
     def gamepadbtn(self, gamepad_id, btn, state) = nil
     def gamepadaxis(self, gamepad_id, axis, state) = nil
+}
+
+class WrappingDelegate {
+    new(target, canvas) = new(
+        target=target,
+        canvas=canvas,
+        hastick=hasmethod(type(target), 'tick'),
+        hasresize=hasmethod(type(target), 'resize'),
+        hasclick=hasmethod(type(target), 'click'),
+        hasmousemove=hasmethod(type(target), 'mousemove'),
+        hasmousedown=hasmethod(type(target), 'mousedown'),
+        hasmouseup=hasmethod(type(target), 'mouseup'),
+        haskeydown=hasmethod(type(target), 'keydown'),
+        haskeyup=hasmethod(type(target), 'keyup'),
+        haskeypress=hasmethod(type(target), 'keypress'),
+        hasgamepadconnected=hasmethod(type(target), 'gamepadconnected'),
+        hasgamepadbtn=hasmethod(type(target), 'gamepadbtn'),
+        hasgamepadaxis=hasmethod(type(target), 'gamepadaxis'),
+    )
+    def tick(self, timestamp) = {
+        if self.hastick {
+            self.target.tick(timestamp)
+        }
+    }
+    def resize(self, width, height) = {
+        if self.hasresize {
+            self.target.resize(width, height)
+        }
+    }
+    def click(self, btn, x, y) = {
+        if self.hasclick {
+            self.target.click(btn, x, y)
+        }
+    }
+    def mousemove(self, x, y) = {
+        if self.hasmousemove {
+            self.target.mousemove(x, y)
+        }
+    }
+    def mousedown(self, btn, x, y) = {
+        if self.hasmousedown {
+            self.target.mousedown(btn, x, y)
+        }
+    }
+    def mouseup(self, btn, x, y) = {
+        if self.hasmouseup {
+            self.target.mouseup(btn, x, y)
+        }
+    }
+    def keydown(self, key, mods) = {
+        if self.haskeydown {
+            self.target.keydown(key, mods)
+        } else {
+            switch key {
+                'Escape' => self.canvas.exit()
+            }
+        }
+    }
+    def keyup(self, key, mods) = {
+        if self.haskeyup {
+            self.target.keyup(key, mods)
+        }
+    }
+    def keypress(self, key, mods) = {
+        if self.haskeypress {
+            self.target.keypress(key, mods)
+        }
+    }
+
+    def gamepadconnected(self, gamepad_id) = {
+        if self.hasgamepadconnected {
+            self.target.gamepadconnected(gamepad_id)
+        }
+    }
+    def gamepadbtn(self, gamepad_id, btn, state) = {
+        if self.hasgamepadbtn {
+            self.target.gamepadbtn(gamepad_id, btn, state)
+        }
+    }
+    def gamepadaxis(self, gamepad_id, axis, state) = {
+        if self.hasgamepadaxis {
+            self.target.gamepadaxis(gamepad_id, axis, state)
+        }
+    }
 }
