@@ -1,0 +1,44 @@
+<html>
+    <head>
+        <style>
+            html, body, canvas {
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas"></canvas>
+        <script>
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            function updateDim() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+            updateDim();
+            window.addEventListener('resize', updateDim);
+
+            const NROWS = 100;
+            const NCOLS = 100;
+            const CELL_WIDTH = 10;
+            const CELL_HEIGHT = 10;
+            function animate() {
+                requestAnimationFrame(animate);
+                ctx.fillStyle = 'black'
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (var r = 0; r < NROWS; r++) {
+                    for (var c = 0; c < NCOLS; c++) {
+                        ctx.fillStyle = ((r + c) % 2 === 0 ) ? 'red' : 'blue';
+                        ctx.fillRect(c * CELL_WIDTH, r * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        </script>
+    </body>
+</html>
